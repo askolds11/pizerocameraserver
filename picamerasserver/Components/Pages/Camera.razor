@@ -1,0 +1,66 @@
+@page "/camera"
+@using picamerasserver.Components.Components
+@using picamerasserver.mqtt
+@using picamerasserver.pizerocamera.Requests
+
+<DefaultPage>
+    <MudStack Style="width: 100%">
+        <MudExpansionPanels Elevation="5" MultiExpansion>
+            <MudExpansionPanel Expanded Gutters="false" Dense="true">
+                <TitleContent>
+                    <MudText Typo="Typo.h5">Status</MudText>
+                </TitleContent>
+                <ChildContent>
+                    @* <StatusTable ColorTransform="@ColorTransform"></StatusTable> *@
+                </ChildContent>
+            </MudExpansionPanel>
+            <MudExpansionPanel Expanded>
+                <TitleContent>
+                    <MudText Typo="Typo.h5">Take picture</MudText>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               OnClick="@(() => OnSwitchMode(new CameraRequest.TakePicture(DateTime.Now.ToUnixTimeMilliSeconds(), Guid.CreateVersion7())))">
+                        Take pic
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               OnClick="@(() => OnSwitchMode(new CameraRequest.StartPreview()))">
+                        Start preview
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               OnClick="@(() => OnSwitchMode(new CameraRequest.StopPreview()))">
+                        Stop preview
+                    </MudButton>
+                </TitleContent>
+                <ChildContent>
+
+                </ChildContent>
+            </MudExpansionPanel>
+            <MudExpansionPanel Expanded>
+                <TitleContent>
+                    <MudText Typo="Typo.h5">Config</MudText>
+                </TitleContent>
+                <ChildContent>
+                    <ControlsControl />
+                    
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               OnClick="@(() => OnSubmitConfig())">
+                        Set controls
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               OnClick="@(() => OnGetConfig())">
+                        Set controls
+                    </MudButton>
+                </ChildContent>
+            </MudExpansionPanel>
+            <MudExpansionPanel>
+                <TitleContent>
+                    <MudText Typo="Typo.h5">Preview</MudText>
+                </TitleContent>
+                <ChildContent>
+                    <MudImage Src="@($"http://pizero.local:8000/stream.mjpg?t={_cacheBuster}")" Alt="Here's Johnny" Elevation="25"
+                              Class="rounded-lg ma-4"
+                              ObjectFit="ObjectFit.Contain" Fluid="true"/>
+                </ChildContent>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+    </MudStack>
+</DefaultPage>

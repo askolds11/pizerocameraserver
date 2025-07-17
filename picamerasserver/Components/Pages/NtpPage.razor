@@ -1,0 +1,29 @@
+@page "/ntp"
+@using picamerasserver.Components.Components
+@using picamerasserver.mqtt
+
+<DefaultPage>
+    <MudStack Style="width: 100%">
+        <MudExpansionPanels Elevation="5" MultiExpansion>
+            <MudExpansionPanel Expanded Gutters="false" Dense="true">
+                <TitleContent>
+                    <MudText Typo="Typo.h5">Status</MudText>
+                </TitleContent>
+                <ChildContent>
+                    <StatusTable ColorTransform="@ColorTransform"></StatusTable>
+                </ChildContent>
+            </MudExpansionPanel>
+            <MudExpansionPanel Expanded>
+                <TitleContent>
+                    <MudText Typo="Typo.h5">Take picture</MudText>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               OnClick="@RequestNtpSync">
+                        Sync
+                    </MudButton>
+                </TitleContent>
+                <ChildContent>
+                </ChildContent>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+    </MudStack>
+</DefaultPage>

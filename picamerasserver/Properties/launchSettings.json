@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+    "profiles": {
+      "MyBlazorLauncher": {
+        "commandName": "Executable",
+        "workingDirectory": "$(ProjectDir)",
+        "executablePath": "dotnet",
+        "commandLineArgs": "watch run debug --launch-profile http"
+      },
+      "http": {
+        "commandName": "Project",
+        "dotnetRunMessages": true,
+//        "launchBrowser": true,
+        "applicationUrl": "http://localhost:5020",
+        "environmentVariables": {
+          "ASPNETCORE_ENVIRONMENT": "Development"
+        },
+        "hotReloadEnabled":true,
+        "hotReloadProfile": "blazorwasm"
+      },
+      "https": {
+        "commandName": "Project",
+        "dotnetRunMessages": true,
+        "launchBrowser": true,
+        "applicationUrl": "https://localhost:7189;http://localhost:5020",
+        "environmentVariables": {
+          "ASPNETCORE_ENVIRONMENT": "Development"
+        }
+      }
+    }
+  }

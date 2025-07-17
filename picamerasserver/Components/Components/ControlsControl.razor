@@ -1,0 +1,46 @@
+@{
+    /*
+   'AeConstraintMode': (0, 3, 0),
+   'AeEnable': (False, True, True),
+   'AeExposureMode': (0, 3, 0),
+   'AeFlickerMode': (0, 1, 0),
+   'AeFlickerPeriod': (100, 1000000, None),
+   'AeMeteringMode': (0, 3, 0),
+   'AnalogueGain': (1.0, 16.0, 1.0),
+   'AnalogueGainMode': (0, 1, 0)
+   'AwbEnable': (False, True, None),
+   'AwbMode': (0, 7, 0),
+   'Brightness': (-1.0, 1.0, 0.0),
+   'ColourGains': (0.0, 32.0, None),
+   'ColourTemperature': (100, 100000, None),
+   'Contrast': (0.0, 32.0, 1.0),
+   'CnnEnableInputTensor': (False, True, False),
+   'ExposureTime': (1, 66666, 20000),
+   'ExposureTimeMode': (0, 1, 0),
+   'ExposureValue': (-8.0, 8.0, 0.0),
+   'FrameDurationLimits': (33333, 120000, 33333),
+   'HdrMode': (0, 4, 0),
+   'NoiseReductionMode': (0, 4, 0),
+   'Saturation': (0.0, 32.0, 1.0),
+   'ScalerCrop': ((0, 0, 0, 0), (65535, 65535, 65535, 65535), (0, 0, 0, 0)),
+   'Sharpness': (0.0, 16.0, 1.0),
+   'SyncMode': (0, 2, 0),
+   'SyncFrames': (1, 1000000, 100),
+   'StatsOutputEnable': (False, True, False),
+     */
+}
+
+<MudStack Style="width: 100%">
+    <MudText>Single Selection</MudText>
+    <MudText>Value: @_value1</MudText>
+    <MudToggleGroup T="string" SelectionMode="SelectionMode.SingleSelection" @bind-Value="_value1" Color="Color.Primary"
+                    CheckMark FixedContent>
+        <MudToggleItem Value="@("Yes")" Text="Yes"/>
+        <MudToggleItem Value="@("No")" Text="No"/>
+        <MudToggleItem Value="@("Don't know")" Text="Don't know"/>
+    </MudToggleGroup>
+</MudStack>
+
+@code {
+    private string _value1 = "Yes";
+}

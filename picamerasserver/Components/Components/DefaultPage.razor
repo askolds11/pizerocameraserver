@@ -1,0 +1,17 @@
+@using picamerasserver.Components.Layout
+
+<MudContainer MaxWidth="MaxWidth.Large">
+    <MudPaper Height="@($"calc(100vh - {MyThemeProvider.MyCustomTheme.LayoutProperties.AppbarHeight})")">
+        @ChildContent
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter, EditorRequired]
+    public required RenderFragment ChildContent { get; set; }
+    
+    private string GetHeight()
+    {
+        return $"calc(100vh) - {@MyThemeProvider.MyCustomTheme.LayoutProperties.AppbarHeight}";
+    }
+}

@@ -1,0 +1,15 @@
+﻿services:
+  picamerasserver:
+    image: picamerasserver
+    build:
+      context: .
+      dockerfile: picamerasserver/Dockerfile
+    ports:
+      - "5000:80"   # maps host port 5000 to container port 80
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    volumes:
+      - ./picamerasserver/uploads:/home/askolds/repos/picamerasserver/picamerasserver/uploads:rw
+volumes:
+  uploads:
