@@ -4,7 +4,7 @@ using picamerasserver.Components;
 using picamerasserver.Endpoints;
 using picamerasserver.mqtt;
 using picamerasserver.Options;
-using picamerasserver.pizerocamera;
+using picamerasserver.pizerocamera.manager;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace picamerasserver.pizerocamera.Requests;
+namespace picamerasserver.pizerocamera.manager.Requests;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(TakePicture), nameof(TakePicture))]
@@ -9,7 +9,7 @@ namespace picamerasserver.pizerocamera.Requests;
 [JsonDerivedType(typeof(SetControls), nameof(SetControls))]
 [JsonDerivedType(typeof(GetControls), nameof(GetControls))]
 [JsonDerivedType(typeof(GetControlLimits), nameof(GetControlLimits))]
-public abstract partial record CameraRequest
+public abstract record CameraRequest
 {
     public sealed record TakePicture(
         long StartEpoch,

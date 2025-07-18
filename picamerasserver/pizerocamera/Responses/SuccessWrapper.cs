@@ -1,4 +1,4 @@
-namespace picamerasserver.pizerocamera;
+namespace picamerasserver.pizerocamera.manager;
 
 public record SuccessWrapper<T>
 {

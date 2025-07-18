@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using picamerasserver.Components.Components;
 using picamerasserver.mqtt;
-using picamerasserver.pizerocamera;
+using picamerasserver.pizerocamera.manager;
 
 namespace picamerasserver.Components.Pages;
 

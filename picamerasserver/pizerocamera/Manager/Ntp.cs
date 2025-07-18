@@ -2,48 +2,23 @@ using System.Text;
 using MQTTnet;
 using MQTTnet.Protocol;
 
-namespace picamerasserver.pizerocamera;
+namespace picamerasserver.pizerocamera.manager;
 
-public class PiZeroCameraManager
+public partial class PiZeroCameraManager
 {
-    private readonly IMqttClient _mqttClient;
-    private readonly ILogger<PiZeroCameraManager> _logger;
-
-    public readonly IReadOnlyList<string> PiZeroCameraIds;
-    public readonly IReadOnlyDictionary<string, PiZeroCamera> PiZeroCameras;
-    public event Action? OnChange;
-
-    public PiZeroCameraManager(IMqttClient mqttClient, ILogger<PiZeroCameraManager> logger)
-    {
-        _mqttClient = mqttClient;
-        _logger = logger;
-        // Add all cameras
-        var piZeroCamerasIds = new List<string>();
-        var piZeroCameras = new Dictionary<string, PiZeroCamera>();
-        foreach (var letter in Enumerable.Range('A', 16).Select(c => ((char)c).ToString()))
-        {
-            foreach (var number in Enumerable.Range(1, 6))
-            {
-                piZeroCamerasIds.Add(letter + number);
-                piZeroCameras.Add(letter + number, new PiZeroCamera());
-            }
-        }
-
-        PiZeroCameraIds = piZeroCamerasIds;
-        PiZeroCameras = piZeroCameras;
-    }
-
     /// <summary>
     /// Request a NTP time sync.
     /// </summary>
     /// <param name="ids">Provide a List for specific devices, null for global</param>
     public async Task RequestNtpSync(IEnumerable<string>? ids)
     {
+        var options = _optionsMonitor.CurrentValue;
+        
         if (ids == null)
         {
             var message = new MqttApplicationMessageBuilder()
                 .WithContentType("application/json")
-                .WithTopic("ntp")
+                .WithTopic(options.NtpTopic)
                 // .WithPayload(Json.Serialize(cameraControls))
                 .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
                 .Build();
@@ -71,7 +46,7 @@ public class PiZeroCameraManager
 
         MqttApplicationMessage GetMessage(string id) =>
             new MqttApplicationMessageBuilder().WithContentType("application/json")
-                .WithTopic($"ntp/{id}")
+                .WithTopic($"{options.NtpTopic}/{id}")
                 // .WithPayload(Json.Serialize(cameraControls))
                 .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
                 .Build();

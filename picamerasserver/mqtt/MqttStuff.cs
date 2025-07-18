@@ -3,8 +3,8 @@ using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Protocol;
 using picamerasserver.Options;
-using picamerasserver.pizerocamera;
-using picamerasserver.pizerocamera.Requests;
+using picamerasserver.pizerocamera.manager;
+using picamerasserver.pizerocamera.manager.Requests;
 
 namespace picamerasserver.mqtt;
 
@@ -40,7 +40,7 @@ public class MqttStuff
     /// </summary>
     /// <param name="topic">Topic</param>
     /// <returns>Answers topic</returns>
-    private static string GetAnswersTopic(string topic) => $"{topic}/answers/#";
+    private static string GetAnswersTopic(string topic) => $"{topic}/answer/#";
 
     /// <summary>
     /// Resubscribes to topic if changed
@@ -93,6 +93,7 @@ public class MqttStuff
         }
         else if (topic == _currentOptions.CameraTopic)
         {
+            _piZeroCameraManager.ResponseTakePicture(e.ApplicationMessage);
         }
         else if (topic == _currentOptions.CommandTopic)
         {

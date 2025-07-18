@@ -9,7 +9,7 @@ using picamerasserver.Options;
 
 namespace picamerasserver.Components.Pages;
 
-public partial class Update(
+public partial class UpdatePage(
     // MqttStuff mqttStuff
     IOptionsMonitor<DirectoriesOptions> dirOptionsMonitor
 ) : ComponentBase

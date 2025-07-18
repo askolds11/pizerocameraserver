@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Components;
-using picamerasserver.pizerocamera;
+using picamerasserver.pizerocamera.manager;
 
 namespace picamerasserver.Components.Components;
 
@@ -21,9 +21,4 @@ public partial class StatusTable : ComponentBase
     {
         return ColorTransform(PiZeroCameraManager.PiZeroCameras[letter + number]);
     }
-}
-
-public class Something
-{
-    
 }
