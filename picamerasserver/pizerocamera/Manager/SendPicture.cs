@@ -9,23 +9,23 @@ namespace picamerasserver.pizerocamera.manager;
 public partial class PiZeroCameraManager
 {
     /// <summary>
-    /// Request to take a picture
+    /// Request to send picture
     /// </summary>
     /// <param name="ids">Provide a List for specific devices, null for global</param>
-    public async Task RequestTakePicture(IEnumerable<string>? ids, Guid uuid)
+    public async Task RequestSendPicture(IEnumerable<string>? ids, Guid uuid)
     {
         var options = _optionsMonitor.CurrentValue;
 
-        CameraRequest takePictureRequest = new CameraRequest.TakePicture(
-            DateTime.Now.ToUnixTimeMilliSeconds() + 1000,
-            uuid);
+        CameraRequest sendPictureRequest = new CameraRequest.SendPicture(
+            uuid
+        );
 
         if (ids == null)
         {
             var message = new MqttApplicationMessageBuilder()
                 .WithContentType("application/json")
                 .WithTopic(options.CameraTopic)
-                .WithPayload(Json.Serialize(takePictureRequest))
+                .WithPayload(Json.Serialize(sendPictureRequest))
                 .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
                 .Build();
 
@@ -35,7 +35,7 @@ public partial class PiZeroCameraManager
             {
                 foreach (var piZeroCamera in PiZeroCameras.Values)
                 {
-                    piZeroCamera.TakePictureRequest = new PiZeroCameraTakePictureRequest.Requested();
+                    piZeroCamera.TakePictureRequest = new PiZeroCameraTakePictureRequest.RequestedSend();
                 }
             }
             else
@@ -43,7 +43,7 @@ public partial class PiZeroCameraManager
                 foreach (var piZeroCamera in PiZeroCameras.Values)
                 {
                     piZeroCamera.TakePictureRequest =
-                        new PiZeroCameraTakePictureRequest.FailedToRequest(publishResult.ReasonString);
+                        new PiZeroCameraTakePictureRequest.FailedToRequestSend(publishResult.ReasonString);
                 }
             }
 
@@ -54,11 +54,13 @@ public partial class PiZeroCameraManager
         MqttApplicationMessage GetMessage(string id) =>
             new MqttApplicationMessageBuilder().WithContentType("application/json")
                 .WithTopic($"{options.CameraTopic}/{id}")
-                .WithPayload(Json.Serialize(takePictureRequest))
+                .WithPayload(Json.Serialize(sendPictureRequest))
                 .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
                 .Build();
 
         var idList = ids.ToList();
+
+        // TODO: Maybe not
 
         // PiZeroCameras that are not requested set to null
         foreach (var id in PiZeroCameras.Keys.Except(idList))
@@ -80,19 +82,19 @@ public partial class PiZeroCameraManager
             var piZeroCamera = PiZeroCameras[id];
             if (publishResult.IsSuccess)
             {
-                piZeroCamera.TakePictureRequest = new PiZeroCameraTakePictureRequest.Requested();
+                piZeroCamera.TakePictureRequest = new PiZeroCameraTakePictureRequest.RequestedSend();
             }
             else
             {
                 piZeroCamera.TakePictureRequest =
-                    new PiZeroCameraTakePictureRequest.FailedToRequest(publishResult.ReasonString);
+                    new PiZeroCameraTakePictureRequest.FailedToRequestSend(publishResult.ReasonString);
             }
         }
 
         OnChange?.Invoke();
     }
 
-    public void ResponseTakePicture(MqttApplicationMessage message, CameraResponse.TakePicture takePicture)
+    public void ResponseSendPicture(MqttApplicationMessage message, CameraResponse.SendPicture sendPicture)
     {
         var id = message.Topic.Split('/').Last();
 
@@ -100,31 +102,29 @@ public partial class PiZeroCameraManager
 
         var text = Encoding.UTF8.GetString(message.Payload);
 
-        var successWrapper = takePicture.Response;
+        var successWrapper = sendPicture.Response;
 
         // if (response.IsSuccess)
         // {
-            // var successWrapper = response.Value;
-            if (successWrapper.Success)
+        // var successWrapper = response.Value;
+        if (successWrapper.Success)
+        {
+            piZeroCamera.TakePictureRequest = successWrapper.Value switch
             {
-                piZeroCamera.TakePictureRequest = successWrapper.Value switch
-                {
-                    TakePictureResponse.PictureTaken =>
-                        new PiZeroCameraTakePictureRequest.Taken(),
-                    TakePictureResponse.PictureSavedOnDevice =>
-                        new PiZeroCameraTakePictureRequest.SavedOnDevice(),
-                    _ => new PiZeroCameraTakePictureRequest.Unknown("Unknown success")
-                };
-            }
-            else
+                SendPictureResponse.PictureSent =>
+                    new PiZeroCameraTakePictureRequest.Success(),
+                _ => new PiZeroCameraTakePictureRequest.Unknown("Unknown success")
+            };
+        }
+        else
+        {
+            piZeroCamera.TakePictureRequest = successWrapper.Value switch
             {
-                piZeroCamera.TakePictureRequest = successWrapper.Value switch
-                {
-                    TakePictureResponse.Failure failure =>
-                        new PiZeroCameraTakePictureRequest.Failure(failure),
-                    _ => new PiZeroCameraTakePictureRequest.Unknown("Unknown failure")
-                };
-            }
+                SendPictureResponse.Failure failure =>
+                    new PiZeroCameraTakePictureRequest.FailureSend(failure),
+                _ => new PiZeroCameraTakePictureRequest.Unknown("Unknown failure")
+            };
+        }
         // }
         // else
         // {

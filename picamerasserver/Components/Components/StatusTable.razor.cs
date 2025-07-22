@@ -1,4 +1,6 @@
+using System.Drawing;
 using Microsoft.AspNetCore.Components;
+using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.manager;
 
 namespace picamerasserver.Components.Components;
@@ -6,7 +8,7 @@ namespace picamerasserver.Components.Components;
 public partial class StatusTable : ComponentBase
 {
     [Parameter, EditorRequired]
-    public required Func<PiZeroCamera, string> ColorTransform { get; set; }
+    public required Func<PiZeroCamera, Color> ColorTransform { get; set; }
     
     [Inject]
     protected PiZeroCameraManager PiZeroCameraManager { get; set; } = null!;
@@ -19,6 +21,7 @@ public partial class StatusTable : ComponentBase
 
     private string GetCellColor(string letter, int number)
     {
-        return ColorTransform(PiZeroCameraManager.PiZeroCameras[letter + number]);
+        var color = ColorTransform(PiZeroCameraManager.PiZeroCameras[letter + number]);
+        return $"#{color.R:X2}{color.G:X2}{color.B:X2}";
     }
 }

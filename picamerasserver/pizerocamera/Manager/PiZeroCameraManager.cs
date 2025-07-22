@@ -14,7 +14,8 @@ public partial class PiZeroCameraManager
     public readonly IReadOnlyDictionary<string, PiZeroCamera> PiZeroCameras;
     public event Action? OnChange;
 
-    public PiZeroCameraManager(IMqttClient mqttClient, ILogger<PiZeroCameraManager> logger, IOptionsMonitor<MqttOptions> optionsMonitor)
+    public PiZeroCameraManager(IMqttClient mqttClient, ILogger<PiZeroCameraManager> logger,
+        IOptionsMonitor<MqttOptions> optionsMonitor)
     {
         _mqttClient = mqttClient;
         _logger = logger;
@@ -26,8 +27,9 @@ public partial class PiZeroCameraManager
         {
             foreach (var number in Enumerable.Range(1, 6))
             {
-                piZeroCamerasIds.Add(letter + number);
-                piZeroCameras.Add(letter + number, new PiZeroCamera());
+                var id = letter + number;
+                piZeroCamerasIds.Add(id);
+                piZeroCameras.Add(id, new PiZeroCamera { Id = id });
             }
         }
 

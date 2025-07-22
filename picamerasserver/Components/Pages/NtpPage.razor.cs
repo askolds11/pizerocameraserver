@@ -1,11 +1,11 @@
+using System.Drawing;
 using Microsoft.AspNetCore.Components;
-using picamerasserver.Components.Components;
-using picamerasserver.mqtt;
+using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.manager;
 
 namespace picamerasserver.Components.Pages;
 
-public partial class NtpPage : ComponentBase
+public partial class NtpPage : ComponentBase, IDisposable
 {
     [Inject]
     protected PiZeroCameraManager PiZeroCameraManager { get; set; } = null!;
@@ -30,16 +30,16 @@ public partial class NtpPage : ComponentBase
         PiZeroCameraManager.OnChange -= OnGlobalChanged;
     }
     
-    private string ColorTransform(PiZeroCamera piZeroCamera)
+    private Color ColorTransform(PiZeroCamera piZeroCamera)
     {
         return piZeroCamera.NtpRequest switch
         {
-            null => "#000000",
-            PiZeroCameraNtpRequest.FailedToRequest failedToRequest => "#FF0000",
-            PiZeroCameraNtpRequest.Failure failure => "#550000",
-            PiZeroCameraNtpRequest.Requested requested => "#555500",
-            PiZeroCameraNtpRequest.Success success => "#00FF00",
-            PiZeroCameraNtpRequest.Unknown unknown => "#0000FF",
+            null => Color.FromArgb(0x00, 0x00, 0x00),
+            PiZeroCameraNtpRequest.FailedToRequest failedToRequest => Color.FromArgb(0xFF, 0x00, 0x00),
+            PiZeroCameraNtpRequest.Failure failure => Color.FromArgb(0x55, 0x00, 0x00),
+            PiZeroCameraNtpRequest.Requested requested => Color.FromArgb(0x55, 0x55, 0x00),
+            PiZeroCameraNtpRequest.Success success => Color.FromArgb(0x00, 0xFF, 0x00),
+            PiZeroCameraNtpRequest.Unknown unknown => Color.FromArgb(0x00, 0x00, 0xFF),
             _ => throw new ArgumentOutOfRangeException()
         };
     }

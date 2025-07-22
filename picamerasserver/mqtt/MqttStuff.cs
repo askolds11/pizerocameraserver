@@ -4,7 +4,8 @@ using MQTTnet;
 using MQTTnet.Protocol;
 using picamerasserver.Options;
 using picamerasserver.pizerocamera.manager;
-using picamerasserver.pizerocamera.manager.Requests;
+using picamerasserver.pizerocamera.Requests;
+using picamerasserver.pizerocamera.Responses;
 
 namespace picamerasserver.mqtt;
 
@@ -93,7 +94,24 @@ public class MqttStuff
         }
         else if (topic == _currentOptions.CameraTopic)
         {
-            _piZeroCameraManager.ResponseTakePicture(e.ApplicationMessage);
+            var payload = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
+            var cameraResponse = Json.TryDeserialize<CameraResponse>(payload, _logger);
+            if (cameraResponse.IsSuccess)
+            {
+                var cameraResponseValue = cameraResponse.Value;
+                if (cameraResponseValue is CameraResponse.TakePicture takePictureResponse)
+                {
+                    _piZeroCameraManager.ResponseTakePicture(e.ApplicationMessage, takePictureResponse);
+                } else if (cameraResponseValue is CameraResponse.SendPicture sendPictureResponse)
+                {
+                    _piZeroCameraManager.ResponseSendPicture(e.ApplicationMessage, sendPictureResponse);
+                }
+            } else if (cameraResponse.IsFailure)
+            {
+                // TODO: Handle
+            }
+            
+            
         }
         else if (topic == _currentOptions.CommandTopic)
         {

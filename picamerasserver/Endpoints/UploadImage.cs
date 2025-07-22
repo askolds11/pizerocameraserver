@@ -12,12 +12,11 @@ public static class UploadImageEndpoint
             async (
                 IFormFile image,
                 [FromForm] string metadata,
-                [FromForm] long startEpoch,
                 [FromForm] Guid uuid,
                 [FromServices] IOptionsMonitor<DirectoriesOptions> dirOptionsMonitor
             ) =>
             {
-                var directoryName = $"{startEpoch}_{uuid}";
+                var directoryName = $"{uuid}";
                 var directory = Path.Combine(dirOptionsMonitor.CurrentValue.UploadDirectory, directoryName);
                 if (!Directory.Exists(directory))
                 {

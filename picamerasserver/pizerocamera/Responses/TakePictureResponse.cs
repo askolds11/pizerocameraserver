@@ -3,23 +3,27 @@ using System.Text.Json.Serialization;
 namespace picamerasserver.pizerocamera.Responses;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
-[JsonDerivedType(typeof(Failure.PictureFailedToTake), nameof(Failure.PictureFailedToTake))]
+[JsonDerivedType(typeof(PictureTaken), nameof(PictureTaken))]
 [JsonDerivedType(typeof(PictureSavedOnDevice), nameof(PictureSavedOnDevice))]
+[JsonDerivedType(typeof(Failure.Failed), nameof(Failure.Failed))]
+[JsonDerivedType(typeof(Failure.PictureFailedToSchedule), nameof(Failure.PictureFailedToSchedule))]
+[JsonDerivedType(typeof(Failure.PictureFailedToTake), nameof(Failure.PictureFailedToTake))]
 [JsonDerivedType(typeof(Failure.PictureFailedToSave), nameof(Failure.PictureFailedToSave))]
-[JsonDerivedType(typeof(PictureSent), nameof(PictureSent))]
-[JsonDerivedType(typeof(Failure.PictureFailedToSend), nameof(Failure.PictureFailedToSend))]
 public abstract record TakePictureResponse
 {
+    public sealed record PictureTaken : TakePictureResponse;
+
     public sealed record PictureSavedOnDevice : TakePictureResponse;
 
-    public sealed record PictureSent : TakePictureResponse;
 
     public abstract record Failure : TakePictureResponse
     {
-        public sealed record PictureFailedToTake(string Message) : TakePictureResponse;
+        public sealed record Failed : Failure;
 
-        public sealed record PictureFailedToSave(string Message) : TakePictureResponse;
+        public sealed record PictureFailedToSchedule : Failure;
 
-        public sealed record PictureFailedToSend(string Message) : TakePictureResponse;
+        public sealed record PictureFailedToTake(string Message) : Failure;
+
+        public sealed record PictureFailedToSave(string Message) : Failure;
     }
 }
