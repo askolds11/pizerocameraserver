@@ -9,21 +9,21 @@ namespace picamerasserver.pizerocamera.Responses;
 [JsonDerivedType(typeof(Failure.PictureFailedToSchedule), nameof(Failure.PictureFailedToSchedule))]
 [JsonDerivedType(typeof(Failure.PictureFailedToTake), nameof(Failure.PictureFailedToTake))]
 [JsonDerivedType(typeof(Failure.PictureFailedToSave), nameof(Failure.PictureFailedToSave))]
-public abstract record TakePictureResponse
+public abstract record TakePictureResponse(Guid Uuid)
 {
-    public sealed record PictureTaken : TakePictureResponse;
+    public sealed record PictureTaken(Guid Uuid) : TakePictureResponse(Uuid);
 
-    public sealed record PictureSavedOnDevice : TakePictureResponse;
+    public sealed record PictureSavedOnDevice(Guid Uuid) : TakePictureResponse(Uuid);
 
 
-    public abstract record Failure : TakePictureResponse
+    public abstract record Failure(Guid Uuid) : TakePictureResponse(Uuid)
     {
-        public sealed record Failed : Failure;
+        public sealed record Failed(Guid Uuid) : Failure(Uuid);
 
-        public sealed record PictureFailedToSchedule : Failure;
+        public sealed record PictureFailedToSchedule(Guid Uuid) : Failure(Uuid);
 
-        public sealed record PictureFailedToTake(string Message) : Failure;
+        public sealed record PictureFailedToTake(Guid Uuid, string Message) : Failure(Uuid);
 
-        public sealed record PictureFailedToSave(string Message) : Failure;
+        public sealed record PictureFailedToSave(Guid Uuid, string Message) : Failure(Uuid);
     }
 }

@@ -1,6 +1,6 @@
-using System.Text;
 using MQTTnet;
 using MQTTnet.Protocol;
+using picamerasserver.Database.Models;
 using picamerasserver.pizerocamera.Requests;
 using picamerasserver.pizerocamera.Responses;
 
@@ -8,123 +8,133 @@ namespace picamerasserver.pizerocamera.manager;
 
 public partial class PiZeroCameraManager
 {
+    public event Action<Guid>? OnPictureChange;
+    
     /// <summary>
     /// Request to take a picture
     /// </summary>
-    /// <param name="ids">Provide a List for specific devices, null for global</param>
-    public async Task RequestTakePicture(IEnumerable<string>? ids, Guid uuid)
+    public async Task<PictureRequestModel> RequestTakePicture()
     {
+        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
+
+        var uuid = Guid.CreateVersion7();
+        var currentTime = DateTimeOffset.Now;
+        var pictureTime = currentTime.AddMilliseconds(2000);
+
+        var pictureRequest = new PictureRequestModel
+        {
+            Uuid = uuid,
+            RequestTime = currentTime,
+            PictureTime = pictureTime
+        };
+
+        piDbContext.PictureRequests.Add(pictureRequest);
+        // must save before requests
+        await piDbContext.SaveChangesAsync();
+
         var options = _optionsMonitor.CurrentValue;
 
         CameraRequest takePictureRequest = new CameraRequest.TakePicture(
-            DateTime.Now.ToUnixTimeMilliSeconds() + 1000,
+            pictureTime.ToUnixTimeMilliseconds(),
             uuid);
 
-        if (ids == null)
+        var message = new MqttApplicationMessageBuilder()
+            .WithContentType("application/json")
+            .WithTopic(options.CameraTopic)
+            .WithPayload(Json.Serialize(takePictureRequest))
+            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
+            .Build();
+
+        var publishResult = await _mqttClient.PublishAsync(message);
+
+        foreach (var piZeroCamera in PiZeroCameras.Values)
         {
-            var message = new MqttApplicationMessageBuilder()
-                .WithContentType("application/json")
-                .WithTopic(options.CameraTopic)
-                .WithPayload(Json.Serialize(takePictureRequest))
-                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
-                .Build();
-
-            var publishResult = await _mqttClient.PublishAsync(message);
-
-            if (publishResult.IsSuccess)
+            // ignore not working cameras
+            if (piZeroCamera.Pingable == null || piZeroCamera.Status == null)
             {
-                foreach (var piZeroCamera in PiZeroCameras.Values)
-                {
-                    piZeroCamera.TakePictureRequest = new PiZeroCameraTakePictureRequest.Requested();
-                }
-            }
-            else
-            {
-                foreach (var piZeroCamera in PiZeroCameras.Values)
-                {
-                    piZeroCamera.TakePictureRequest =
-                        new PiZeroCameraTakePictureRequest.FailedToRequest(publishResult.ReasonString);
-                }
+                continue;
             }
 
-            OnChange?.Invoke();
-            return;
+            var dbItem = new CameraPictureModel
+            {
+                CameraId = piZeroCamera.Id, PictureRequestId = uuid,
+                CameraPictureStatus = publishResult.IsSuccess
+                    ? CameraPictureStatus.Requested
+                    : CameraPictureStatus.FailedToRequest
+            };
+            piDbContext.Add(dbItem);
         }
 
-        MqttApplicationMessage GetMessage(string id) =>
-            new MqttApplicationMessageBuilder().WithContentType("application/json")
-                .WithTopic($"{options.CameraTopic}/{id}")
-                .WithPayload(Json.Serialize(takePictureRequest))
-                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
-                .Build();
+        await piDbContext.SaveChangesAsync();
+        await piDbContext.Entry(pictureRequest).Collection(x => x.CameraPictures).LoadAsync();
 
-        var idList = ids.ToList();
-
-        // PiZeroCameras that are not requested set to null
-        foreach (var id in PiZeroCameras.Keys.Except(idList))
-        {
-            PiZeroCameras[id].TakePictureRequest = null;
-        }
-
-        // PiZeroCameras that are requested
-        var tasks = PiZeroCameras.Keys
-            .Intersect(idList)
-            .Select(async id => (id, await _mqttClient.PublishAsync(GetMessage(id))));
-
-
-        var tasksResult = await Task.WhenAll(tasks);
-
-        // Process message sending results
-        foreach (var (id, publishResult) in tasksResult)
-        {
-            var piZeroCamera = PiZeroCameras[id];
-            if (publishResult.IsSuccess)
-            {
-                piZeroCamera.TakePictureRequest = new PiZeroCameraTakePictureRequest.Requested();
-            }
-            else
-            {
-                piZeroCamera.TakePictureRequest =
-                    new PiZeroCameraTakePictureRequest.FailedToRequest(publishResult.ReasonString);
-            }
-        }
-
-        OnChange?.Invoke();
+        return pictureRequest;
     }
 
-    public void ResponseTakePicture(MqttApplicationMessage message, CameraResponse.TakePicture takePicture)
+    public async Task ResponseTakePicture(MqttApplicationMessage message, CameraResponse.TakePicture takePicture)
     {
+        var timeNow = DateTimeOffset.Now;
+        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
+
         var id = message.Topic.Split('/').Last();
 
-        var piZeroCamera = PiZeroCameras[id];
-
-        var text = Encoding.UTF8.GetString(message.Payload);
-
         var successWrapper = takePicture.Response;
+        // todo: value bad
+        var uuid = successWrapper.Value.Uuid;
+
+        // todo: async, uuid
+        var dbItem = piDbContext.CameraPictures.FirstOrDefault(x => x.PictureRequestId == uuid && x.CameraId == id);
+        // TODO: Really null check?
+        if (dbItem == null)
+        {
+            dbItem = new CameraPictureModel { CameraId = id, PictureRequestId = uuid };
+            piDbContext.Add(dbItem);
+        }
 
         // if (response.IsSuccess)
         // {
-            // var successWrapper = response.Value;
-            if (successWrapper.Success)
+        // var successWrapper = response.Value;
+        if (successWrapper.Success)
+        {
+            if (successWrapper.Value is TakePictureResponse.PictureTaken)
             {
-                piZeroCamera.TakePictureRequest = successWrapper.Value switch
-                {
-                    TakePictureResponse.PictureTaken =>
-                        new PiZeroCameraTakePictureRequest.Taken(),
-                    TakePictureResponse.PictureSavedOnDevice =>
-                        new PiZeroCameraTakePictureRequest.SavedOnDevice(),
-                    _ => new PiZeroCameraTakePictureRequest.Unknown("Unknown success")
-                };
+                dbItem.ReceivedTaken = timeNow;
             }
-            else
+            else if (successWrapper.Value is TakePictureResponse.PictureSavedOnDevice)
             {
-                piZeroCamera.TakePictureRequest = successWrapper.Value switch
-                {
-                    TakePictureResponse.Failure failure =>
-                        new PiZeroCameraTakePictureRequest.Failure(failure),
-                    _ => new PiZeroCameraTakePictureRequest.Unknown("Unknown failure")
-                };
+                dbItem.ReceivedSaved = timeNow;
             }
+
+            (dbItem.CameraPictureStatus, dbItem.StatusMessage) = successWrapper.Value switch
+            {
+                TakePictureResponse.PictureTaken =>
+                    (CameraPictureStatus.Taken, null),
+                TakePictureResponse.PictureSavedOnDevice =>
+                    (CameraPictureStatus.SavedOnDevice, null),
+                _ => (CameraPictureStatus.Unknown, "Unknown Success")
+            };
+        }
+        else
+        {
+            (dbItem.CameraPictureStatus, dbItem.StatusMessage) = successWrapper.Value switch
+            {
+                TakePictureResponse.Failure failure => failure switch
+                {
+                    TakePictureResponse.Failure.Failed failed => (CameraPictureStatus.Failed, "Failed"),
+                    TakePictureResponse.Failure.PictureFailedToSave pictureFailedToSave => (
+                        CameraPictureStatus.PictureFailedToSave, pictureFailedToSave.Message),
+                    TakePictureResponse.Failure.PictureFailedToSchedule pictureFailedToSchedule => (
+                        CameraPictureStatus.PictureFailedToSchedule, "Failed to schedule"),
+                    TakePictureResponse.Failure.PictureFailedToTake pictureFailedToTake => (
+                        CameraPictureStatus.PictureFailedToTake, pictureFailedToTake.Message),
+                    _ => throw new ArgumentOutOfRangeException(nameof(failure))
+                },
+                _ => (CameraPictureStatus.Unknown, "Unknown failure")
+            };
+        }
+
+        await piDbContext.SaveChangesAsync();
+        OnPictureChange?.Invoke(uuid);
         // }
         // else
         // {

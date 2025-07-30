@@ -101,7 +101,7 @@ public class MqttStuff
                 var cameraResponseValue = cameraResponse.Value;
                 if (cameraResponseValue is CameraResponse.TakePicture takePictureResponse)
                 {
-                    _piZeroCameraManager.ResponseTakePicture(e.ApplicationMessage, takePictureResponse);
+                    await _piZeroCameraManager.ResponseTakePicture(e.ApplicationMessage, takePictureResponse);
                 } else if (cameraResponseValue is CameraResponse.SendPicture sendPictureResponse)
                 {
                     _piZeroCameraManager.ResponseSendPicture(e.ApplicationMessage, sendPictureResponse);

@@ -6,14 +6,15 @@ namespace picamerasserver.pizerocamera.Responses;
 [JsonDerivedType(typeof(PictureSent), nameof(PictureSent))]
 [JsonDerivedType(typeof(Failure.Failed), nameof(Failure.Failed))]
 [JsonDerivedType(typeof(Failure.PictureFailedToSend), nameof(Failure.PictureFailedToSend))]
-public abstract record SendPictureResponse
+public abstract record SendPictureResponse(Guid Uuid)
 {
-    public sealed record PictureSent : SendPictureResponse;
+    public sealed record PictureSent(Guid Uuid) : SendPictureResponse(Uuid);
 
-    public abstract record Failure : SendPictureResponse
+    public abstract record Failure(Guid Uuid) : SendPictureResponse(Uuid)
     {
-        public sealed record Failed : Failure;
+        public sealed record Failed(Guid Uuid) : Failure(Uuid);
 
-        public sealed record PictureFailedToSend(string Message) : Failure;
+        public sealed record PictureFailedToRead(Guid Uuid, string Message) : Failure(Uuid);
+        public sealed record PictureFailedToSend(Guid Uuid, string Message) : Failure(Uuid);
     }
 }
