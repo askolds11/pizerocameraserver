@@ -1,11 +1,11 @@
-<MudTable Items="@RowNumbers" Bordered Dense>
+<MudTable Items="@_rows" Bordered Dense>
     <HeaderContent>
         <MudTh Class="pa-0">
             <div class="d-flex justify-center">
                 <MudText Typo="Typo.h6">#</MudText>
             </div>
         </MudTh>
-        @foreach (var columnLabel in Columns)
+        @foreach (var columnLabel in _columns)
         {
             <MudTh Class="pa-0">
                 <div class="d-flex justify-center">
@@ -20,7 +20,7 @@
                 <MudText Typo="Typo.h6">@context</MudText>
             </div>
         </MudTd>
-        @foreach (var columnLabel in Columns)
+        @foreach (var columnLabel in _columns)
         {
             @* <MudTd>@GetDeviceData(columnLabel, context.RowNumber)</MudTd> *@
             @* <MudTd Class="mx-auto px-0 py-0 ">@columnLabel@context</MudTd> *@

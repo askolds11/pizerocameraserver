@@ -30,8 +30,9 @@ public partial class NtpPage : ComponentBase, IDisposable
         PiZeroCameraManager.OnChange -= OnGlobalChanged;
     }
     
-    private Color ColorTransform(PiZeroCamera piZeroCamera)
+    private Color ColorTransform(string id)
     {
+        var piZeroCamera = PiZeroCameraManager.PiZeroCameras[id];
         return piZeroCamera.NtpRequest switch
         {
             null => Color.FromArgb(0x00, 0x00, 0x00),

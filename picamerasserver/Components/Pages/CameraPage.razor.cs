@@ -4,7 +4,7 @@ using MudBlazor;
 using picamerasserver.Database;
 using picamerasserver.Database.Models;
 using picamerasserver.pizerocamera.manager;
-using picamerasserver.pizerocamera.Requests;
+using Color = System.Drawing.Color;
 
 namespace picamerasserver.Components.Pages;
 
@@ -109,21 +109,32 @@ public partial class CameraPage : ComponentBase, IDisposable
         // await MqttStuff.SetConfig(new CameraRequest.GetControlLimits());
     }
 
-    private Color ColorTransform(PiZeroCamera piZeroCamera)
+    private Color ColorTransform(string cameraId)
     {
-        return piZeroCamera.TakePictureRequest switch
+        var cameraPicture = _selectedPicture?.CameraPictures.FirstOrDefault(x => x.CameraId == cameraId);
+        if (cameraPicture == null)
         {
+            return Color.FromArgb(0x00, 0x00, 0x00);
+        }
+
+        return cameraPicture.CameraPictureStatus switch
+        {
+            CameraPictureStatus.Requested => Color.FromArgb(0x55, 0x55, 0x00),
+            CameraPictureStatus.FailedToRequest => Color.FromArgb(0xFF, 0x00, 0x00),
+            CameraPictureStatus.Taken => Color.FromArgb(0x00, 0x55, 0x55),
+            CameraPictureStatus.SavedOnDevice => Color.FromArgb(0x00, 0x55, 0x00),
+            CameraPictureStatus.Failed => Color.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.PictureFailedToSave => Color.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.PictureFailedToSchedule => Color.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.PictureFailedToTake => Color.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.RequestedSend => Color.FromArgb(0x55, 0x55, 0x00),
+            CameraPictureStatus.FailedToRequestSend => Color.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.FailureSend => Color.FromArgb(0x99, 0x00, 0x00),
+            CameraPictureStatus.Success => Color.FromArgb(0x00, 0xFF, 0x00),
+            CameraPictureStatus.Unknown => Color.FromArgb(0x00, 0x00, 0xFF),
+            CameraPictureStatus.PictureFailedToRead => Color.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.PictureFailedToSend => Color.FromArgb(0x55, 0x00, 0x00),
             null => Color.FromArgb(0x00, 0x00, 0x00),
-            PiZeroCameraTakePictureRequest.FailedToRequest => Color.FromArgb(0xFF, 0x00, 0x00),
-            PiZeroCameraTakePictureRequest.Failure => Color.FromArgb(0x55, 0x00, 0x00),
-            PiZeroCameraTakePictureRequest.Requested => Color.FromArgb(0x55, 0x55, 0x00),
-            PiZeroCameraTakePictureRequest.SavedOnDevice => Color.FromArgb(0x00, 0x55, 0x00),
-            PiZeroCameraTakePictureRequest.Success => Color.FromArgb(0x00, 0xFF, 0x00),
-            PiZeroCameraTakePictureRequest.Unknown => Color.FromArgb(0x00, 0x00, 0xFF),
-            PiZeroCameraTakePictureRequest.Taken => Color.FromArgb(0x00, 0x55, 0x55),
-            PiZeroCameraTakePictureRequest.RequestedSend => Color.FromArgb(0x55, 0x55, 0x00),
-            PiZeroCameraTakePictureRequest.FailedToRequestSend => Color.FromArgb(0x55, 0x00, 0x00),
-            PiZeroCameraTakePictureRequest.FailureSend => Color.FromArgb(0x99, 0x00, 0x00),
             _ => throw new ArgumentOutOfRangeException(),
         };
     }
