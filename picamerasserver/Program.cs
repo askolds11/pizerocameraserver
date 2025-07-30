@@ -17,6 +17,8 @@ var logger = new LoggerConfiguration()
 builder.Logging.ClearProviders();
 builder.Logging.AddSerilog(logger);
 
+builder.Services.AddLocalization();
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -62,6 +64,7 @@ if (!app.Environment.IsDevelopment())
 // app.UseAntiforgery();
 
 app.MapStaticAssets();
+app.UseRequestLocalization("lv");
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .DisableAntiforgery();
