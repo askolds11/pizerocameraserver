@@ -1,6 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using MQTTnet;
 using MudBlazor.Services;
 using picamerasserver.Components;
+using picamerasserver.Database;
 using picamerasserver.Endpoints;
 using picamerasserver.mqtt;
 using picamerasserver.Options;
@@ -25,6 +27,19 @@ builder.Services.Configure<DirectoriesOptions>(
     builder.Configuration.GetSection(DirectoriesOptions.Directories));
 builder.Services.Configure<MqttOptions>(
     builder.Configuration.GetSection(MqttOptions.Mqtt));
+builder.Services.Configure<ConnectionStringsOptions>(
+    builder.Configuration.GetSection(ConnectionStringsOptions.ConnectionStrings));
+
+var connectionStrings = builder.Configuration
+    .GetSection(ConnectionStringsOptions.ConnectionStrings)
+    .Get<ConnectionStringsOptions>();
+if (connectionStrings == null)
+{
+    throw new Exception("ConnectionStrings not found");
+}
+
+builder.Services.AddDbContextFactory<PiDbContext>(opt =>
+    opt.UseNpgsql(connectionStrings.Postgres));
 
 var mqttFactory = new MqttClientFactory();
 var mqttClient = mqttFactory.CreateMqttClient();
