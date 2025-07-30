@@ -1,11 +1,14 @@
 using Microsoft.AspNetCore.Components;
 using picamerasserver.Database.Models;
+using picamerasserver.pizerocamera.manager;
 
 namespace picamerasserver.Components.Components;
 
 public partial class PictureRequestTooltip : ComponentBase
 {
     [Parameter, EditorRequired] public required CameraPictureModel CameraPicture { get; set; }
+    
+    [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; init; } = null!;
     
     private (string header, string? message) GetContent()
     {
@@ -29,5 +32,10 @@ public partial class PictureRequestTooltip : ComponentBase
             null => ("Nothing", CameraPicture.StatusMessage),
             _ => throw new ArgumentOutOfRangeException(),
         };
+    }
+
+    private async Task RequestSend()
+    {
+        await PiZeroCameraManager.RequestSendPictureIndividual(CameraPicture.PictureRequestId, CameraPicture.CameraId);
     }
 }

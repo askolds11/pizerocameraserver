@@ -1,4 +1,3 @@
-using System.Text;
 using Microsoft.EntityFrameworkCore;
 using MQTTnet;
 using MQTTnet.Protocol;
@@ -62,6 +61,65 @@ public partial class PiZeroCameraManager
                 : CameraPictureStatus.FailedToRequestSend;
             piDbContext.Update(dbItem);
         }
+
+        await piDbContext.SaveChangesAsync();
+        OnPictureChange?.Invoke(uuid);
+        await Task.Yield();
+    }
+
+    /// <summary>
+    /// Request to send picture for individual camera
+    /// </summary>
+    /// <param name="uuid">Uuid of PictureRequest</param>
+    /// <param name="cameraId">Camera id of wanted camera</param>
+    public async Task RequestSendPictureIndividual(Guid uuid, string cameraId)
+    {
+        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
+
+        var options = _optionsMonitor.CurrentValue;
+
+        var pictureRequest = await piDbContext.PictureRequests
+            .Include(x => x.CameraPictures)
+            .FirstOrDefaultAsync(x => x.Uuid == uuid);
+        if (pictureRequest == null)
+        {
+            throw new Exception("Picture request not found");
+        }
+
+        var cameraPicture = pictureRequest.CameraPictures
+            .FirstOrDefault(x => x.ReceivedSaved != null && x.CameraId == cameraId);
+        // Can't do anything if valid picture does not exist.
+        if (cameraPicture == null)
+        {
+            return;
+        }
+
+        var piZeroCamera = PiZeroCameras[cameraId];
+        // Can't do anything if unreachable
+        if (piZeroCamera.Pingable == null || piZeroCamera.Status == null)
+        {
+            return;
+        }
+
+        CameraRequest sendPictureRequest = new CameraRequest.SendPicture(
+            uuid
+        );
+
+        var message = new MqttApplicationMessageBuilder()
+            .WithContentType("application/json")
+            .WithTopic($"{options.CameraTopic}/{cameraId}")
+            .WithPayload(Json.Serialize(sendPictureRequest))
+            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
+            .Build();
+
+        var publishResult = await _mqttClient.PublishAsync(message);
+
+
+        // First because it exists based on previous
+        cameraPicture.CameraPictureStatus = publishResult.IsSuccess
+            ? CameraPictureStatus.RequestedSend
+            : CameraPictureStatus.FailedToRequestSend;
+        piDbContext.Update(cameraPicture);
 
         await piDbContext.SaveChangesAsync();
         OnPictureChange?.Invoke(uuid);

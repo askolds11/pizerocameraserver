@@ -94,8 +94,8 @@
                     <MudText Typo="Typo.h5">Config</MudText>
                 </TitleContent>
                 <ChildContent>
-                    <ControlsControl />
-                    
+                    <ControlsControl/>
+
                     <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                OnClick="@(() => OnSubmitConfig())">
                         Set controls
@@ -135,7 +135,7 @@
 </DefaultPage>
 
 @code {
-    private RenderFragment<string> _tooltipTransform = _ => _ => { };
+    private Func<string, RenderFragment?> _tooltipTransform = _ => null;
 
     private void UpdateTooltipTransform()
     {
@@ -143,9 +143,9 @@
         {
             var item = _selectedPicture?.CameraPictures.FirstOrDefault(x => x.CameraId == cameraId);
             if (item == null)
-                return _ => { };
+                return null;
 
-            return @<PictureRequestTooltip CameraPicture="item" />;
+            return @<PictureRequestTooltip CameraPicture="item"/>;
         };
     }
 
@@ -155,7 +155,7 @@
         {
             { x => x.CameraId, "A1" }
         };
-        var options = new DialogOptions { FullScreen = true, NoHeader = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraExtraLarge};
+        var options = new DialogOptions { FullScreen = true, NoHeader = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraExtraLarge };
 
         return Dialog.ShowAsync<PreviewDialog>("Preview", dialogParams, options);
     }

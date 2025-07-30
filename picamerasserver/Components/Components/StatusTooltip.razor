@@ -1,0 +1,60 @@
+@* @if (TooltipContent == null) *@
+@* { *@
+@*     <div class="d-flex justify-center" Width="100%" @onmouseover="@KeepTooltipVisible" *@
+@*          @onmouseleave="@HideTooltip"> *@
+@*         @ChildContent *@
+@*     </div> *@
+@* } *@
+@* else *@
+@* { *@
+    <MudTooltip Arrow="true" Placement="Placement.Top" Inline="false" Visible="_tooltipVisible"
+                ShowOnHover="false">
+        <ChildContent>
+            <div class="d-flex justify-center" Width="100%" @onmouseover="@KeepTooltipVisible"
+                 @onmouseleave="@HideTooltip">
+                @ChildContent
+            </div>
+        </ChildContent>
+        <TooltipContent>
+            <div @onmouseover="@KeepTooltipVisible" @onmouseleave="@HideTooltip">
+                @TooltipContent
+            </div>
+        </TooltipContent>
+    </MudTooltip>
+@* } *@
+
+
+@code {
+    [Parameter, EditorRequired] public required RenderFragment ChildContent { get; set; }
+    [Parameter] public RenderFragment? TooltipContent { get; set; }
+
+    @* ReSharper disable once RedundantDefaultMemberInitializer *@
+    private bool _tooltipVisible = false;
+    private CancellationTokenSource? _hideCancellationTokenSource;
+
+    private async Task HideTooltip()
+    {
+        if (_hideCancellationTokenSource != null)
+        {
+            await _hideCancellationTokenSource.CancelAsync();
+        }
+
+        _hideCancellationTokenSource?.Dispose();
+
+        _hideCancellationTokenSource = new CancellationTokenSource();
+        await Task.Delay(100, _hideCancellationTokenSource.Token);
+        _hideCancellationTokenSource.Token.ThrowIfCancellationRequested();
+        _tooltipVisible = false; // Tooltip is hidden
+    }
+
+    private async Task KeepTooltipVisible()
+    {
+        if (_hideCancellationTokenSource != null)
+        {
+            await _hideCancellationTokenSource.CancelAsync();
+        }
+
+        _tooltipVisible = true; // Ensure tooltip remains visible
+    }
+
+}

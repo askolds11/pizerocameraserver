@@ -1,7 +1,12 @@
+@using picamerasserver.Database.Models
 @{
     var content = GetContent();
 }
 @* <MudText Typo="Typo.h6">@CameraPicture.CameraId</MudText> *@
 <MudText Typo="Typo.h6">@content.header</MudText>
 <MudText Typo="Typo.body2">@content.message</MudText>
+@if (CameraPicture.CameraPictureStatus is CameraPictureStatus.PictureFailedToRead or CameraPictureStatus.PictureFailedToSend or CameraPictureStatus.FailedToRequestSend)
+{
+    <MudIconButton OnClick="@RequestSend" Icon="@Icons.Material.Rounded.Sync" aria-label="resync" Size="Size.Medium" Class="pa-4 ma-0" />
+}
 @* <MudIcon Icon="@Icons.Material.Filled.Star"/> *@
