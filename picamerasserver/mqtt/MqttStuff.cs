@@ -118,6 +118,7 @@ public class MqttStuff
         }
         else if (topic == _currentOptions.StatusTopic)
         {
+            _piZeroCameraManager.ResponseGetStatus(e.ApplicationMessage);
         }
         else if (topic == _currentOptions.UpdateTopic)
         {

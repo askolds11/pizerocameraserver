@@ -1,0 +1,56 @@
+@page "/status"
+@using picamerasserver.Components.Components
+
+<DefaultPage>
+    <MudStack>
+        <MudExpansionPanels Elevation="5" MultiExpansion>
+            <MudExpansionPanel Expanded Gutters="false" Dense="true">
+                <TitleContent>
+                    <MudText Typo="Typo.h5">Ping</MudText>
+                </TitleContent>
+                <ChildContent>
+                    <StatusTable ColorTransform="@ColorTransform" TooltipTransform="@TooltipTransform"></StatusTable>
+                    <MudStack Row="true" Spacing="4" Class="pa-4">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="@Ping" Disabled="PingActive">
+                            Ping
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Secondary"
+                                   OnClick="@StopPing" Disabled="!CanStopPing">
+                            Stop
+                        </MudButton>
+                    </MudStack>
+                </ChildContent>
+            </MudExpansionPanel>
+            <MudExpansionPanel Expanded Gutters="false" Dense="true">
+                <TitleContent>
+                    <MudText Typo="Typo.h5">Status</MudText>
+                </TitleContent>
+                <ChildContent>
+                    <StatusTable ColorTransform="@ColorTransformStatus"
+                                 TooltipTransform="@TooltipTransform"></StatusTable>
+                    <MudStack Row="true" Spacing="4" Class="pa-4">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="@GetStatus" Disabled="PingActive">
+                            Get status
+                        </MudButton>
+                    </MudStack>
+                </ChildContent>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+    </MudStack>
+</DefaultPage>
+
+@code {
+
+    private RenderFragment<string> TooltipTransform => cameraId =>
+    {
+        return builder => { };
+        @* var item = _selectedPicture?.CameraPictures.FirstOrDefault(x => x.CameraId == cameraId); *@
+        @* if (item == null) *@
+        @*     return builder => { }; // empty *@
+        @* *@
+        @* return @<PictureRequestTooltip CameraPicture="item" />; *@
+    };
+
+}
