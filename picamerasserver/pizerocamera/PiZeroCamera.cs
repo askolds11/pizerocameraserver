@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace picamerasserver.pizerocamera;
 
 public enum PiZeroCameraCameraMode
@@ -19,6 +21,7 @@ public class PiZeroCameraStatus
 {
     public required string Version { get; set; }
     public string? IpAddress { get; set; }
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public PiZeroCameraCameraMode CameraMode { get; set; }
 }
 
