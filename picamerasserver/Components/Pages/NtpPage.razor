@@ -10,7 +10,7 @@
                     <MudText Typo="Typo.h5">Status</MudText>
                 </TitleContent>
                 <ChildContent>
-                    <StatusTable ColorTransform="@ColorTransform"></StatusTable>
+                    <StatusTable ColorTransform="@ColorTransform" TooltipTransform="@TooltipTransform"></StatusTable>
                 </ChildContent>
             </MudExpansionPanel>
             <MudExpansionPanel Expanded>
@@ -27,3 +27,15 @@
         </MudExpansionPanels>
     </MudStack>
 </DefaultPage>
+
+@code {
+    private RenderFragment<string> TooltipTransform => cameraId =>
+    {
+        return builder => { };
+        @* var item = _selectedPicture?.CameraPictures.FirstOrDefault(x => x.CameraId == cameraId); *@
+        @* if (item == null) *@
+        @*     return builder => { }; // empty *@
+        @* *@
+        @* return @<PictureRequestTooltip CameraPicture="item" />; *@
+    };
+}

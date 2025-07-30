@@ -7,6 +7,8 @@ public partial class StatusTable : ComponentBase
 {
     [Parameter, EditorRequired]
     public required Func<string, Color> ColorTransform { get; set; }
+    [Parameter, EditorRequired]
+    public required RenderFragment<string> TooltipTransform { get; set; }
     
     // Letters as columns (A-P)
     private readonly List<string> _columns = Enumerable.Range('A', 16).Select(c => ((char)c).ToString()).ToList();
