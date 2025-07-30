@@ -97,6 +97,13 @@ public partial class PiZeroCameraManager
     {
         await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
 
+        foreach (var piZeroCamera in PiZeroCameras.Values)
+        {
+            piZeroCamera.Status = null;
+        }
+        OnChangePing?.Invoke();
+        await Task.Yield();
+
         var options = _optionsMonitor.CurrentValue;
 
         var message = new MqttApplicationMessageBuilder()
