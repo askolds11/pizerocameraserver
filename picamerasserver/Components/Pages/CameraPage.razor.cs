@@ -1,6 +1,8 @@
-using System.Drawing;
 using Microsoft.AspNetCore.Components;
-using picamerasserver.pizerocamera;
+using Microsoft.EntityFrameworkCore;
+using MudBlazor;
+using picamerasserver.Database;
+using picamerasserver.Database.Models;
 using picamerasserver.pizerocamera.manager;
 using picamerasserver.pizerocamera.Requests;
 
@@ -8,37 +10,85 @@ namespace picamerasserver.Components.Pages;
 
 public partial class CameraPage : ComponentBase, IDisposable
 {
-    [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; set; } = null!;
+    [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; init; } = null!;
+    [Inject] protected IDbContextFactory<PiDbContext> DbContextFactory { get; init; } = null!;
 
-    private Guid _workUuid = Guid.CreateVersion7();
+    private MudDataGrid<PictureElement> _gridData = null!;
+    private PictureElement? _selectedPicture;
 
     private void OnGlobalChanged()
     {
-        InvokeAsync(StateHasChanged);
+        InvokeAsync(async () =>
+        {
+            await _gridData.ReloadServerData();
+            StateHasChanged();
+        });
+    }
+
+    /// <summary>
+    /// Refreshes an individual picture
+    /// </summary>
+    /// <param name="uuid"></param>
+    private void OnPictureChanged(Guid uuid)
+    {
+        InvokeAsync(async () =>
+        {
+            var serverItemsList = _gridData.ServerItems.ToList();
+            var itemIndex = serverItemsList.FindIndex(x => x.Uuid == uuid);
+            // If no data needs to be updated, nothing will change in UI
+            if (itemIndex == -1 && _selectedPicture == null)
+            {
+                return;
+            }
+
+            await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
+            var updatedItem = await piDbContext.PictureRequests
+                .Include(x => x.CameraPictures)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Uuid == uuid);
+            if (itemIndex != -1 && updatedItem != null)
+            {
+                serverItemsList[itemIndex] = new PictureElement(updatedItem);
+            }
+
+            if (updatedItem != null && _selectedPicture != null)
+            {
+                _selectedPicture = new PictureElement(updatedItem);
+                UpdateTooltipTransform();
+            }
+
+            StateHasChanged();
+        });
     }
 
     protected override void OnInitialized()
     {
         PiZeroCameraManager.OnChange += OnGlobalChanged;
+        PiZeroCameraManager.OnPictureChange += OnPictureChanged;
     }
 
     public void Dispose()
     {
         PiZeroCameraManager.OnChange -= OnGlobalChanged;
+        PiZeroCameraManager.OnPictureChange -= OnPictureChanged;
+        GC.SuppressFinalize(this);
     }
 
     private async Task TakePicture()
     {
-        _workUuid = Guid.CreateVersion7();
-        await PiZeroCameraManager.RequestTakePicture(null, _workUuid);
         var pictureRequestModel = await PiZeroCameraManager.RequestTakePicture();
-        _workUuid = pictureRequestModel.Uuid;
+        _selectedPicture = new PictureElement(pictureRequestModel);
+        await _gridData.ReloadServerData();
     }
 
     private async Task SendPicture()
     {
-        await PiZeroCameraManager.RequestSendPicture(null, _workUuid);
-        await PiZeroCameraManager.RequestSendPicture(_workUuid);
+        if (_selectedPicture == null)
+        {
+            throw new ArgumentNullException(nameof(_selectedPicture));
+        }
+
+        await PiZeroCameraManager.RequestSendPicture(_selectedPicture.Uuid);
     }
 
     private async Task OnSwitchMode(CameraRequest cameraRequest)
@@ -77,4 +127,40 @@ public partial class CameraPage : ComponentBase, IDisposable
             _ => throw new ArgumentOutOfRangeException(),
         };
     }
+
+    private async Task<GridData<PictureElement>> ServerReload(GridState<PictureElement> state)
+    {
+        await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
+
+        var data = piDbContext.PictureRequests
+            .Include(x => x.CameraPictures)
+            .OrderByDescending(x => x.Uuid)
+            .AsNoTracking()
+            .Select(x => new PictureElement(x));
+        var totalItems = await data.CountAsync();
+        var pagedData = await data.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArrayAsync();
+
+        return new GridData<PictureElement>
+        {
+            TotalItems = totalItems,
+            Items = pagedData
+        };
+    }
+}
+
+public class PictureElement(PictureRequestModel pictureRequestModel)
+{
+    public Guid Uuid => pictureRequestModel.Uuid;
+
+    public DateTime RequestTime => TimeZoneInfo.ConvertTime(pictureRequestModel.RequestTime.LocalDateTime,
+        TimeZoneInfo.FindSystemTimeZoneById("Europe/Riga"));
+
+    public int TakenCount => pictureRequestModel.CameraPictures.Count(x => x.ReceivedTaken != null);
+    public int SentCount => pictureRequestModel.CameraPictures.Count(x => x.ReceivedSent != null);
+    public int TotalCount => pictureRequestModel.CameraPictures.Count(x => x.CameraPictureStatus != null);
+
+    public bool CanSend => pictureRequestModel.CameraPictures.Where(x => x.CameraPictureStatus != null)
+        .All(x => x.CameraPictureStatus == CameraPictureStatus.Taken);
+
+    public List<CameraPictureModel> CameraPictures => pictureRequestModel.CameraPictures;
 }

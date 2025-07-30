@@ -75,5 +75,6 @@ app.Services.GetRequiredService<PiZeroCameraManager>();
 
 app.AddDownloadUpdateEndpoint();
 app.AddUploadImageEndpoint();
+app.AddDownloadPicturesEndpoint();
 
 app.Run();
