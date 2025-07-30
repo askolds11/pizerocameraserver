@@ -15,6 +15,7 @@ public partial class CameraPage : ComponentBase, IDisposable
 
     private MudDataGrid<PictureElement> _gridData = null!;
     private PictureElement? _selectedPicture;
+    private string? PreviewStreamUrl;
 
     private void OnGlobalChanged()
     {
@@ -91,10 +92,19 @@ public partial class CameraPage : ComponentBase, IDisposable
         await PiZeroCameraManager.RequestSendPicture(_selectedPicture.Uuid);
     }
 
-    private async Task OnSwitchMode(CameraRequest cameraRequest)
+    private async Task StartPreview()
     {
-        // await MqttStuff.SetCameraMode(cameraRequest);
+        await PiZeroCameraManager.StartPreview();
+        // wait for the preview to start
+        // TODO: Maybe some kind of confirmation?
         await Task.Delay(2000);
+        PreviewStreamUrl = "http://pizeroA1.local:8000/stream.mjpg";
+    }
+
+    private async Task StopPreview()
+    {
+        await PiZeroCameraManager.StopPreview();
+        PreviewStreamUrl = null;
     }
 
     private async Task OnSubmitConfig()

@@ -168,18 +168,6 @@ public class MqttStuff
         await _mqttClient.SubscribeAsync(GetAnswersTopic(_currentOptions.ErrorTopic));
     }
 
-    public async Task SetCameraMode(CameraRequest cameraRequest)
-    {
-        // Send
-        var message = new MqttApplicationMessageBuilder()
-            .WithContentType("application/json")
-            .WithTopic("camera")
-            .WithPayload(Json.Serialize(cameraRequest))
-            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
-            .Build();
-        await _mqttClient.PublishAsync(message);
-    }
-
     public async Task SetConfig(CameraRequest cameraControls)
     {
         Console.WriteLine(Json.Serialize(cameraControls));

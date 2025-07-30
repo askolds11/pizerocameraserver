@@ -1,4 +1,5 @@
 @page "/camera"
+@inject IDialogService Dialog
 @using picamerasserver.Components.Components
 
 <PageTitle>Cameras - PiCam</PageTitle>
@@ -88,9 +89,23 @@
                     <MudText Typo="Typo.h5">Preview</MudText>
                 </TitleContent>
                 <ChildContent>
-                    <MudImage Src="@($"http://pizero.local:8000/stream.mjpg")" Alt="Here's Johnny" Elevation="25"
+                    <MudStack Row="true" Spacing="4" Class="pa-4">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="@StartPreview">
+                            Start preview
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="@StopPreview">
+                            Stop preview
+                        </MudButton>
+                    </MudStack>
+                    <MudImage Src="@PreviewStreamUrl" Alt="X" Elevation="25"
                               Class="rounded-lg ma-4"
                               ObjectFit="ObjectFit.Contain" Fluid="true"/>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               OnClick="@OpenPreviewDialog">
+                        Open dialog
+                    </MudButton>
                 </ChildContent>
             </MudExpansionPanel>
         </MudExpansionPanels>
@@ -110,5 +125,16 @@
 
             return @<PictureRequestTooltip CameraPicture="item" />;
         };
+    }
+
+    private Task OpenPreviewDialog()
+    {
+        var dialogParams = new DialogParameters<PreviewDialog>
+        {
+            { x => x.CameraId, "A1" }
+        };
+        var options = new DialogOptions { FullScreen = true, NoHeader = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraExtraLarge};
+
+        return Dialog.ShowAsync<PreviewDialog>("Preview", dialogParams, options);
     }
 }

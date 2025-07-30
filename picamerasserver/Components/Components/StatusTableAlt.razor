@@ -1,0 +1,44 @@
+<MudTable Items="@_rows" Bordered Dense>
+    <HeaderContent>
+        <MudTh Class="pa-0">
+            <div class="d-flex justify-center">
+                <MudText Typo="Typo.h6">#</MudText>
+            </div>
+        </MudTh>
+        @foreach (var columnLabel in _columns)
+        {
+            <MudTh Class="pa-0">
+                <div class="d-flex justify-center">
+                    <MudText Typo="Typo.h6">@columnLabel</MudText>
+                </div>
+            </MudTh>
+        }
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd Class="pa-0" Width="100">
+            <div class="d-flex justify-center">
+                <MudText Typo="Typo.h6">@context</MudText>
+            </div>
+        </MudTd>
+        @foreach (var columnLabel in _columns)
+        {
+            @* <MudTd>@GetDeviceData(columnLabel, context.RowNumber)</MudTd> *@
+            @* <MudTd Class="mx-auto px-0 py-0 ">@columnLabel@context</MudTd> *@
+            <MudTd Class="px-0 py-2" Width="100" Style="@($"background:{GetCellColor(context, columnLabel)}")">
+                <MudTooltip Arrow="true" Placement="Placement.Top" Inline="false">
+                    <ChildContent>
+                        <div class="d-flex justify-center" Width="100%">
+                            <MudText Typo="Typo.body1">@context@columnLabel</MudText>
+                        </div>
+                    </ChildContent>
+                    <TooltipContent>
+                        @TooltipTransform(context + columnLabel)
+                        @* <MudText Typo="Typo.h6">@columnLabel@context</MudText> *@
+                        @* <MudText Typo="Typo.body2">body2 content</MudText> *@
+                        @* <MudIcon Icon="@Icons.Material.Filled.Star"/> *@
+                    </TooltipContent>
+                </MudTooltip>
+            </MudTd>
+        }
+    </RowTemplate>
+</MudTable>
