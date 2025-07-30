@@ -119,6 +119,17 @@ public partial class CameraPage : ComponentBase, IDisposable
         // await MqttStuff.SetConfig(new CameraRequest.GetControlLimits());
     }
 
+    private async Task SelectPicture(Guid uuid)
+    {
+        await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
+        var updatedItem = await piDbContext.PictureRequests
+            .Include(x => x.CameraPictures)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Uuid == uuid);
+        _selectedPicture = updatedItem == null ? null : new PictureElement(updatedItem);
+        UpdateTooltipTransform();
+    }
+
     private Color ColorTransform(string cameraId)
     {
         var cameraPicture = _selectedPicture?.CameraPictures.FirstOrDefault(x => x.CameraId == cameraId);

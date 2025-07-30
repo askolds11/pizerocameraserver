@@ -32,12 +32,31 @@
                     <MudText Typo="Typo.h5">Picture list</MudText>
                 </TitleContent>
                 <ChildContent>
-                    <MudDataGrid @ref="_gridData" T="PictureElement" ServerData="ServerReload" Filterable="false" SortMode="SortMode.None">
+                    <MudDataGrid @ref="_gridData" T="PictureElement" ServerData="ServerReload" Filterable="false"
+                                 SortMode="SortMode.None">
                         @* <ToolBarContent> *@
                         @*     <MudText Typo="Typo.h6">Pictures</MudText> *@
                         @* </ToolBarContent> *@
                         <Columns>
-                            <PropertyColumn Property="x => x.Uuid" Title="Uuid" />
+                            <TemplateColumn HeaderClass="align-center px-0"
+                                            HeaderStyle="text-align: center; max-width:75px" CellClass="pa-0 ma-0"
+                                            CellStyle="text-align: center; max-width: 75px">
+                                <HeaderTemplate>
+                                    <div>
+                                        Selected
+                                    </div>
+                                </HeaderTemplate>
+                                <CellTemplate>
+                                    <MudToggleIconButton Toggled="@(_selectedPicture?.Uuid == context.Item.Uuid)"
+                                                         ToggledChanged="@(() => SelectPicture(context.Item.Uuid))"
+                                                         Icon="@Icons.Material.Filled.RadioButtonUnchecked"
+                                                         Color="@Color.Default"
+                                                         ToggledIcon="@Icons.Material.Filled.RadioButtonChecked"
+                                                         ToggledColor="@Color.Success"
+                                                         Class="pa-3 ma-0"/>
+                                </CellTemplate>
+                            </TemplateColumn>
+                            <PropertyColumn Property="x => x.Uuid" Title="Uuid"/>
                             <PropertyColumn Property="x => x.RequestTime" Title="Request time"/>
                             <TemplateColumn Title="Taken">
                                 <CellTemplate>
@@ -53,16 +72,19 @@
                                     </MudStack>
                                 </CellTemplate>
                             </TemplateColumn>
-                            <TemplateColumn Title="Actions" CellClass="pa-0 ma-0">
+                            <TemplateColumn Title="Actions" HeaderStyle="text-align: center" CellClass="pa-0 ma-0"
+                                            CellStyle="text-align: center">
                                 <CellTemplate>
                                     <MudStack Row>
-                                        <MudIconButton Href="@($"downloadpictures/{context.Item.Uuid}")" Target="_blank" Icon="@Icons.Material.Rounded.Download" aria-label="download" Size="Size.Medium" Class="pa-4 ma-0" />
+                                        <MudIconButton Href="@($"downloadpictures/{context.Item.Uuid}")" Target="_blank"
+                                                       Icon="@Icons.Material.Rounded.Download" aria-label="download"
+                                                       Size="Size.Medium" Class="pa-3 ma-0"/>
                                     </MudStack>
                                 </CellTemplate>
                             </TemplateColumn>
                         </Columns>
                         <PagerContent>
-                            <MudDataGridPager T="PictureElement" />
+                            <MudDataGridPager T="PictureElement"/>
                         </PagerContent>
                     </MudDataGrid>
                 </ChildContent>
