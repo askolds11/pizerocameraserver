@@ -31,11 +31,14 @@ public partial class CameraPage : ComponentBase, IDisposable
     {
         _workUuid = Guid.CreateVersion7();
         await PiZeroCameraManager.RequestTakePicture(null, _workUuid);
+        var pictureRequestModel = await PiZeroCameraManager.RequestTakePicture();
+        _workUuid = pictureRequestModel.Uuid;
     }
 
     private async Task SendPicture()
     {
         await PiZeroCameraManager.RequestSendPicture(null, _workUuid);
+        await PiZeroCameraManager.RequestSendPicture(_workUuid);
     }
 
     private async Task OnSwitchMode(CameraRequest cameraRequest)
