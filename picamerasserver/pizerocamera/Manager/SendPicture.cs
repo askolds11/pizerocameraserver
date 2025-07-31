@@ -32,39 +32,59 @@ public partial class PiZeroCameraManager
             uuid
         );
 
-        var message = new MqttApplicationMessageBuilder()
-            .WithContentType("application/json")
-            .WithTopic(options.CameraTopic)
-            .WithPayload(Json.Serialize(sendPictureRequest))
-            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
-            .Build();
-
-        var publishResult = await _mqttClient.PublishAsync(message);
-
         var expectedCams = pictureRequest.CameraPictures
             .Where(x => x.CameraPictureStatus == CameraPictureStatus.SavedOnDevice)
             .Select(x => x.CameraId)
-            .Select(x => PiZeroCameras[x]);
+            .Select(x => PiZeroCameras[x])
+            .ToList();
 
-        foreach (var piZeroCamera in expectedCams)
+        var columns = Enumerable.Range('A', 16).Select(c => ((char)c).ToString()).ToList();
+
+        foreach (var column in columns)
         {
-            // ignore not working cameras
-            if (piZeroCamera.Pingable == null || piZeroCamera.Status == null)
+            var expectedColumnCams = expectedCams
+                .Where(x => x is { Pingable: true, Status: not null })
+                .Where(x => x.Id.StartsWith(column))
+                .ToList();
+
+            // If column has no useful cameras, skip it
+            if (expectedColumnCams.Count == 0)
             {
                 continue;
             }
 
-            // First because it exists based on previous
-            var dbItem = pictureRequest.CameraPictures.First(x => x.CameraId == piZeroCamera.Id);
-            dbItem.CameraPictureStatus = publishResult.IsSuccess
-                ? CameraPictureStatus.RequestedSend
-                : CameraPictureStatus.FailedToRequestSend;
-            piDbContext.Update(dbItem);
-        }
+            // Send message to column
+            var message = new MqttApplicationMessageBuilder()
+                .WithContentType("application/json")
+                .WithTopic($"{options.CameraTopic}/{column}")
+                .WithPayload(Json.Serialize(sendPictureRequest))
+                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
+                .Build();
 
-        await piDbContext.SaveChangesAsync();
-        OnPictureChange?.Invoke(uuid);
-        await Task.Yield();
+            var publishResult = await _mqttClient.PublishAsync(message);
+
+            // Update statuses
+            foreach (var piZeroCamera in expectedColumnCams)
+            {
+                // First because it exists based on previous
+                var dbItem = pictureRequest.CameraPictures.First(x => x.CameraId == piZeroCamera.Id);
+                dbItem.CameraPictureStatus = publishResult.IsSuccess
+                    ? CameraPictureStatus.RequestedSend
+                    : CameraPictureStatus.FailedToRequestSend;
+                piDbContext.Update(dbItem);
+            }
+
+            await piDbContext.SaveChangesAsync();
+            // Update UI
+            OnPictureChange?.Invoke(uuid);
+            await Task.Yield();
+
+            // Allow time for the cameras to send
+            if (column != columns.Last())
+            {
+                await Task.Delay(10000);
+            }
+        }
     }
 
     /// <summary>
