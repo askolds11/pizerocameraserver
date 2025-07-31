@@ -142,14 +142,10 @@ public class MqttStuff
         _logger.LogInformation("Initializing MQTT client.");
         _optionsMonitor.OnChange((options, _) => { Task.Run(async () => { await HandleOptionsChange(options); }); });
         _mqttClient.ApplicationMessageReceivedAsync += MessageHandler;
-        _mqttClient.DisconnectedAsync += async e =>
+        _mqttClient.DisconnectedAsync += async _ =>
         {
-            // TODO: Does this work?
-            if (e.ClientWasConnected && e.Reason != MqttClientDisconnectReason.NormalDisconnection)
-            {
-                var newMqttClientOptions = GetMqttClientOptions();
-                await _mqttClient.ConnectAsync(newMqttClientOptions, CancellationToken.None);
-            }
+            _logger.LogInformation("Disconnected from MQTT server");
+            await SetupClient();
         };
         await SetupClient();
     }
@@ -159,8 +155,13 @@ public class MqttStuff
     /// </summary>
     private async Task SetupClient()
     {
-        var mqttClientOptions = GetMqttClientOptions();
-        await _mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
+        // Connect until is connected
+        while (!_mqttClient.IsConnected)
+        {
+            _logger.LogInformation("Connecting to mqtt server");
+            var newMqttClientOptions = GetMqttClientOptions();
+            await _mqttClient.ConnectAsync(newMqttClientOptions, CancellationToken.None);
+        }
 
         await _mqttClient.SubscribeAsync(GetAnswersTopic(_currentOptions.NtpTopic));
         await _mqttClient.SubscribeAsync(GetAnswersTopic(_currentOptions.CameraTopic));
