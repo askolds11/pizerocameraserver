@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.Extensions.Options;
 using MQTTnet;
+using MQTTnet.Formatter;
 using MQTTnet.Protocol;
 using picamerasserver.Options;
 using picamerasserver.pizerocamera.manager;
@@ -33,6 +34,7 @@ public class MqttStuff
         return new MqttClientOptionsBuilder()
             .WithClientId("MOTHERSHIP")
             .WithTcpServer(_currentOptions.Host, _currentOptions.Port)
+            .WithProtocolVersion(MqttProtocolVersion.V500)
             .Build();
     }
 
