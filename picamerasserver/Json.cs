@@ -25,6 +25,19 @@ public static class Json
             return Result.Failure<T, Exception>(ex);
         }
     }
+    
+    public static Result<T, Exception> TryDeserializeWithOptions<T>(string json, ILogger logger, JsonSerializerOptions options)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<T>(json, options)!;
+        }
+        catch (Exception ex) when (ex is ArgumentNullException || ex is JsonException || ex is NotSupportedException)
+        {
+            logger.LogError(ex, "Failed to deserialize JSON string {S}", json);
+            return Result.Failure<T, Exception>(ex);
+        }
+    }
 
     public static string Serialize<T>(T obj) =>
         JsonSerializer.Serialize(obj, DefaultOptions);

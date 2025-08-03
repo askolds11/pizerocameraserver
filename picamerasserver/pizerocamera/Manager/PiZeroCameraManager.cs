@@ -12,6 +12,7 @@ public partial class PiZeroCameraManager
     private readonly IMqttClient _mqttClient;
     private readonly ILogger<PiZeroCameraManager> _logger;
     private readonly IOptionsMonitor<MqttOptions> _optionsMonitor;
+    private readonly IOptionsMonitor<DirectoriesOptions> _dirOptionsMonitor;
 
     public readonly IReadOnlyList<string> PiZeroCameraIds;
     public readonly IReadOnlyDictionary<string, PiZeroCamera> PiZeroCameras;
@@ -19,15 +20,17 @@ public partial class PiZeroCameraManager
     public event Action? OnChange;
 
     public PiZeroCameraManager(IMqttClient mqttClient, ILogger<PiZeroCameraManager> logger,
-        IOptionsMonitor<MqttOptions> optionsMonitor, IDbContextFactory<PiDbContext> dbContextFactory)
+        IOptionsMonitor<MqttOptions> optionsMonitor, IDbContextFactory<PiDbContext> dbContextFactory,
+        IOptionsMonitor<DirectoriesOptions> dirOptionsMonitor)
     {
         _mqttClient = mqttClient;
         _logger = logger;
         _optionsMonitor = optionsMonitor;
         _dbContextFactory = dbContextFactory;
+        _dirOptionsMonitor = dirOptionsMonitor;
 
         using var piDbContext = _dbContextFactory.CreateDbContext();
-        
+
         // Add all cameras
         var piZeroCamerasIds = new List<string>();
         var piZeroCameras = new Dictionary<string, PiZeroCamera>();
@@ -45,6 +48,7 @@ public partial class PiZeroCameraManager
                 }
             }
         }
+
         piDbContext.SaveChanges();
 
         PiZeroCameraIds = piZeroCamerasIds;

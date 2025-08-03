@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using MQTTnet;
 using MQTTnet.Protocol;
@@ -174,6 +175,40 @@ public partial class PiZeroCameraManager
                 SendPictureResponse.PictureSent => (CameraPictureStatus.Success, null),
                 _ => (CameraPictureStatus.Unknown, "Unknown Success")
             };
+            
+            // Fill data on picture taken
+            // TODO: Generate filename in one
+            // var metadataFileName = image.FileName.Split('.').First() + "_metadata.json";
+            if (successWrapper.Value is SendPictureResponse.PictureSent)
+            {
+                var directory = Path.Combine(_dirOptionsMonitor.CurrentValue.UploadDirectory, uuid.ToString());
+                if (Directory.Exists(directory))
+                {
+                    var filePath = Path.Combine(directory, $"{uuid}_{id}_metadata.json");
+                    if (File.Exists(filePath))
+                    {
+                        var json = await File.ReadAllTextAsync(filePath);
+                        var jsonOptions = new JsonSerializerOptions(Json.GetDefaultOptions())
+                        {
+                            PropertyNamingPolicy = null,
+                            Converters = { new MetadataConverter() }
+                        };
+                        var metadata = Json.TryDeserializeWithOptions<Metadata>(json, _logger, jsonOptions);
+                        if (metadata.IsSuccess)
+                        {
+                            var val = metadata.Value;
+                            dbItem.SensorTimestamp = val.SensorTimestamp;
+                            dbItem.PictureTaken = val.FrameWallClock != null ? DateTimeOffset.FromUnixTimeMilliseconds(val.FrameWallClock.Value / 1000) : null;
+                            dbItem.FocusFoM = val.FocusFoM;
+                            dbItem.AnalogueGain = val.AnalogueGain;
+                            dbItem.DigitalGain = val.DigitalGain;
+                            dbItem.ExposureTime = val.ExposureTime;
+                            dbItem.ColourTemperature = val.ColourTemperature;
+                            dbItem.Lux = val.Lux;
+                        }
+                    }
+                }
+            }
         }
         else
         {

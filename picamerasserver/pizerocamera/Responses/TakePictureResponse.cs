@@ -11,7 +11,7 @@ namespace picamerasserver.pizerocamera.Responses;
 [JsonDerivedType(typeof(Failure.PictureFailedToSave), nameof(Failure.PictureFailedToSave))]
 public abstract record TakePictureResponse(Guid Uuid)
 {
-    public sealed record PictureTaken(Guid Uuid) : TakePictureResponse(Uuid);
+    public sealed record PictureTaken(Guid Uuid, long MonotonicTime) : TakePictureResponse(Uuid);
 
     public sealed record PictureSavedOnDevice(Guid Uuid) : TakePictureResponse(Uuid);
 

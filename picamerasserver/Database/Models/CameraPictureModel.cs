@@ -28,7 +28,22 @@ public class CameraPictureModel
     /// <summary>
     /// Time when the picture was taken according to the Pi
     /// </summary>
-    public DateTimeOffset? PictureTaken { get; init; }
+    public DateTimeOffset? PictureTaken { get; set; }
+    
+    /// <summary>
+    /// Monotonic time, when picture was supposed to be taken on the Pi (FrameWallClock)
+    /// </summary>
+    public long? MonotonicTime { get; set; }
+    /// <summary>
+    /// Monotonic time, when picture was taken on the Pi according to the metadata
+    /// </summary>
+    public long? SensorTimestamp { get; set; }
+    public int? FocusFoM { get; set; }
+    public float? AnalogueGain { get; set; }
+    public float? DigitalGain { get; set; }
+    public int? ExposureTime { get; set; }
+    public int? ColourTemperature { get; set; }
+    public float? Lux { get; set; }
     
 
     [ForeignKey(nameof(CameraId))] public CameraModel Camera { get; init; } = null!;

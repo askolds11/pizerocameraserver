@@ -120,9 +120,10 @@ public partial class PiZeroCameraManager
 
         if (successWrapper.Success)
         {
-            if (successWrapper.Value is TakePictureResponse.PictureTaken)
+            if (successWrapper.Value is TakePictureResponse.PictureTaken pictureTaken)
             {
                 dbItem.ReceivedTaken = timeNow;
+                dbItem.MonotonicTime = pictureTaken.MonotonicTime;
             }
             else if (successWrapper.Value is TakePictureResponse.PictureSavedOnDevice)
             {
