@@ -154,21 +154,14 @@ public partial class PiZeroCameraManager
         var id = message.Topic.Split('/').Last();
 
         var successWrapper = sendPicture.Response;
-        // todo: value bad
         var uuid = successWrapper.Value.Uuid;
-
-        // todo: async, uuid
         var dbItem = piDbContext.CameraPictures.FirstOrDefault(x => x.PictureRequestId == uuid && x.CameraId == id);
-        // TODO: Really null check?
         if (dbItem == null)
         {
             dbItem = new CameraPictureModel { CameraId = id, PictureRequestId = uuid };
             piDbContext.Add(dbItem);
         }
-
-        // if (response.IsSuccess)
-        // {
-        // var successWrapper = response.Value;
+        
         if (successWrapper.Success)
         {
             if (successWrapper.Value is SendPictureResponse.PictureSent)
@@ -198,15 +191,9 @@ public partial class PiZeroCameraManager
                 _ => (CameraPictureStatus.Unknown, "Unknown failure")
             };
         }
-
-        // }
-        // else
-        // {
-        //     piZeroCamera.TakePictureRequest = new PiZeroCameraTakePictureRequest.Unknown(response.Error.ToString());
-        // }
+        
         await piDbContext.SaveChangesAsync();
         OnPictureChange?.Invoke(uuid);
-        OnChange?.Invoke();
         await Task.Yield();
     }
 }

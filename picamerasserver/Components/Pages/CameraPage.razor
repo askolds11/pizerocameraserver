@@ -15,7 +15,7 @@
                         ColorTransform="@ColorTransform"
                         TooltipTransform="@_tooltipTransform">
                     </StatusTable>
-                    <MudStack Row="true" Spacing="4" Class="pa-4">
+                    <MudStack Row="true" Spacing="4" Class="pa-4" AlignItems="AlignItems.Center">
                         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                    OnClick="@TakePicture">
                             Take pic
@@ -24,6 +24,15 @@
                                    OnClick="@SendPicture">
                             Send pic
                         </MudButton>
+                        @if (_selectedPicture != null)
+                        {
+                            <MudText>
+                                @_selectedPicture?.TakenCount / @_selectedPicture?.TotalCount
+                            </MudText>
+                            <MudText>
+                                @_selectedPicture?.SentCount / @_selectedPicture?.TakenCount
+                            </MudText>
+                        }
                     </MudStack>
                 </ChildContent>
             </MudExpansionPanel>
@@ -121,7 +130,7 @@
                             Stop preview
                         </MudButton>
                     </MudStack>
-                    <MudImage Src="@PreviewStreamUrl" Alt="X" Elevation="25"
+                    <MudImage Src="@_previewStreamUrl" Alt="X" Elevation="25"
                               Class="rounded-lg ma-4"
                               ObjectFit="ObjectFit.Contain" Fluid="true"/>
                     <MudButton Variant="Variant.Filled" Color="Color.Primary"

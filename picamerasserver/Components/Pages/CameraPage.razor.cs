@@ -15,7 +15,7 @@ public partial class CameraPage : ComponentBase, IDisposable
 
     private MudDataGrid<PictureElement> _gridData = null!;
     private PictureElement? _selectedPicture;
-    private string? PreviewStreamUrl;
+    private string? _previewStreamUrl;
 
     private void OnGlobalChanged()
     {
@@ -34,31 +34,25 @@ public partial class CameraPage : ComponentBase, IDisposable
     {
         InvokeAsync(async () =>
         {
-            var serverItemsList = _gridData.ServerItems.ToList();
-            var itemIndex = serverItemsList.FindIndex(x => x.Uuid == uuid);
-            // If no data needs to be updated, nothing will change in UI
-            if (itemIndex == -1 && _selectedPicture == null)
+            if (_selectedPicture != null)
             {
-                return;
-            }
+                await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
+                var updatedItem = await piDbContext.PictureRequests
+                    .Include(x => x.CameraPictures)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Uuid == uuid);
 
-            await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
-            var updatedItem = await piDbContext.PictureRequests
-                .Include(x => x.CameraPictures)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Uuid == uuid);
-            if (itemIndex != -1 && updatedItem != null)
-            {
-                serverItemsList[itemIndex] = new PictureElement(updatedItem);
-            }
+                if (updatedItem != null && _selectedPicture != null)
+                {
+                    _selectedPicture = new PictureElement(updatedItem);
+                    UpdateTooltipTransform();
+                }
 
-            if (updatedItem != null && _selectedPicture != null)
-            {
-                _selectedPicture = new PictureElement(updatedItem);
-                UpdateTooltipTransform();
+                await _gridData.ReloadServerData();
+                
+                // State will only change if a picture is selected
+                StateHasChanged();
             }
-
-            StateHasChanged();
         });
     }
 
@@ -98,13 +92,13 @@ public partial class CameraPage : ComponentBase, IDisposable
         // wait for the preview to start
         // TODO: Maybe some kind of confirmation?
         await Task.Delay(2000);
-        PreviewStreamUrl = "http://pizeroA1.local:8000/stream.mjpg";
+        _previewStreamUrl = "http://pizeroA1.local:8000/stream.mjpg";
     }
 
     private async Task StopPreview()
     {
         await PiZeroCameraManager.StopPreview();
-        PreviewStreamUrl = null;
+        _previewStreamUrl = null;
     }
 
     private async Task OnSubmitConfig()
@@ -182,17 +176,17 @@ public partial class CameraPage : ComponentBase, IDisposable
 
 public class PictureElement(PictureRequestModel pictureRequestModel)
 {
-    public Guid Uuid => pictureRequestModel.Uuid;
+    public readonly Guid Uuid = pictureRequestModel.Uuid;
 
-    public DateTime RequestTime => TimeZoneInfo.ConvertTime(pictureRequestModel.RequestTime.LocalDateTime,
+    public readonly DateTime RequestTime = TimeZoneInfo.ConvertTime(pictureRequestModel.RequestTime.LocalDateTime,
         TimeZoneInfo.FindSystemTimeZoneById("Europe/Riga"));
 
-    public int TakenCount => pictureRequestModel.CameraPictures.Count(x => x.ReceivedTaken != null);
-    public int SentCount => pictureRequestModel.CameraPictures.Count(x => x.ReceivedSent != null);
-    public int TotalCount => pictureRequestModel.CameraPictures.Count(x => x.CameraPictureStatus != null);
+    public readonly int TakenCount = pictureRequestModel.CameraPictures.Count(x => x.ReceivedTaken != null);
+    public readonly int SentCount = pictureRequestModel.CameraPictures.Count(x => x.ReceivedSent != null);
+    public readonly int TotalCount = pictureRequestModel.CameraPictures.Count(x => x.CameraPictureStatus != null);
 
-    public bool CanSend => pictureRequestModel.CameraPictures.Where(x => x.CameraPictureStatus != null)
+    public readonly bool CanSend = pictureRequestModel.CameraPictures.Where(x => x.CameraPictureStatus != null)
         .All(x => x.CameraPictureStatus == CameraPictureStatus.Taken);
 
-    public List<CameraPictureModel> CameraPictures => pictureRequestModel.CameraPictures;
+    public readonly List<CameraPictureModel> CameraPictures = pictureRequestModel.CameraPictures;
 }

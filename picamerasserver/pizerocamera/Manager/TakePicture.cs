@@ -9,7 +9,7 @@ namespace picamerasserver.pizerocamera.manager;
 public partial class PiZeroCameraManager
 {
     public event Action<Guid>? OnPictureChange;
-    
+
     /// <summary>
     /// Request to take a picture
     /// </summary>
@@ -19,6 +19,7 @@ public partial class PiZeroCameraManager
 
         var uuid = Guid.CreateVersion7();
         var currentTime = DateTimeOffset.Now;
+        // todo: changeable in form
         var pictureTime = currentTime.AddMilliseconds(2000);
 
         var pictureRequest = new PictureRequestModel
@@ -67,7 +68,6 @@ public partial class PiZeroCameraManager
 
         await piDbContext.SaveChangesAsync();
         await piDbContext.Entry(pictureRequest).Collection(x => x.CameraPictures).LoadAsync();
-
         return pictureRequest;
     }
 
@@ -79,21 +79,14 @@ public partial class PiZeroCameraManager
         var id = message.Topic.Split('/').Last();
 
         var successWrapper = takePicture.Response;
-        // todo: value bad
         var uuid = successWrapper.Value.Uuid;
-
-        // todo: async, uuid
         var dbItem = piDbContext.CameraPictures.FirstOrDefault(x => x.PictureRequestId == uuid && x.CameraId == id);
-        // TODO: Really null check?
         if (dbItem == null)
         {
             dbItem = new CameraPictureModel { CameraId = id, PictureRequestId = uuid };
             piDbContext.Add(dbItem);
         }
 
-        // if (response.IsSuccess)
-        // {
-        // var successWrapper = response.Value;
         if (successWrapper.Success)
         {
             if (successWrapper.Value is TakePictureResponse.PictureTaken)
@@ -135,12 +128,5 @@ public partial class PiZeroCameraManager
 
         await piDbContext.SaveChangesAsync();
         OnPictureChange?.Invoke(uuid);
-        // }
-        // else
-        // {
-        //     piZeroCamera.TakePictureRequest = new PiZeroCameraTakePictureRequest.Unknown(response.Error.ToString());
-        // }
-
-        OnChange?.Invoke();
     }
 }
