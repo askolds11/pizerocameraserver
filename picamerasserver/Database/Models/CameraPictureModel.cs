@@ -10,7 +10,7 @@ public class CameraPictureModel
 {
     [StringLength(2), Required] public required string CameraId { get; init; }
     [Required] public required Guid PictureRequestId { get; init; }
-    [Column(TypeName = "varchar(20)")] public CameraPictureStatus? CameraPictureStatus { get; set; }
+    [Column(TypeName = "varchar(50)")] public CameraPictureStatus? CameraPictureStatus { get; set; }
     public string? StatusMessage { get; set; }
     /// <summary>
     /// Time when the "taken" message was received

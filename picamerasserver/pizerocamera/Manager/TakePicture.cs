@@ -124,7 +124,7 @@ public partial class PiZeroCameraManager
                     TakePictureResponse.Failure.PictureFailedToSave pictureFailedToSave => (
                         CameraPictureStatus.PictureFailedToSave, pictureFailedToSave.Message),
                     TakePictureResponse.Failure.PictureFailedToSchedule pictureFailedToSchedule => (
-                        CameraPictureStatus.PictureFailedToSchedule, "Failed to schedule"),
+                        CameraPictureStatus.PictureFailedToSchedule, pictureFailedToSchedule.Message),
                     TakePictureResponse.Failure.PictureFailedToTake pictureFailedToTake => (
                         CameraPictureStatus.PictureFailedToTake, pictureFailedToTake.Message),
                     _ => throw new ArgumentOutOfRangeException(nameof(failure))

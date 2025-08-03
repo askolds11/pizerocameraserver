@@ -20,7 +20,7 @@ public abstract record TakePictureResponse(Guid Uuid)
     {
         public sealed record Failed(Guid Uuid) : Failure(Uuid);
 
-        public sealed record PictureFailedToSchedule(Guid Uuid) : Failure(Uuid);
+        public sealed record PictureFailedToSchedule(Guid Uuid, string Message) : Failure(Uuid);
 
         public sealed record PictureFailedToTake(Guid Uuid, string Message) : Failure(Uuid);
 
