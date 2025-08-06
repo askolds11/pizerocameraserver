@@ -12,22 +12,27 @@ public partial class NtpPage : ComponentBase, IDisposable
 
     private async Task RequestNtpSync()
     {
-        await PiZeroCameraManager.RequestNtpSync(null);
+        await PiZeroCameraManager.RequestNtpSync();
     }
     
     private void OnGlobalChanged()
     {
-        InvokeAsync(StateHasChanged);
+        InvokeAsync(() =>
+        {
+            UpdateTooltipTransform();
+            StateHasChanged();
+        });
     }
     
     protected override void OnInitialized()
     {
-        PiZeroCameraManager.OnChange += OnGlobalChanged;
+        PiZeroCameraManager.OnNtpChange += OnGlobalChanged;
     }
 
     public void Dispose()
     {
-        PiZeroCameraManager.OnChange -= OnGlobalChanged;
+        PiZeroCameraManager.OnNtpChange -= OnGlobalChanged;
+        GC.SuppressFinalize(this);
     }
     
     private Color ColorTransform(string id)
@@ -36,11 +41,9 @@ public partial class NtpPage : ComponentBase, IDisposable
         return piZeroCamera.NtpRequest switch
         {
             null => Color.FromArgb(0x00, 0x00, 0x00),
-            PiZeroCameraNtpRequest.FailedToRequest failedToRequest => Color.FromArgb(0xFF, 0x00, 0x00),
-            PiZeroCameraNtpRequest.Failure failure => Color.FromArgb(0x55, 0x00, 0x00),
+            PiZeroCameraNtpRequest.Failure failure => Color.FromArgb(0xff, 0x00, 0x00),
             PiZeroCameraNtpRequest.Requested requested => Color.FromArgb(0x55, 0x55, 0x00),
             PiZeroCameraNtpRequest.Success success => Color.FromArgb(0x00, 0xFF, 0x00),
-            PiZeroCameraNtpRequest.Unknown unknown => Color.FromArgb(0x00, 0x00, 0xFF),
             _ => throw new ArgumentOutOfRangeException()
         };
     }

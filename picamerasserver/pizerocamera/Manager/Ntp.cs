@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using MQTTnet;
 using MQTTnet.Protocol;
 
@@ -6,82 +8,39 @@ namespace picamerasserver.pizerocamera.manager;
 
 public partial class PiZeroCameraManager
 {
+    public event Action? OnNtpChange;
+    
     /// <summary>
     /// Request a NTP time sync.
     /// </summary>
-    /// <param name="ids">Provide a List for specific devices, null for global</param>
-    public async Task RequestNtpSync(IEnumerable<string>? ids)
+    public async Task RequestNtpSync()
     {
         var options = _optionsMonitor.CurrentValue;
-        
-        if (ids == null)
+
+        var message = new MqttApplicationMessageBuilder()
+            .WithContentType("application/json")
+            .WithTopic(options.NtpTopic)
+            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
+            .Build();
+
+        var publishResult = await _mqttClient.PublishAsync(message);
+
+        if (publishResult.IsSuccess)
         {
-            var message = new MqttApplicationMessageBuilder()
-                .WithContentType("application/json")
-                .WithTopic(options.NtpTopic)
-                // .WithPayload(Json.Serialize(cameraControls))
-                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
-                .Build();
-
-            var publishResult = await _mqttClient.PublishAsync(message);
-
-            if (publishResult.IsSuccess)
-            {
-                foreach (var piZeroCamera in PiZeroCameras.Values)
-                {
-                    piZeroCamera.NtpRequest = new PiZeroCameraNtpRequest.Requested();
-                }
-            }
-            else
-            {
-                foreach (var piZeroCamera in PiZeroCameras.Values)
-                {
-                    piZeroCamera.NtpRequest = new PiZeroCameraNtpRequest.FailedToRequest(publishResult.ReasonString);
-                }
-            }
-
-            OnChange?.Invoke();
-            return;
-        }
-
-        MqttApplicationMessage GetMessage(string id) =>
-            new MqttApplicationMessageBuilder().WithContentType("application/json")
-                .WithTopic($"{options.NtpTopic}/{id}")
-                // .WithPayload(Json.Serialize(cameraControls))
-                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
-                .Build();
-
-        var idList = ids.ToList();
-
-        // PiZeroCameras that are not requested set to null
-        foreach (var id in PiZeroCameras.Keys.Except(idList))
-        {
-            PiZeroCameras[id].NtpRequest = null;
-        }
-
-        // PiZeroCameras that are requested
-        var tasks = PiZeroCameras.Keys
-            .Intersect(idList)
-            .Select(async id => (id, await _mqttClient.PublishAsync(GetMessage(id))));
-
-
-        var tasksResult = await Task.WhenAll(tasks);
-
-        // Process message sending results
-        foreach (var (id, publishResult) in tasksResult)
-        {
-            var piZeroCamera = PiZeroCameras[id];
-            if (publishResult.IsSuccess)
+            foreach (var piZeroCamera in PiZeroCameras.Values)
             {
                 piZeroCamera.NtpRequest = new PiZeroCameraNtpRequest.Requested();
             }
-            else
+        }
+        else
+        {
+            foreach (var piZeroCamera in PiZeroCameras.Values)
             {
-                piZeroCamera.NtpRequest = new PiZeroCameraNtpRequest.FailedToRequest(publishResult.ReasonString);
+                piZeroCamera.NtpRequest = new PiZeroCameraNtpRequest.Failure.FailedToRequest(publishResult.ReasonString);
             }
         }
 
-        OnChange?.Invoke();
+        OnNtpChange?.Invoke();
     }
 
     public void ResponseNtpSync(MqttApplicationMessage message)
@@ -100,17 +59,43 @@ public partial class PiZeroCameraManager
             if (successWrapper.Success)
             {
                 piZeroCamera.NtpRequest = new PiZeroCameraNtpRequest.Success(successWrapper.Value);
+                const string pattern = @"(?:^CLOCK:.*?\\n)?(.*?)\s([-+]?\d+\.\d+)\s\+\/-\s(\d+\.\d+)";
+                var match = Regex.Match(successWrapper.Value, pattern, RegexOptions.Multiline);
+
+                if (match.Success)
+                {
+                    var timestamp = match.Groups[1].Value;
+                    var offset = match.Groups[2].Value;
+                    var error = match.Groups[3].Value;
+
+                    var date = DateTimeOffset.ParseExact(
+                        timestamp,
+                        "yyyy-MM-dd HH:mm:ss.ffffff (zzz)",
+                        CultureInfo.InvariantCulture
+                    );
+                    var offsetSeconds = float.Parse(offset, CultureInfo.InvariantCulture);
+                    var errorSeconds = float.Parse(error, CultureInfo.InvariantCulture);
+
+                    piZeroCamera.LastNtpSync = date;
+                    piZeroCamera.LastNtpOffsetMillis = offsetSeconds * 1000;
+                    piZeroCamera.LastNtpErrorMillis = errorSeconds * 1000;
+                }
+                else
+                {
+                    piZeroCamera.NtpRequest =
+                        new PiZeroCameraNtpRequest.Failure.FailedToParseRegex(successWrapper.Value);
+                }
             }
             else
             {
-                piZeroCamera.NtpRequest = new PiZeroCameraNtpRequest.Failure(successWrapper.Value);
+                piZeroCamera.NtpRequest = new PiZeroCameraNtpRequest.Failure.Failed(successWrapper.Value);
             }
         }
         else
         {
-            piZeroCamera.NtpRequest = new PiZeroCameraNtpRequest.Unknown(response.Error.ToString());
+            piZeroCamera.NtpRequest = new PiZeroCameraNtpRequest.Failure.FailedToParseJson(response.Error.ToString());
         }
 
-        OnChange?.Invoke();
+        OnNtpChange?.Invoke();
     }
 }

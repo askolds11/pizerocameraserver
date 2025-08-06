@@ -1,27 +1,21 @@
 @page "/ntp"
 @using picamerasserver.Components.Components
-@using picamerasserver.mqtt
 
 <DefaultPage>
     <MudStack Style="width: 100%">
         <MudExpansionPanels Elevation="5" MultiExpansion>
             <MudExpansionPanel Expanded Gutters="false" Dense="true">
                 <TitleContent>
-                    <MudText Typo="Typo.h5">Status</MudText>
+                    <MudText Typo="Typo.h5">NTP Sync</MudText>
                 </TitleContent>
                 <ChildContent>
-                    <StatusTable ColorTransform="@ColorTransform" TooltipTransform="@TooltipTransform"></StatusTable>
-                </ChildContent>
-            </MudExpansionPanel>
-            <MudExpansionPanel Expanded>
-                <TitleContent>
-                    <MudText Typo="Typo.h5">Take picture</MudText>
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                               OnClick="@RequestNtpSync">
-                        Sync
-                    </MudButton>
-                </TitleContent>
-                <ChildContent>
+                    <StatusTable ColorTransform="@ColorTransform" TooltipTransform="@_tooltipTransform"></StatusTable>
+                    <MudStack Row="true" Spacing="4" Class="pa-4" AlignItems="AlignItems.Center">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="@RequestNtpSync">
+                            Sync
+                        </MudButton>
+                    </MudStack>
                 </ChildContent>
             </MudExpansionPanel>
         </MudExpansionPanels>
@@ -29,5 +23,16 @@
 </DefaultPage>
 
 @code {
-    private Func<string, RenderFragment?> TooltipTransform => cameraId => null;
+    private Func<string, RenderFragment?> _tooltipTransform = _ => null;
+
+    private void UpdateTooltipTransform()
+    {
+        _tooltipTransform = cameraId =>
+        {
+            var item = PiZeroCameraManager.PiZeroCameras[cameraId];
+
+            return @<NtpRequestTooltip PiZeroCamera="item"/>;
+        };
+    }
+
 }
