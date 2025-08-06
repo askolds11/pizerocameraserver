@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using MQTTnet;
 using MQTTnet.Protocol;
+using picamerasserver.pizerocamera.Responses;
 
 namespace picamerasserver.pizerocamera.manager;
 

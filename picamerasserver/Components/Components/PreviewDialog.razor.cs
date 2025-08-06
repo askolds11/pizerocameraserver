@@ -17,7 +17,7 @@ public partial class PreviewDialog : ComponentBase
 
     private string PreviewStreamUrl => $"http://pizero{CameraId}.local:8000/stream.mjpg";
 
-    private async Task OnKeyDownAsync(KeyboardEventArgs args)
+    private void OnKeyDown(KeyboardEventArgs args)
     {
         var currCol = CameraId[0];
         var currRow = CameraId[1] - '0';

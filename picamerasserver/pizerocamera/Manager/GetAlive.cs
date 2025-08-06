@@ -2,8 +2,6 @@ using System.Net.NetworkInformation;
 using System.Text;
 using MQTTnet;
 using MQTTnet.Protocol;
-using picamerasserver.Database.Models;
-using picamerasserver.pizerocamera.Responses;
 
 namespace picamerasserver.pizerocamera.manager;
 

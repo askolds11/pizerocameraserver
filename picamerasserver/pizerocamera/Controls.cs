@@ -1,4 +1,4 @@
-namespace picamerasserver.pizerocamera.manager;
+namespace picamerasserver.pizerocamera;
 
 /* Raw Pi Camera 2 output
 {

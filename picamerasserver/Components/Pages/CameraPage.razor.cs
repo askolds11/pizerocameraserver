@@ -19,15 +19,6 @@ public partial class CameraPage : ComponentBase, IDisposable
     private PictureElement? _selectedPicture;
     private string? _previewStreamUrl;
 
-    private void OnGlobalChanged()
-    {
-        InvokeAsync(async () =>
-        {
-            await _gridData.ReloadServerData();
-            StateHasChanged();
-        });
-    }
-
     /// <summary>
     /// Refreshes an individual picture
     /// </summary>

@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using picamerasserver.pizerocamera.manager;
 
 namespace picamerasserver.pizerocamera.Responses;
 

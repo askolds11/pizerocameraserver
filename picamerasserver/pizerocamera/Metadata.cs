@@ -96,15 +96,15 @@ public class MetadataConverter : JsonConverter<Metadata>
 
     // Helper method to read nullable long
     private static long? ReadNullableLong(ref Utf8JsonReader reader) =>
-        reader.TokenType == JsonTokenType.Null ? null : long.Parse(reader.GetString());
+        reader.TokenType == JsonTokenType.Null ? null : long.Parse(reader.GetString()!);
 
     // Helper method to read nullable int
     private static int? ReadNullableInt(ref Utf8JsonReader reader) =>
-        reader.TokenType == JsonTokenType.Null ? null : int.Parse(reader.GetString());
+        reader.TokenType == JsonTokenType.Null ? null : int.Parse(reader.GetString()!);
 
     // Helper method to read nullable float
     private static float? ReadNullableFloat(ref Utf8JsonReader reader) =>
-        reader.TokenType == JsonTokenType.Null ? null : float.Parse(reader.GetString());
+        reader.TokenType == JsonTokenType.Null ? null : float.Parse(reader.GetString()!);
 
     // Write nullable values as strings
     private static void WriteNullable<T>(Utf8JsonWriter writer, string propertyName, T? value) where T : struct
