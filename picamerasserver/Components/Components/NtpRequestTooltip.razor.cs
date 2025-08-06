@@ -11,7 +11,7 @@ public partial class NtpRequestTooltip : ComponentBase
     {
         return PiZeroCamera.NtpRequest switch
         {
-            null => throw new NotImplementedException(),
+            null => ("Nothing", null, null, null),
             PiZeroCameraNtpRequest.Failure.Failed failed => ("Failed on device", failed.Message, null, null),
             PiZeroCameraNtpRequest.Failure.FailedToParseJson failedToParseJson => ("Failed json",
                 failedToParseJson.Message, null, null),
