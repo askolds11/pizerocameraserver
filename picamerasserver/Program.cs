@@ -48,6 +48,8 @@ var mqttClient = mqttFactory.CreateMqttClient();
 builder.Services.AddSingleton(mqttClient);
 builder.Services.AddSingleton<MqttStuff>();
 builder.Services.AddSingleton<PiZeroCameraManager>();
+builder.Services.AddSingleton<ISendPictureManager>(sp => sp.GetRequiredService<PiZeroCameraManager>());
+builder.Services.AddSingleton<ITakePictureManager>(sp => sp.GetRequiredService<PiZeroCameraManager>());
 
 var app = builder.Build();
 

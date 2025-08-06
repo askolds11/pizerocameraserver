@@ -11,6 +11,8 @@ namespace picamerasserver.Components.Pages;
 public partial class CameraPage : ComponentBase, IDisposable
 {
     [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; init; } = null!;
+    [Inject] protected ITakePictureManager TakePictureManager { get; init; } = null!;
+    [Inject] protected ISendPictureManager SendPictureManager { get; init; } = null!;
     [Inject] protected IDbContextFactory<PiDbContext> DbContextFactory { get; init; } = null!;
 
     private MudDataGrid<PictureElement> _gridData = null!;
@@ -47,31 +49,28 @@ public partial class CameraPage : ComponentBase, IDisposable
                     _selectedPicture = new PictureElement(updatedItem);
                     UpdateTooltipTransform();
                 }
-
-                await _gridData.ReloadServerData();
                 
                 // State will only change if a picture is selected
                 StateHasChanged();
             }
+            await _gridData.ReloadServerData();
         });
     }
 
     protected override void OnInitialized()
     {
-        PiZeroCameraManager.OnChange += OnGlobalChanged;
         PiZeroCameraManager.OnPictureChange += OnPictureChanged;
     }
 
     public void Dispose()
     {
-        PiZeroCameraManager.OnChange -= OnGlobalChanged;
         PiZeroCameraManager.OnPictureChange -= OnPictureChanged;
         GC.SuppressFinalize(this);
     }
 
     private async Task TakePicture()
     {
-        var pictureRequestModel = await PiZeroCameraManager.RequestTakePicture();
+        var pictureRequestModel = await TakePictureManager.RequestTakePictureColumns();
         _selectedPicture = new PictureElement(pictureRequestModel);
         await _gridData.ReloadServerData();
     }
@@ -83,7 +82,7 @@ public partial class CameraPage : ComponentBase, IDisposable
             throw new ArgumentNullException(nameof(_selectedPicture));
         }
 
-        await PiZeroCameraManager.RequestSendPicture(_selectedPicture.Uuid);
+        await SendPictureManager.RequestSendPictureChannels(_selectedPicture.Uuid);
     }
 
     private async Task StartPreview()

@@ -6,7 +6,35 @@ using picamerasserver.pizerocamera.Responses;
 
 namespace picamerasserver.pizerocamera.manager;
 
-public partial class PiZeroCameraManager
+public interface ITakePictureManager
+{
+    /// <summary>
+    /// Makes requests to take pictures. <br />
+    /// Makes requests to all cameras at once.
+    /// </summary>
+    /// <param name="futureMillis">How far in the future to take the photo</param>
+    /// <returns>The resulting request model with cameras</returns>
+    Task<PictureRequestModel> RequestTakePictureAll(int futureMillis = 2000);
+    /// <summary>
+    /// Makes requests to take pictures. <br />
+    /// Makes requests to a column of cameras at once every <paramref name="columnDelayMillis"/>
+    /// </summary>
+    /// <param name="futureMillis">How far in the future to take the photo</param>
+    /// <param name="columnDelayMillis">Time between column requests</param>
+    /// <returns>The resulting request model with cameras</returns>
+    Task<PictureRequestModel> RequestTakePictureColumns(int futureMillis = 2000, int columnDelayMillis = 50);
+    /// <summary>
+    /// Handle a TakePicture response
+    /// </summary>
+    /// <param name="message">MQTT message</param>
+    /// <param name="messageReceived">Time when message was received</param>
+    /// <param name="takePicture">Deserialized TakePicture</param>
+    /// <param name="id">Camera's id</param>
+    /// <exception cref="ArgumentOutOfRangeException">Unknown failure type</exception>
+    Task ResponseTakePicture(MqttApplicationMessage message, DateTimeOffset messageReceived, CameraResponse.TakePicture takePicture, string id);
+}
+
+public partial class PiZeroCameraManager: ITakePictureManager
 {
     public event Action<Guid>? OnPictureChange;
 

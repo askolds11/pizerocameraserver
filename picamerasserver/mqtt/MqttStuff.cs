@@ -14,17 +14,21 @@ public class MqttStuff
 {
     private readonly IMqttClient _mqttClient;
     private readonly PiZeroCameraManager _piZeroCameraManager;
+    private readonly ITakePictureManager _takePictureManager;
+    private readonly ISendPictureManager _sendPictureManager;
     private readonly IOptionsMonitor<MqttOptions> _optionsMonitor;
     private MqttOptions _currentOptions;
     private readonly ILogger<MqttStuff> _logger;
 
     public MqttStuff(IMqttClient mqttClient, PiZeroCameraManager piZeroCameraManager,
-        IOptionsMonitor<MqttOptions> optionsMonitor, ILogger<MqttStuff> logger)
+        IOptionsMonitor<MqttOptions> optionsMonitor, ILogger<MqttStuff> logger, ITakePictureManager takePictureManager, ISendPictureManager sendPictureManager)
     {
         _mqttClient = mqttClient;
         _piZeroCameraManager = piZeroCameraManager;
         _optionsMonitor = optionsMonitor;
         _logger = logger;
+        _takePictureManager = takePictureManager;
+        _sendPictureManager = sendPictureManager;
         _currentOptions = _optionsMonitor.CurrentValue;
         Task.Run(() => InitClient());
     }
@@ -105,10 +109,10 @@ public class MqttStuff
                 var cameraResponseValue = cameraResponse.Value;
                 if (cameraResponseValue is CameraResponse.TakePicture takePictureResponse)
                 {
-                    await _piZeroCameraManager.ResponseTakePicture(e.ApplicationMessage, messageReceived, takePictureResponse, id);
+                    await _takePictureManager.ResponseTakePicture(e.ApplicationMessage, messageReceived, takePictureResponse, id);
                 } else if (cameraResponseValue is CameraResponse.SendPicture sendPictureResponse)
                 {
-                    await _piZeroCameraManager.ResponseSendPicture(e.ApplicationMessage, messageReceived, sendPictureResponse, id);
+                    await _sendPictureManager.ResponseSendPicture(e.ApplicationMessage, messageReceived, sendPictureResponse, id);
                 }
             } else if (cameraResponse.IsFailure)
             {
