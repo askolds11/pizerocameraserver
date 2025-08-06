@@ -27,7 +27,7 @@ public partial class CameraPage : ComponentBase, IDisposable
     {
         InvokeAsync(async () =>
         {
-            if (_selectedPicture != null)
+            if (_selectedPicture != null && _selectedPicture.Uuid == uuid)
             {
                 await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
                 var updatedItem = await piDbContext.PictureRequests
