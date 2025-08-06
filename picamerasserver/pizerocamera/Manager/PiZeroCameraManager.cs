@@ -17,7 +17,6 @@ public partial class PiZeroCameraManager
     public readonly IReadOnlyList<string> PiZeroCameraIds;
     public readonly IReadOnlyDictionary<string, PiZeroCamera> PiZeroCameras;
     private readonly IDbContextFactory<PiDbContext> _dbContextFactory;
-    public event Action? OnChange;
 
     public PiZeroCameraManager(IMqttClient mqttClient, ILogger<PiZeroCameraManager> logger,
         IOptionsMonitor<MqttOptions> optionsMonitor, IDbContextFactory<PiDbContext> dbContextFactory,

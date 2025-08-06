@@ -27,6 +27,7 @@ public class PiZeroCameraStatus
 {
     public required string Version { get; set; }
     public string? IpAddress { get; set; }
+
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public PiZeroCameraCameraMode CameraMode { get; set; }
 }
