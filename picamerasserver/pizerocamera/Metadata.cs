@@ -11,7 +11,9 @@ public record Metadata(
     float? DigitalGain,
     int? ExposureTime,
     int? ColourTemperature,
-    float? Lux
+    float? Lux,
+    long? FrameDuration,
+    byte? AeState
 );
 
 public class MetadataConverter : JsonConverter<Metadata>
@@ -29,6 +31,8 @@ public class MetadataConverter : JsonConverter<Metadata>
         int? exposureTime = null;
         int? colourTemperature = null;
         float? lux = null;
+        long? frameDuration = null;
+        byte? aeState = null;
 
         while (reader.Read())
         {
@@ -68,6 +72,12 @@ public class MetadataConverter : JsonConverter<Metadata>
                 case nameof(Metadata.Lux):
                     lux = ReadNullableFloat(ref reader);
                     break;
+                case nameof(Metadata.FrameDuration):
+                    frameDuration = ReadNullableLong(ref reader);
+                    break;
+                case nameof(Metadata.AeState):
+                    aeState = ReadNullableByte(ref reader);
+                    break;
 
                 default:
                     reader.Skip();
@@ -75,7 +85,7 @@ public class MetadataConverter : JsonConverter<Metadata>
             }
         }
 
-        return new Metadata(sensorTimestamp, frameWallClock, frameFoM, analogueGain, digitalGain, exposureTime, colourTemperature, lux);
+        return new Metadata(sensorTimestamp, frameWallClock, frameFoM, analogueGain, digitalGain, exposureTime, colourTemperature, lux, frameDuration, aeState);
     }
 
     public override void Write(Utf8JsonWriter writer, Metadata value, JsonSerializerOptions options)
@@ -105,6 +115,10 @@ public class MetadataConverter : JsonConverter<Metadata>
     // Helper method to read nullable float
     private static float? ReadNullableFloat(ref Utf8JsonReader reader) =>
         reader.TokenType == JsonTokenType.Null ? null : float.Parse(reader.GetString()!);
+    
+    // Helper method to read nullable byte
+    private static byte? ReadNullableByte(ref Utf8JsonReader reader) =>
+        reader.TokenType == JsonTokenType.Null ? null : byte.Parse(reader.GetString()!);
 
     // Write nullable values as strings
     private static void WriteNullable<T>(Utf8JsonWriter writer, string propertyName, T? value) where T : struct

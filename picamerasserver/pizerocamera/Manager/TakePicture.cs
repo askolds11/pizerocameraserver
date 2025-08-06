@@ -15,6 +15,7 @@ public interface ITakePictureManager
     /// <param name="futureMillis">How far in the future to take the photo</param>
     /// <returns>The resulting request model with cameras</returns>
     Task<PictureRequestModel> RequestTakePictureAll(int futureMillis = 2000);
+
     /// <summary>
     /// Makes requests to take pictures. <br />
     /// Makes requests to a column of cameras at once every <paramref name="columnDelayMillis"/>
@@ -23,6 +24,7 @@ public interface ITakePictureManager
     /// <param name="columnDelayMillis">Time between column requests</param>
     /// <returns>The resulting request model with cameras</returns>
     Task<PictureRequestModel> RequestTakePictureColumns(int futureMillis = 2000, int columnDelayMillis = 50);
+
     /// <summary>
     /// Handle a TakePicture response
     /// </summary>
@@ -31,10 +33,11 @@ public interface ITakePictureManager
     /// <param name="takePicture">Deserialized TakePicture</param>
     /// <param name="id">Camera's id</param>
     /// <exception cref="ArgumentOutOfRangeException">Unknown failure type</exception>
-    Task ResponseTakePicture(MqttApplicationMessage message, DateTimeOffset messageReceived, CameraResponse.TakePicture takePicture, string id);
+    Task ResponseTakePicture(MqttApplicationMessage message, DateTimeOffset messageReceived,
+        CameraResponse.TakePicture takePicture, string id);
 }
 
-public partial class PiZeroCameraManager: ITakePictureManager
+public partial class PiZeroCameraManager : ITakePictureManager
 {
     public event Action<Guid>? OnPictureChange;
 
@@ -117,7 +120,9 @@ public partial class PiZeroCameraManager: ITakePictureManager
             CameraId = x.Id, PictureRequestId = pictureRequest.Uuid,
             CameraPictureStatus = publishResult.IsSuccess
                 ? CameraPictureStatus.Requested
-                : CameraPictureStatus.FailedToRequest
+                : CameraPictureStatus.FailedToRequest,
+            Requested = DateTimeOffset.UtcNow,
+            NtpErrorMillis = x.LastNtpErrorMillis
         });
 
         piDbContext.AddRange(dbItems);
@@ -170,7 +175,9 @@ public partial class PiZeroCameraManager: ITakePictureManager
                 CameraId = x.Id, PictureRequestId = pictureRequest.Uuid,
                 CameraPictureStatus = publishResult.IsSuccess
                     ? CameraPictureStatus.Requested
-                    : CameraPictureStatus.FailedToRequest
+                    : CameraPictureStatus.FailedToRequest,
+                Requested = DateTimeOffset.UtcNow,
+                NtpErrorMillis = x.LastNtpErrorMillis
             });
             piDbContext.AddRange(dbItems);
 
@@ -203,8 +210,31 @@ public partial class PiZeroCameraManager: ITakePictureManager
         var dbItem = piDbContext.CameraPictures.FirstOrDefault(x => x.PictureRequestId == uuid && x.CameraId == id);
         if (dbItem == null)
         {
-            dbItem = new CameraPictureModel { CameraId = id, PictureRequestId = uuid };
+            dbItem = new CameraPictureModel
+                { CameraId = id, PictureRequestId = uuid };
             piDbContext.Add(dbItem);
+        }
+
+        // Handle times
+        {
+            if (successWrapper.Value is TakePictureResponse.PictureTaken pictureTaken)
+            {
+                dbItem.PictureRequestReceived =
+                    DateTimeOffset.FromUnixTimeMilliseconds(pictureTaken.MessageReceivedNanos / 1000000);
+                dbItem.WaitTimeNanos = pictureTaken.WaitTimeNanos;
+            }
+            else if (successWrapper.Value is TakePictureResponse.Failure.PictureFailedToSchedule failedToSchedule)
+            {
+                dbItem.PictureRequestReceived =
+                    DateTimeOffset.FromUnixTimeMilliseconds(failedToSchedule.MessageReceivedNanos / 1000000);
+                dbItem.WaitTimeNanos = failedToSchedule.WaitTimeNanos;
+            }
+            else if (successWrapper.Value is TakePictureResponse.Failure.PictureFailedToTake failedToTake)
+            {
+                dbItem.PictureRequestReceived =
+                    DateTimeOffset.FromUnixTimeMilliseconds(failedToTake.MessageReceivedNanos / 1000000);
+                dbItem.WaitTimeNanos = failedToTake.WaitTimeNanos;
+            }
         }
 
         if (successWrapper.Success)

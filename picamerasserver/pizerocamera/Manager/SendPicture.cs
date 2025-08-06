@@ -268,7 +268,6 @@ public partial class PiZeroCameraManager: ISendPictureManager
 
         await piDbContext.SaveChangesAsync();
         // Update UI
-        // TODO: Broken
         OnPictureChange?.Invoke(uuid);
         await Task.Yield();
 
@@ -446,6 +445,8 @@ public partial class PiZeroCameraManager: ISendPictureManager
                             dbItem.ExposureTime = val.ExposureTime;
                             dbItem.ColourTemperature = val.ColourTemperature;
                             dbItem.Lux = val.Lux;
+                            dbItem.FrameDuration = val.FrameDuration;
+                            dbItem.AeState = val.AeState;
                         }
                     }
                 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using picamerasserver.Database;
@@ -11,9 +12,11 @@ using picamerasserver.Database;
 namespace picamerasserver.Database.Migrations
 {
     [DbContext(typeof(PiDbContext))]
-    partial class PiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250806150847_AddNtpErrorToCameraPicture")]
+    partial class AddNtpErrorToCameraPicture
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

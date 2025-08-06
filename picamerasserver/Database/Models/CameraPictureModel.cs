@@ -10,8 +10,13 @@ public class CameraPictureModel
 {
     [StringLength(2), Required] public required string CameraId { get; init; }
     [Required] public required Guid PictureRequestId { get; init; }
+    /// <summary>
+    /// Time when the request was sent
+    /// </summary>
+    public DateTimeOffset? Requested { get; init; }
     [Column(TypeName = "varchar(50)")] public CameraPictureStatus? CameraPictureStatus { get; set; }
     public string? StatusMessage { get; set; }
+    
     /// <summary>
     /// Time when the "taken" message was received
     /// </summary>
@@ -26,9 +31,21 @@ public class CameraPictureModel
     public DateTimeOffset? ReceivedSent { get; set; }
     
     /// <summary>
+    /// Time when the picture request was received according to the Pi
+    /// </summary>
+    public DateTimeOffset? PictureRequestReceived { get; set; }
+    
+    /// <summary>
+    /// How long the code had to wait 
+    /// </summary>
+    public long WaitTimeNanos { get; set; }
+    
+    /// <summary>
     /// Time when the picture was taken according to the Pi
     /// </summary>
     public DateTimeOffset? PictureTaken { get; set; }
+    
+    public float? NtpErrorMillis { get; init; }
     
     /// <summary>
     /// Monotonic time, when picture was supposed to be taken on the Pi (FrameWallClock)
@@ -44,6 +61,8 @@ public class CameraPictureModel
     public int? ExposureTime { get; set; }
     public int? ColourTemperature { get; set; }
     public float? Lux { get; set; }
+    public long? FrameDuration { get; set; }
+    public byte? AeState { get; set; }
     
 
     [ForeignKey(nameof(CameraId))] public CameraModel Camera { get; init; } = null!;
