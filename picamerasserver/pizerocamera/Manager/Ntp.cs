@@ -43,10 +43,8 @@ public partial class PiZeroCameraManager
         OnNtpChange?.Invoke();
     }
 
-    public void ResponseNtpSync(MqttApplicationMessage message)
+    public void ResponseNtpSync(MqttApplicationMessage message, string id)
     {
-        var id = message.Topic.Split('/').Last();
-
         var piZeroCamera = PiZeroCameras[id];
 
         var text = Encoding.UTF8.GetString(message.Payload);

@@ -103,11 +103,14 @@ public partial class PiZeroCameraManager
     }
 
     public async Task ResponseTakePicture(MqttApplicationMessage message, CameraResponse.TakePicture takePicture)
+    public async Task ResponseTakePicture(
+        MqttApplicationMessage message,
+        CameraResponse.TakePicture takePicture,
+        string id
+    )
     {
         var timeNow = DateTimeOffset.Now;
         await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
-
-        var id = message.Topic.Split('/').Last();
 
         var successWrapper = takePicture.Response;
         var uuid = successWrapper.Value.Uuid;

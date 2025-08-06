@@ -90,9 +90,10 @@ public class MqttStuff
     private async Task MessageHandler(MqttApplicationMessageReceivedEventArgs e)
     {
         var topic = e.ApplicationMessage.Topic.Split("/").First();
+        var id = e.ApplicationMessage.Topic.Split("/").Last();
         if (topic == _currentOptions.NtpTopic)
         {
-            _piZeroCameraManager.ResponseNtpSync(e.ApplicationMessage);
+            _piZeroCameraManager.ResponseNtpSync(e.ApplicationMessage, id);
         }
         else if (topic == _currentOptions.CameraTopic)
         {
@@ -104,9 +105,11 @@ public class MqttStuff
                 if (cameraResponseValue is CameraResponse.TakePicture takePictureResponse)
                 {
                     await _piZeroCameraManager.ResponseTakePicture(e.ApplicationMessage, takePictureResponse);
+                    await _piZeroCameraManager.ResponseTakePicture(e.ApplicationMessage, takePictureResponse, id);
                 } else if (cameraResponseValue is CameraResponse.SendPicture sendPictureResponse)
                 {
                     await _piZeroCameraManager.ResponseSendPicture(e.ApplicationMessage, sendPictureResponse);
+                    await _piZeroCameraManager.ResponseSendPicture(e.ApplicationMessage, sendPictureResponse, id);
                 }
             } else if (cameraResponse.IsFailure)
             {
