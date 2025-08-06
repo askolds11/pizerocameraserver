@@ -41,7 +41,10 @@ public partial class NtpPage : ComponentBase, IDisposable
         return piZeroCamera.NtpRequest switch
         {
             null => Color.FromArgb(0x00, 0x00, 0x00),
-            PiZeroCameraNtpRequest.Failure _ => Color.FromArgb(0xff, 0x00, 0x00),
+            PiZeroCameraNtpRequest.Failure.Failed failed => Color.FromArgb(0xff, 0x00, 0x00),
+            PiZeroCameraNtpRequest.Failure.FailedToParseJson failedToParseJson => Color.FromArgb(0xff, 0x00, 0x00),
+            PiZeroCameraNtpRequest.Failure.FailedToParseRegex failedToParseRegex => Color.FromArgb(0xff, 0x00, 0x00),
+            PiZeroCameraNtpRequest.Failure.FailedToRequest failedToRequest => Color.FromArgb(0xff, 0x00, 0x00),
             PiZeroCameraNtpRequest.Requested _ => Color.FromArgb(0x55, 0x55, 0x00),
             PiZeroCameraNtpRequest.Success _ => Color.FromArgb(0x00, 0xFF, 0x00),
             _ => throw new ArgumentOutOfRangeException()
