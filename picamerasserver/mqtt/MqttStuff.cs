@@ -89,6 +89,7 @@ public class MqttStuff
     /// <param name="e">Event</param>
     private async Task MessageHandler(MqttApplicationMessageReceivedEventArgs e)
     {
+        var messageReceived = DateTimeOffset.Now;
         var topic = e.ApplicationMessage.Topic.Split("/").First();
         var id = e.ApplicationMessage.Topic.Split("/").Last();
         if (topic == _currentOptions.NtpTopic)
@@ -104,12 +105,10 @@ public class MqttStuff
                 var cameraResponseValue = cameraResponse.Value;
                 if (cameraResponseValue is CameraResponse.TakePicture takePictureResponse)
                 {
-                    await _piZeroCameraManager.ResponseTakePicture(e.ApplicationMessage, takePictureResponse);
-                    await _piZeroCameraManager.ResponseTakePicture(e.ApplicationMessage, takePictureResponse, id);
+                    await _piZeroCameraManager.ResponseTakePicture(e.ApplicationMessage, messageReceived, takePictureResponse, id);
                 } else if (cameraResponseValue is CameraResponse.SendPicture sendPictureResponse)
                 {
-                    await _piZeroCameraManager.ResponseSendPicture(e.ApplicationMessage, sendPictureResponse);
-                    await _piZeroCameraManager.ResponseSendPicture(e.ApplicationMessage, sendPictureResponse, id);
+                    await _piZeroCameraManager.ResponseSendPicture(e.ApplicationMessage, messageReceived, sendPictureResponse, id);
                 }
             } else if (cameraResponse.IsFailure)
             {

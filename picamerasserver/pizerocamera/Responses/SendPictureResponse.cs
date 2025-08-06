@@ -12,7 +12,7 @@ public abstract record SendPictureResponse(Guid Uuid)
 
     public abstract record Failure(Guid Uuid) : SendPictureResponse(Uuid)
     {
-        public sealed record Failed(Guid Uuid) : Failure(Uuid);
+        public sealed record Failed(Guid Uuid, string Message) : Failure(Uuid);
 
         public sealed record PictureFailedToRead(Guid Uuid, string Message) : Failure(Uuid);
         public sealed record PictureFailedToSend(Guid Uuid, string Message) : Failure(Uuid);

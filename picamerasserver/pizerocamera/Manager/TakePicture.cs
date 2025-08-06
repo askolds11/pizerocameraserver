@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using MQTTnet;
 using MQTTnet.Protocol;
 using picamerasserver.Database.Models;
@@ -12,16 +11,16 @@ public partial class PiZeroCameraManager
     public event Action<Guid>? OnPictureChange;
 
     /// <summary>
-    /// Request to take a picture
+    /// Creates request model and MQTT message for take picture request
     /// </summary>
-    public async Task<PictureRequestModel> RequestTakePicture()
+    /// <param name="futureMillis">How far in the future to take the photo</param>
+    /// <returns>PictureRequest model and MQTT message</returns>
+    private static (PictureRequestModel pictureRequest, MqttApplicationMessage message) CreateRequestModels(
+        int futureMillis)
     {
-        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
-
         var uuid = Guid.CreateVersion7();
         var currentTime = DateTimeOffset.Now;
-        // todo: changeable in form
-        var pictureTime = currentTime.AddMilliseconds(2000);
+        var pictureTime = currentTime.AddMilliseconds(futureMillis);
 
         var pictureRequest = new PictureRequestModel
         {
@@ -30,23 +29,94 @@ public partial class PiZeroCameraManager
             PictureTime = pictureTime
         };
 
-        piDbContext.PictureRequests.Add(pictureRequest);
-        // must save before requests
-        await piDbContext.SaveChangesAsync();
-
-        var options = _optionsMonitor.CurrentValue;
-
         CameraRequest takePictureRequest = new CameraRequest.TakePicture(
             pictureTime.ToUnixTimeMilliseconds(),
             uuid
         );
 
-        // cameras, which are online
-        var expectedCams = PiZeroCameras.Values
-            .Where(x => x is { Pingable: true, Status: not null })
-            .ToList();
+        var message = new MqttApplicationMessageBuilder()
+            .WithContentType("application/json")
+            .WithTopic("temp")
+            .WithPayload(Json.Serialize(takePictureRequest))
+            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
+            .Build();
 
-        var stopwatch = Stopwatch.StartNew();
+        return (pictureRequest, message);
+    }
+
+    /// <summary>
+    /// Get list of cameras based on criteria for taking pictures
+    /// </summary>
+    /// <param name="requirePing">Should camera be pingable</param>
+    /// <param name="requireDeviceStatus">Should camera have status</param>
+    /// <returns>A collection of cameras that a request can be sent to</returns>
+    private IEnumerable<PiZeroCamera> GetTakeableCameras(
+        bool requirePing = true,
+        bool requireDeviceStatus = true
+    )
+    {
+        // Cameras to send request to
+        return PiZeroCameras.Values
+            .Where(x => !requirePing || x.Pingable == true)
+            .Where(x => !requireDeviceStatus || x.Status != null);
+    }
+
+    /// <inheritdoc />
+    public async Task<PictureRequestModel> RequestTakePictureAll(int futureMillis)
+    {
+        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
+        var options = _optionsMonitor.CurrentValue;
+
+        var (pictureRequest, message) = CreateRequestModels(futureMillis);
+
+        // must save request to db before requests
+        piDbContext.PictureRequests.Add(pictureRequest);
+        await piDbContext.SaveChangesAsync();
+
+        var expectedCams = GetTakeableCameras(
+            requirePing: false,
+            requireDeviceStatus: false
+        ).ToList();
+
+
+        // Send message
+        message.Topic = options.CameraTopic;
+        var publishResult = await _mqttClient.PublishAsync(message);
+
+        // Add to database
+        var dbItems = expectedCams.Select(x => new CameraPictureModel
+        {
+            CameraId = x.Id, PictureRequestId = pictureRequest.Uuid,
+            CameraPictureStatus = publishResult.IsSuccess
+                ? CameraPictureStatus.Requested
+                : CameraPictureStatus.FailedToRequest
+        });
+
+        piDbContext.AddRange(dbItems);
+        await piDbContext.SaveChangesAsync();
+
+        await piDbContext.Entry(pictureRequest).Collection(x => x.CameraPictures).LoadAsync();
+        return pictureRequest;
+    }
+
+    /// <inheritdoc />
+    /// TODO: implement form part for millis
+    public async Task<PictureRequestModel> RequestTakePictureColumns(int futureMillis, int columnDelayMillis)
+    {
+        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
+        var options = _optionsMonitor.CurrentValue;
+
+        var (pictureRequest, message) = CreateRequestModels(futureMillis);
+
+        // must save request to db before requests
+        piDbContext.PictureRequests.Add(pictureRequest);
+        await piDbContext.SaveChangesAsync();
+
+        var expectedCams = GetTakeableCameras(
+            requirePing: false,
+            requireDeviceStatus: false
+        ).ToList();
+
         var columns = Enumerable.Range('A', 16).Select(c => ((char)c).ToString()).ToList();
         foreach (var column in columns)
         {
@@ -63,19 +133,13 @@ public partial class PiZeroCameraManager
             // }
 
             // Send message to column
-            var message = new MqttApplicationMessageBuilder()
-                .WithContentType("application/json")
-                .WithTopic($"{options.CameraTopic}/{column}")
-                .WithPayload(Json.Serialize(takePictureRequest))
-                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
-                .Build();
-
+            message.Topic = $"{options.CameraTopic}/{column}";
             var publishResult = await _mqttClient.PublishAsync(message);
 
             // Add to database
             var dbItems = expectedColumnCams.Select(x => new CameraPictureModel
             {
-                CameraId = x.Id, PictureRequestId = uuid,
+                CameraId = x.Id, PictureRequestId = pictureRequest.Uuid,
                 CameraPictureStatus = publishResult.IsSuccess
                     ? CameraPictureStatus.Requested
                     : CameraPictureStatus.FailedToRequest
@@ -88,28 +152,22 @@ public partial class PiZeroCameraManager
             // Allow time for the cameras to send
             if (column != columns.Last())
             {
-                // todo: changeable in form
-                await Task.Delay(50);
+                await Task.Delay(columnDelayMillis);
             }
         }
-
-        stopwatch.Stop();
-        _logger.LogInformation(
-            "Sending \"Take Picture\" took {StopwatchElapsedMilliseconds} ms, avg {ElapsedMilliseconds} ms per column",
-            stopwatch.ElapsedMilliseconds, stopwatch.ElapsedMilliseconds / 16);
 
         await piDbContext.Entry(pictureRequest).Collection(x => x.CameraPictures).LoadAsync();
         return pictureRequest;
     }
 
-    public async Task ResponseTakePicture(MqttApplicationMessage message, CameraResponse.TakePicture takePicture)
+    /// <inheritdoc />
     public async Task ResponseTakePicture(
         MqttApplicationMessage message,
+        DateTimeOffset messageReceived,
         CameraResponse.TakePicture takePicture,
         string id
     )
     {
-        var timeNow = DateTimeOffset.Now;
         await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
 
         var successWrapper = takePicture.Response;
@@ -125,12 +183,12 @@ public partial class PiZeroCameraManager
         {
             if (successWrapper.Value is TakePictureResponse.PictureTaken pictureTaken)
             {
-                dbItem.ReceivedTaken = timeNow;
+                dbItem.ReceivedTaken = messageReceived;
                 dbItem.MonotonicTime = pictureTaken.MonotonicTime;
             }
             else if (successWrapper.Value is TakePictureResponse.PictureSavedOnDevice)
             {
-                dbItem.ReceivedSaved = timeNow;
+                dbItem.ReceivedSaved = messageReceived;
             }
 
             (dbItem.CameraPictureStatus, dbItem.StatusMessage) = successWrapper.Value switch
@@ -148,7 +206,7 @@ public partial class PiZeroCameraManager
             {
                 TakePictureResponse.Failure failure => failure switch
                 {
-                    TakePictureResponse.Failure.Failed failed => (CameraPictureStatus.Failed, "Failed"),
+                    TakePictureResponse.Failure.Failed failed => (CameraPictureStatus.Failed, failed.Message),
                     TakePictureResponse.Failure.PictureFailedToSave pictureFailedToSave => (
                         CameraPictureStatus.PictureFailedToSave, pictureFailedToSave.Message),
                     TakePictureResponse.Failure.PictureFailedToSchedule pictureFailedToSchedule => (

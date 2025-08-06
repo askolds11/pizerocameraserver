@@ -18,7 +18,7 @@ public abstract record TakePictureResponse(Guid Uuid)
 
     public abstract record Failure(Guid Uuid) : TakePictureResponse(Uuid)
     {
-        public sealed record Failed(Guid Uuid) : Failure(Uuid);
+        public sealed record Failed(Guid Uuid, string Message) : Failure(Uuid);
 
         public sealed record PictureFailedToSchedule(Guid Uuid, string Message) : Failure(Uuid);
 
