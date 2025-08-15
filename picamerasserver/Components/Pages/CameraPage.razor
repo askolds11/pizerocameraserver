@@ -1,6 +1,6 @@
 @page "/camera"
-@inject IDialogService Dialog
 @using picamerasserver.Components.Components
+@inject IDialogService Dialog
 
 <PageTitle>Cameras - PiCam</PageTitle>
 <DefaultPage>
@@ -21,8 +21,12 @@
                             Take pic
                         </MudButton>
                         <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                   OnClick="@SendPicture">
+                                   OnClick="@SendPicture" Disabled="SendActive">
                             Send pic
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="@CancelSend" Disabled="!SendActive">
+                            Cancel send
                         </MudButton>
                         @if (_selectedPicture != null)
                         {

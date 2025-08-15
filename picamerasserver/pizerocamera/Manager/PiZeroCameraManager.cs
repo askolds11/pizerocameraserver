@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MQTTnet;
+using MQTTnet.Protocol;
 using picamerasserver.Database;
 using picamerasserver.Database.Models;
 using picamerasserver.Options;
@@ -52,5 +53,19 @@ public partial class PiZeroCameraManager
 
         PiZeroCameraIds = piZeroCamerasIds;
         PiZeroCameras = piZeroCameras;
+    }
+
+    /// <summary>
+    /// Sends a cancel message to cameras to stop existing tasks
+    /// </summary>
+    private async Task CancelCameraTasks()
+    {
+        var message = new MqttApplicationMessageBuilder()
+            .WithContentType("application/json")
+            .WithTopic("cancel")
+            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
+            .Build();
+        
+        await _mqttClient.PublishAsync(message);
     }
 }

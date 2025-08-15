@@ -29,6 +29,7 @@ public partial class PictureRequestTooltip : ComponentBase
             CameraPictureStatus.Unknown => ("Unknown", CameraPicture.StatusMessage),
             CameraPictureStatus.PictureFailedToRead => ("Failed to read when sending", CameraPicture.StatusMessage),
             CameraPictureStatus.PictureFailedToSend => ("Failed to send 2", CameraPicture.StatusMessage),
+            CameraPictureStatus.Cancelled => ("Cancelled", null),
             null => ("Nothing", CameraPicture.StatusMessage),
             _ => throw new ArgumentOutOfRangeException(),
         };

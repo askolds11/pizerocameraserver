@@ -18,6 +18,8 @@ public partial class CameraPage : ComponentBase, IDisposable
     private MudDataGrid<PictureElement> _gridData = null!;
     private PictureElement? _selectedPicture;
     private string? _previewStreamUrl;
+    
+    private bool SendActive => SendPictureManager.SendActive;
 
     /// <summary>
     /// Refreshes an individual picture
@@ -74,6 +76,11 @@ public partial class CameraPage : ComponentBase, IDisposable
         }
 
         await SendPictureManager.RequestSendPictureChannels(_selectedPicture.Uuid);
+    }
+    
+    private async Task CancelSend()
+    {
+        await SendPictureManager.CancelSend();
     }
 
     private async Task StartPreview()
@@ -139,6 +146,7 @@ public partial class CameraPage : ComponentBase, IDisposable
             CameraPictureStatus.Unknown => Color.FromArgb(0x00, 0x00, 0xFF),
             CameraPictureStatus.PictureFailedToRead => Color.FromArgb(0x55, 0x00, 0x00),
             CameraPictureStatus.PictureFailedToSend => Color.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.Cancelled => Color.FromArgb(0xFF, 0x55, 0x00),
             null => Color.FromArgb(0x00, 0x00, 0x00),
             _ => throw new ArgumentOutOfRangeException(),
         };

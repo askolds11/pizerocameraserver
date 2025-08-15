@@ -94,5 +94,6 @@ public enum CameraPictureStatus
     PictureFailedToRead,
     PictureFailedToSend,
     Success,
-    Unknown //(string Message)
+    Unknown, //(string Message)
+    Cancelled
 }

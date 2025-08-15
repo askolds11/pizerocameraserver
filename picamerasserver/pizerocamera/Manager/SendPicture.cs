@@ -6,6 +6,7 @@ using MQTTnet;
 using MQTTnet.Protocol;
 using picamerasserver.Database;
 using picamerasserver.Database.Models;
+using picamerasserver.Options;
 using picamerasserver.pizerocamera.Requests;
 using picamerasserver.pizerocamera.Responses;
 
@@ -14,11 +15,17 @@ namespace picamerasserver.pizerocamera.manager;
 public interface ISendPictureManager
 {
     /// <summary>
+    /// Is a send operation ongoing?
+    /// </summary>
+    bool SendActive { get; }
+
+    /// <summary>
     /// Makes requests to send pictures from cameras to server. <br />
     /// Makes requests to all cameras at once
     /// </summary>
     /// <param name="uuid">Uuid of PictureRequest</param>
     Task RequestSendPictureAll(Guid uuid);
+
     /// <summary>
     /// Makes requests to send pictures from cameras to server. <br />
     /// Makes requests to a column of cameras at once every <paramref name="columnDelayMillis"/>
@@ -26,6 +33,7 @@ public interface ISendPictureManager
     /// <param name="uuid">Uuid of PictureRequest</param>
     /// <param name="columnDelayMillis">Delay between columns in milliseconds</param>
     Task RequestSendPictureColumns(Guid uuid, int columnDelayMillis = 10000);
+
     /// <summary>
     /// Makes requests to send pictures from cameras to server. <br />
     /// Makes requests to <paramref name="maxConcurrentUploads"/> cameras at once.
@@ -33,34 +41,46 @@ public interface ISendPictureManager
     /// <param name="uuid">Uuid of PictureRequest</param>
     /// <param name="maxConcurrentUploads">How many uploads to do at once</param>
     Task RequestSendPictureChannels(Guid uuid, int maxConcurrentUploads = 3);
+
     /// <summary>
     /// Request to send picture for individual camera
     /// </summary>
     /// <param name="uuid">Uuid of PictureRequest</param>
     /// <param name="cameraId">Camera id of wanted camera</param>
     Task RequestSendPictureIndividual(Guid uuid, string cameraId);
+
     /// <summary>
     /// Handle a SendPicture response
     /// </summary>
     /// <param name="message">MQTT message</param>
-    /// <param name="messageReceived">Time when message was received</param>
+    /// <param name="messageReceived">Time when the message was received</param>
     /// <param name="sendPicture">Deserialized SendPicture</param>
     /// <param name="id">Camera's id</param>
     /// <exception cref="ArgumentOutOfRangeException">Unknown failure type</exception>
-    Task ResponseSendPicture(MqttApplicationMessage message, DateTimeOffset messageReceived, CameraResponse.SendPicture sendPicture, string id);
+    Task ResponseSendPicture(MqttApplicationMessage message, DateTimeOffset messageReceived,
+        CameraResponse.SendPicture sendPicture, string id);
+
+    /// <summary>
+    /// Cancels the ongoing send operation
+    /// </summary>
+    Task CancelSend();
 }
 
-public partial class PiZeroCameraManager: ISendPictureManager
+public partial class PiZeroCameraManager : ISendPictureManager
 {
     private readonly ConcurrentDictionary<Guid, Channel<string>> _sendPictureChannels = new();
-    
+
+    public bool SendActive { get; private set; }
+    private readonly SemaphoreSlim _sendSemaphore = new(1, 1);
+    private CancellationTokenSource? _sendCancellationTokenSource;
+
     /// <summary>
-    /// Get list of cameras based on criteria for sending pictures
+    /// Get a list of cameras based on criteria for sending pictures
     /// </summary>
     /// <param name="pictureRequest">PictureRequest with cameras</param>
-    /// <param name="requirePing">Should camera be pingable</param>
-    /// <param name="requireDeviceStatus">Should camera have status</param>
-    /// <param name="requireStatus">Should the camera's picture's status be valid</param>
+    /// <param name="requirePing">Should the cameras be pingable?</param>
+    /// <param name="requireDeviceStatus">Should the cameras have status?</param>
+    /// <param name="requireStatus">Should the camera's picture's status be valid?</param>
     /// <returns>A collection of tuples, where each tuple contains a database camera picture model and a PiZeroCamera instance meeting the criteria.</returns>
     private IEnumerable<(CameraPictureModel dbItem, PiZeroCamera dictItem)> GetSendableCameras(
         PictureRequestModel pictureRequest,
@@ -84,114 +104,128 @@ public partial class PiZeroCameraManager: ISendPictureManager
             .Where(x => !requireDeviceStatus || x.dictItem.Status != null);
     }
 
-    /// <inheritdoc />
-    public async Task RequestSendPictureAll(Guid uuid)
+    /// <summary>
+    /// Generic set up for a request to send pictures. <br />
+    /// Sets up channel, cancellation, try-catch, etc.
+    /// </summary>
+    /// <param name="uuid"></param>
+    /// <param name="tryBlock"></param>
+    private async Task RequestSendPictureTryBlock(
+        Guid uuid,
+        Func<
+            (CancellationTokenSource cts,
+            PiDbContext dbContext,
+            List<(CameraPictureModel dbItem, PiZeroCamera dictItem)> unsentCameras,
+            MqttOptions options,
+            Channel<string> channel ),
+            Task> tryBlock
+    )
     {
-        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
-        var options = _optionsMonitor.CurrentValue;
-
-        // Get the request
-        var pictureRequest = await piDbContext.PictureRequests
-            .Include(x => x.CameraPictures)
-            .FirstOrDefaultAsync(x => x.Uuid == uuid);
-        if (pictureRequest == null)
-        {
-            throw new Exception("Picture request not found");
-        }
-
-        // Make message
-        CameraRequest sendPictureRequest = new CameraRequest.SendPicture(
-            uuid
-        );
-        var message = new MqttApplicationMessageBuilder()
-            .WithContentType("application/json")
-            .WithTopic($"{options.CameraTopic}")
-            .WithPayload(Json.Serialize(sendPictureRequest))
-            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
-            .Build();
-
-        var expectedCams = GetSendableCameras(
-            pictureRequest,
-            requirePing: false,
-            requireDeviceStatus: false,
-            requireStatus: false
-        ).ToList();
-        if (expectedCams.Count == 0)
+        // Another send operation is already running
+        if (!await _sendSemaphore.WaitAsync(TimeSpan.Zero))
         {
             return;
         }
 
-        // Send message to column
-        var publishResult = await _mqttClient.PublishAsync(message);
-
-        // Update statuses
-        foreach (var (dbItem, _) in expectedCams)
+        // Just in case, cancel existing sends (there shouldn't be any)
+        if (_sendCancellationTokenSource != null)
         {
-            // First because it exists based on previous
-            dbItem.CameraPictureStatus = publishResult.IsSuccess
-                ? CameraPictureStatus.RequestedSend
-                : CameraPictureStatus.FailedToRequestSend;
-            piDbContext.Update(dbItem);
+            await _sendCancellationTokenSource.CancelAsync();
         }
 
-        await piDbContext.SaveChangesAsync();
-        // Update UI
-        OnPictureChange?.Invoke(uuid);
-        await Task.Yield();
+        _sendCancellationTokenSource?.Dispose();
+        _sendCancellationTokenSource = new CancellationTokenSource();
+
+        List<(CameraPictureModel dbItem, PiZeroCamera dictItem)>? unsentCameras = null;
+        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync(_sendCancellationTokenSource.Token);
+        try
+        {
+            SendActive = true;
+
+            var options = _optionsMonitor.CurrentValue;
+
+            // Get the request
+            var pictureRequest = await piDbContext.PictureRequests
+                .Include(x => x.CameraPictures)
+                .FirstOrDefaultAsync(x => x.Uuid == uuid, _sendCancellationTokenSource.Token);
+            if (pictureRequest == null)
+            {
+                throw new Exception("Picture request not found");
+            }
+
+            unsentCameras = GetSendableCameras(
+                pictureRequest,
+                requirePing: false,
+                requireDeviceStatus: false,
+                requireStatus: false
+            ).ToList();
+            if (unsentCameras.Count == 0)
+            {
+                return;
+            }
+
+            // Create a channel to receive events
+            var channel = Channel.CreateUnbounded<string>();
+            if (!_sendPictureChannels.TryAdd(uuid, channel))
+            {
+                throw new Exception("Failed to create channel");
+            }
+
+            // Execute the custom logic provided by `tryBlock`
+            await tryBlock((_sendCancellationTokenSource, piDbContext, unsentCameras, options, channel));
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            // Remove the channel and clean up
+            _sendPictureChannels.TryRemove(uuid, out _);
+            if (unsentCameras is { Count: > 0 })
+            {
+                foreach (var (dbItem, _) in unsentCameras)
+                {
+                    dbItem.CameraPictureStatus = CameraPictureStatus.Cancelled;
+                    piDbContext.Update(dbItem);
+                }
+
+                await piDbContext.SaveChangesAsync();
+            }
+
+            _sendCancellationTokenSource.Dispose();
+            _sendCancellationTokenSource = null;
+            // Release semaphore
+            _sendSemaphore.Release();
+            // Update UI
+            SendActive = false;
+            OnPictureChange?.Invoke(uuid);
+            await Task.Yield();
+        }
     }
 
     /// <inheritdoc />
-    public async Task RequestSendPictureColumns(Guid uuid, int columnDelayMillis)
+    public async Task RequestSendPictureAll(Guid uuid)
     {
-        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
-        var options = _optionsMonitor.CurrentValue;
-
-        // Get the request
-        var pictureRequest = await piDbContext.PictureRequests
-            .Include(x => x.CameraPictures)
-            .FirstOrDefaultAsync(x => x.Uuid == uuid);
-        if (pictureRequest == null)
+        await RequestSendPictureTryBlock(uuid, async context =>
         {
-            throw new Exception("Picture request not found");
-        }
+            var (cts, piDbContext, unsentCameras, options, channel) = context;
 
-        // Make message
-        CameraRequest sendPictureRequest = new CameraRequest.SendPicture(
-            uuid
-        );
-        var message = new MqttApplicationMessageBuilder()
-            .WithContentType("application/json")
-            .WithTopic("temp")
-            .WithPayload(Json.Serialize(sendPictureRequest))
-            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
-            .Build();
+            // Make the message
+            CameraRequest sendPictureRequest = new CameraRequest.SendPicture(
+                uuid
+            );
+            var message = new MqttApplicationMessageBuilder()
+                .WithContentType("application/json")
+                .WithTopic($"{options.CameraTopic}")
+                .WithPayload(Json.Serialize(sendPictureRequest))
+                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
+                .Build();
 
-        var expectedCams = GetSendableCameras(
-            pictureRequest,
-            requirePing: false,
-            requireDeviceStatus: false,
-            requireStatus: false
-        ).ToList();
-
-        var columns = Enumerable.Range('A', 16).Select(c => ((char)c).ToString()).ToList();
-        foreach (var column in columns)
-        {
-            var expectedColumnCams = expectedCams
-                .Where(x => x.dictItem.Id.StartsWith(column))
-                .ToList();
-
-            // If column has no useful cameras, skip it
-            if (expectedColumnCams.Count == 0)
-            {
-                continue;
-            }
-
-            // Send message to column
-            message.Topic = $"{options.CameraTopic}/{column}";
-            var publishResult = await _mqttClient.PublishAsync(message);
+            // Send the message
+            var publishResult = await _mqttClient.PublishAsync(message, cts.Token);
 
             // Update statuses
-            foreach (var (dbItem, _) in expectedColumnCams)
+            foreach (var (dbItem, _) in unsentCameras)
             {
                 // First because it exists based on previous
                 dbItem.CameraPictureStatus = publishResult.IsSuccess
@@ -200,121 +234,210 @@ public partial class PiZeroCameraManager: ISendPictureManager
                 piDbContext.Update(dbItem);
             }
 
-            await piDbContext.SaveChangesAsync();
+            await piDbContext.SaveChangesAsync(cts.Token);
             // Update UI
             OnPictureChange?.Invoke(uuid);
             await Task.Yield();
 
-            // Allow time for the cameras to send
-            if (column != columns.Last())
-            {
-                await Task.Delay(columnDelayMillis);
-            }
-        }
-    }
-
-    /// <inheritdoc />
-    public async Task RequestSendPictureChannels(Guid uuid, int maxConcurrentUploads)
-    {
-        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
-        var options = _optionsMonitor.CurrentValue;
-
-        // Get the request
-        var pictureRequest = await piDbContext.PictureRequests
-            .Include(x => x.CameraPictures)
-            .FirstOrDefaultAsync(x => x.Uuid == uuid);
-        if (pictureRequest == null)
-        {
-            throw new Exception("Picture request not found");
-        }
-
-        // Create message
-        CameraRequest sendPictureRequest = new CameraRequest.SendPicture(
-            uuid
-        );
-        var message = new MqttApplicationMessageBuilder()
-            .WithContentType("application/json")
-            .WithTopic("temp")
-            .WithPayload(Json.Serialize(sendPictureRequest))
-            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
-            .Build();
-
-        // Create channel to receive events
-        var channel = Channel.CreateUnbounded<string>();
-        if (!_sendPictureChannels.TryAdd(uuid, channel))
-        {
-            throw new Exception("Failed to create channel");
-        }
-
-        // Cameras that need to be sent requests as a queue
-        var unsentCameras = new Queue<(CameraPictureModel dbItem, PiZeroCamera dictItem)>(GetSendableCameras(
-            pictureRequest,
-            requirePing: false,
-            requireDeviceStatus: false,
-            requireStatus: false
-        ));
-
-        // Start first transfers (maxConcurrent)
-        for (var i = 0; i < maxConcurrentUploads; i++)
-        {
-            await SendMessage(piDbContext);
-            // Stop early if there are no more cameras available
+            // Sanity check - there should be cameras that need further processing
             if (unsentCameras.Count == 0)
             {
-                channel.Writer.Complete();
-                break;
+                return;
             }
-        }
 
-        await piDbContext.SaveChangesAsync();
-        // Update UI
-        OnPictureChange?.Invoke(uuid);
-        await Task.Yield();
-
-        // Check that there are cameras that need to be sent requests
-        if (unsentCameras.Count > 0)
-        {
-            // Wait for message
-            while (await channel.Reader.WaitToReadAsync())
+            // Wait for messages
+            while (await channel.Reader.WaitToReadAsync(cts.Token))
             {
-                // Pop message
-                channel.Reader.TryRead(out _);
+                // Remove camera from the unsent cameras list
+                if (channel.Reader.TryRead(out var cameraId))
+                {
+                    var camera = unsentCameras.First(x => x.dbItem.CameraId == cameraId);
+                    unsentCameras.Remove(camera);
+                }
 
-                await SendMessage(piDbContext);
-
-                await piDbContext.SaveChangesAsync();
-                // Update UI
-                OnPictureChange?.Invoke(uuid);
-                await Task.Yield();
-
-                // If no more cameras, complete channel and break out
-                // Need break, because according to docs, Read could still run, if it's quick enough.
+                // If no more cameras, complete the channel and break out
+                // Need break because, according to docs, Read could still execute, if it's quick enough.
                 if (unsentCameras.Count == 0)
                 {
                     channel.Writer.Complete();
                     break;
                 }
             }
-        }
+        });
+    }
 
-        // Remove channel
-        _sendPictureChannels.TryRemove(uuid, out _);
-        return;
-
-        // Send message to a camera
-        async Task SendMessage(PiDbContext localPiDbContext)
+    /// <inheritdoc />
+    public async Task RequestSendPictureColumns(Guid uuid, int columnDelayMillis)
+    {
+        await RequestSendPictureTryBlock(uuid, async context =>
         {
-            var (dbItem, piZeroCamera) = unsentCameras.Dequeue();
+            var (cts, piDbContext, unsentCameras, options, channel) = context;
 
-            message.Topic = $"{options.CameraTopic}/{piZeroCamera.Id}";
-            var publishResult = await _mqttClient.PublishAsync(message);
+            // Make a message
+            CameraRequest sendPictureRequest = new CameraRequest.SendPicture(
+                uuid
+            );
+            var message = new MqttApplicationMessageBuilder()
+                .WithContentType("application/json")
+                .WithTopic("temp")
+                .WithPayload(Json.Serialize(sendPictureRequest))
+                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
+                .Build();
 
-            // Update statuses
-            dbItem.CameraPictureStatus = publishResult.IsSuccess
-                ? CameraPictureStatus.RequestedSend
-                : CameraPictureStatus.FailedToRequestSend;
-            localPiDbContext.Update(dbItem);
-        }
+            var columns = Enumerable.Range('A', 16).Select(c => ((char)c).ToString()).ToList();
+            var columnProcessingTask = Task.Run(async () =>
+            {
+                foreach (var column in columns)
+                {
+                    var expectedColumnCams = unsentCameras
+                        .Where(x => x.dictItem.Id.StartsWith(column))
+                        .ToList();
+
+                    // If the column has no useful cameras, skip it
+                    if (expectedColumnCams.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    // Send a message to the column
+                    message.Topic = $"{options.CameraTopic}/{column}";
+                    var publishResult = await _mqttClient.PublishAsync(message, cts.Token);
+
+                    // Update statuses
+                    foreach (var (dbItem, _) in expectedColumnCams)
+                    {
+                        dbItem.CameraPictureStatus = publishResult.IsSuccess
+                            ? CameraPictureStatus.RequestedSend
+                            : CameraPictureStatus.FailedToRequestSend;
+                        piDbContext.Update(dbItem);
+                    }
+
+                    await piDbContext.SaveChangesAsync(cts.Token);
+                    // Update UI
+                    OnPictureChange?.Invoke(uuid);
+                    await Task.Yield();
+
+                    // Delay before moving to the next column if it's not the last column
+                    if (column != columns.Last())
+                    {
+                        await Task.Delay(columnDelayMillis, cts.Token);
+                    }
+                }
+            }, cts.Token);
+
+            var channelProcessingTask = Task.Run(async () =>
+            {
+                // Wait for messages and handle unsent cameras
+                while (await channel.Reader.WaitToReadAsync(cts.Token))
+                {
+                    if (channel.Reader.TryRead(out var cameraId))
+                    {
+                        var camera = unsentCameras.First(x => x.dbItem.CameraId == cameraId);
+                        unsentCameras.Remove(camera);
+                    }
+
+                    // If no more cameras, complete the channel and exit
+                    if (unsentCameras.Count == 0)
+                    {
+                        channel.Writer.Complete();
+                        break;
+                    }
+                }
+            }, cts.Token);
+
+            // Have to execute in parallel, so upon cancellation received messages are not mistakenly canceled
+            await Task.WhenAll(columnProcessingTask, channelProcessingTask);
+        });
+    }
+
+    /// <inheritdoc />
+    public async Task RequestSendPictureChannels(Guid uuid, int maxConcurrentUploads)
+    {
+        await RequestSendPictureTryBlock(uuid, async context =>
+        {
+            var (cts, piDbContext, unsentCameras, options, channel) = context;
+
+            // Queue for sending requests
+            var cameraQueue = new Queue<(CameraPictureModel dbItem, PiZeroCamera dictItem)>(unsentCameras);
+
+            // Make a message
+            CameraRequest sendPictureRequest = new CameraRequest.SendPicture(
+                uuid
+            );
+            var message = new MqttApplicationMessageBuilder()
+                .WithContentType("application/json")
+                .WithTopic("temp")
+                .WithPayload(Json.Serialize(sendPictureRequest))
+                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
+                .Build();
+
+            // Start first transfers (maxConcurrent)
+            for (var i = 0; i < maxConcurrentUploads; i++)
+            {
+                await SendMessage(piDbContext);
+                // Stop early if there are no more cameras available
+                if (unsentCameras.Count == 0)
+                {
+                    channel.Writer.Complete();
+                    break;
+                }
+            }
+
+            await piDbContext.SaveChangesAsync(cts.Token);
+            // Update UI
+            OnPictureChange?.Invoke(uuid);
+            await Task.Yield();
+
+            // Check that there are cameras that need to be sent requests
+            MqttClientPublishResult publishResult;
+            if (unsentCameras.Count <= 0)
+            {
+                return;
+            }
+
+            // Wait for messages
+            while (await channel.Reader.WaitToReadAsync(cts.Token))
+            {
+                // Pop message
+                if (channel.Reader.TryRead(out var cameraId))
+                {
+                    var camera = unsentCameras.First(x => x.dbItem.CameraId == cameraId);
+                    unsentCameras.Remove(camera);
+                }
+
+                await SendMessage(piDbContext);
+
+                await piDbContext.SaveChangesAsync(cts.Token);
+                // Update UI
+                OnPictureChange?.Invoke(uuid);
+                await Task.Yield();
+
+                // If no more cameras, complete the channel and break out
+                // Need break because, according to docs, Read could still run, if it's quick enough.
+                if (unsentCameras.Count == 0)
+                {
+                    channel.Writer.Complete();
+                    break;
+                }
+            }
+
+            return;
+
+            // Send a message to a camera
+            async Task SendMessage(PiDbContext localPiDbContext)
+            {
+                var (dbItem, piZeroCamera) = cameraQueue.Dequeue();
+
+                message.Topic = $"{options.CameraTopic}/{piZeroCamera.Id}";
+                publishResult = await _mqttClient.PublishAsync(message, cts.Token);
+
+                // Update statuses
+                dbItem.CameraPictureStatus = publishResult.IsSuccess
+                    ? CameraPictureStatus.RequestedSend
+                    : CameraPictureStatus.FailedToRequestSend;
+                localPiDbContext.Update(dbItem);
+            }
+        });
     }
 
     /// <inheritdoc />
@@ -334,7 +457,7 @@ public partial class PiZeroCameraManager: ISendPictureManager
 
         var cameraPicture = pictureRequest.CameraPictures
             .FirstOrDefault(x => x.ReceivedSaved != null && x.CameraId == cameraId);
-        // Can't do anything if valid picture does not exist.
+        // Can't do anything if a valid picture does not exist.
         if (cameraPicture == null)
         {
             return;
@@ -384,7 +507,7 @@ public partial class PiZeroCameraManager: ISendPictureManager
 
         var successWrapper = sendPicture.Response;
         var uuid = successWrapper.Value.Uuid;
-        // Get database item, create if doesn't exist
+        // Get the database item, create if it doesn't exist
         var dbItem = piDbContext.CameraPictures.FirstOrDefault(x => x.PictureRequestId == uuid && x.CameraId == id);
         if (dbItem == null)
         {
@@ -472,5 +595,19 @@ public partial class PiZeroCameraManager: ISendPictureManager
         await piDbContext.SaveChangesAsync();
         OnPictureChange?.Invoke(uuid);
         await Task.Yield();
+    }
+
+    /// <inheritdoc />
+    public async Task CancelSend()
+    {
+        if (_sendCancellationTokenSource != null)
+        {
+            await _sendCancellationTokenSource.CancelAsync();
+        }
+
+        if (SendActive)
+        {
+            await CancelCameraTasks();
+        }
     }
 }
