@@ -12,11 +12,12 @@
     <link rel="stylesheet" href="@Assets["picamerasserver.styles.css"]"/>
     <ImportMap/>
     <link rel="icon" type="image/png" href="favicon.png"/>
-    <HeadOutlet/>
+    <HeadOutlet @rendermode="InteractiveServer" />
+    <PageTitle>PiCam</PageTitle>
 </head>
 
 <body>
-<Routes @rendermode=InteractiveServer />
+<Routes @rendermode="InteractiveServer" />
 @* ReSharper disable once Html.PathError *@
 <script src="_framework/blazor.web.js"></script>
 @* ReSharper disable once Html.PathError *@
