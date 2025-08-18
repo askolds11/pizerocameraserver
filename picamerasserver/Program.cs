@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MQTTnet;
+using MudBlazor;
 using MudBlazor.Services;
 using picamerasserver.Components;
 using picamerasserver.Database;
@@ -23,7 +24,12 @@ builder.Services.AddLocalization();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddMudServices();
+builder.Services.AddMudServices(config =>
+{
+    config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.BottomLeft;
+    config.SnackbarConfiguration.HideTransitionDuration = 500;
+    config.SnackbarConfiguration.ShowTransitionDuration = 500;
+});
 
 builder.Services.Configure<DirectoriesOptions>(
     builder.Configuration.GetSection(DirectoriesOptions.Directories));

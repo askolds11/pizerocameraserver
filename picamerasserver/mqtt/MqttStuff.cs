@@ -93,7 +93,7 @@ public class MqttStuff
     /// <param name="e">Event</param>
     private async Task MessageHandler(MqttApplicationMessageReceivedEventArgs e)
     {
-        var messageReceived = DateTimeOffset.Now;
+        var messageReceived = DateTimeOffset.UtcNow;
         var topic = e.ApplicationMessage.Topic.Split("/").First();
         var id = e.ApplicationMessage.Topic.Split("/").Last();
         if (topic == _currentOptions.NtpTopic)
@@ -126,10 +126,11 @@ public class MqttStuff
         }
         else if (topic == _currentOptions.StatusTopic)
         {
-            _piZeroCameraManager.ResponseGetStatus(e.ApplicationMessage);
+            await _piZeroCameraManager.ResponseGetStatus(e.ApplicationMessage, id);
         }
         else if (topic == _currentOptions.UpdateTopic)
         {
+            await _piZeroCameraManager.ResponseUpdate(e.ApplicationMessage, id);
         }
         else if (topic == _currentOptions.ErrorTopic)
         {

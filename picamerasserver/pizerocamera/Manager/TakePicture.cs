@@ -50,7 +50,7 @@ public partial class PiZeroCameraManager : ITakePictureManager
         int futureMillis)
     {
         var uuid = Guid.CreateVersion7();
-        var currentTime = DateTimeOffset.Now;
+        var currentTime = DateTimeOffset.UtcNow;
         var pictureTime = currentTime.AddMilliseconds(futureMillis);
 
         var pictureRequest = new PictureRequestModel

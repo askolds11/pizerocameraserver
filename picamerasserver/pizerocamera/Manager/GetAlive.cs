@@ -99,6 +99,7 @@ public partial class PiZeroCameraManager
         {
             piZeroCamera.Status = null;
         }
+
         OnChangePing?.Invoke();
         await Task.Yield();
 
@@ -115,9 +116,8 @@ public partial class PiZeroCameraManager
         OnChangePing?.Invoke();
     }
 
-    public void ResponseGetStatus(MqttApplicationMessage message)
+    public async Task ResponseGetStatus(MqttApplicationMessage message, string id)
     {
-        var id = message.Topic.Split('/').Last();
         var piZeroCamera = PiZeroCameras[id];
 
         var text = Encoding.UTF8.GetString(message.Payload);
@@ -127,10 +127,25 @@ public partial class PiZeroCameraManager
             piZeroCamera.Status = null;
             _logger.LogError(statusResponse.Error, "Failed to parse status response");
         }
+        else
+        {
+            var successWrapper = statusResponse.Value;
+            piZeroCamera.Status = successWrapper.Success ? successWrapper.Value : null;
 
-        var successWrapper = statusResponse.Value;
-
-        piZeroCamera.Status = successWrapper.Success ? successWrapper.Value : null;
+            if (successWrapper.Success)
+            {
+                var activeVersion = (await GetActiveVersion())?.Version;
+                if (activeVersion == successWrapper.Value.Version)
+                {
+                    piZeroCamera.UpdateRequest = new PiZeroCameraUpdateRequest.Success();
+                }
+                else
+                {
+                    piZeroCamera.UpdateRequest = new PiZeroCameraUpdateRequest.Failure.VersionMismatch();
+                }
+                OnUpdateChange?.Invoke();
+            }
+        }
 
         OnChangePing?.Invoke();
     }

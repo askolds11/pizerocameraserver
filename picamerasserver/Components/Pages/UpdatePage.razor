@@ -1,29 +1,77 @@
 @page "/update"
-@inject ISnackbar Snackbar
 @using picamerasserver.Components.Components
+@inject ISnackbar Snackbar
 
 <DefaultPage>
     <MudStack Style="width: 100%">
         <MudExpansionPanels Elevation="5" MultiExpansion Dense>
-            <MudExpansionPanel Expanded>
-                <TitleContent>
-                    <MudText Typo="Typo.h5">Status</MudText>
-                </TitleContent>
-            </MudExpansionPanel>
-            <MudExpansionPanel Expanded>
+            <MudExpansionPanel Expanded Gutters="false" Dense="true">
                 <TitleContent>
                     <MudText Typo="Typo.h5">Send update</MudText>
                 </TitleContent>
                 <ChildContent>
-                    @* <MudCheckBox @bind-Value="IsGlobalUpdate" Color="Color.Primary"></MudCheckBox> *@
+                    <StatusTable
+                        ColorTransform="@ColorTransform"
+                        TooltipTransform="@_tooltipTransform">
+                    </StatusTable>
+                    <MudStack Row="true" Spacing="4" Class="pa-4" AlignItems="AlignItems.Center">
+                        <MudButton
+                            Variant="Variant.Filled"
+                            Color="Color.Primary"
+                            OnClick="@SendUpdate"
+                            Disabled="UpdateActive"
+                        >
+                            Update
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="@CancelUpdate" Disabled="!UpdateActive">
+                            Cancel send
+                        </MudButton>
+                    </MudStack>
                 </ChildContent>
             </MudExpansionPanel>
-            <MudExpansionPanel Expanded>
+            <MudExpansionPanel Expanded Gutters="false" Dense="true">
                 <TitleContent>
                     <MudText Typo="Typo.h5">List of updates</MudText>
                 </TitleContent>
+                <ChildContent>
+                    <MudDataGrid @ref="_gridData" T="UpdateElement" ServerData="ServerReload" Filterable="false"
+                                 SortMode="SortMode.None">
+                        @* <ToolBarContent> *@
+                        @*     <MudText Typo="Typo.h6">Pictures</MudText> *@
+                        @* </ToolBarContent> *@
+                        <Columns>
+                            <TemplateColumn HeaderClass="align-center px-0"
+                                            HeaderStyle="text-align: center; max-width:75px" CellClass="pa-0 ma-0"
+                                            CellStyle="text-align: center; max-width: 75px">
+                                <HeaderTemplate>
+                                    <div>
+                                        Selected
+                                    </div>
+                                </HeaderTemplate>
+                                <CellTemplate>
+                                    <MudToggleIconButton Toggled="@context.Item.IsCurrent"
+                                                         ToggledChanged="@(() => SelectUpdate(context.Item.Version))"
+                                                         Icon="@Icons.Material.Filled.RadioButtonUnchecked"
+                                                         Color="@Color.Default"
+                                                         ToggledIcon="@Icons.Material.Filled.RadioButtonChecked"
+                                                         ToggledColor="@Color.Success"
+                                                         Class="pa-3 ma-0"
+                                                         Disabled="@UpdateActive"
+                                    />
+                                </CellTemplate>
+                            </TemplateColumn>
+                            <PropertyColumn Property="x => x.Version" Title="Version"/>
+                            <PropertyColumn Property="x => x.UploadedTime" Title="Uploaded time"/>
+                            <PropertyColumn Property="x => x.UpdatedTime" Title="Updated time"/>
+                        </Columns>
+                        <PagerContent>
+                            <MudDataGridPager T="UpdateElement"/>
+                        </PagerContent>
+                    </MudDataGrid>
+                </ChildContent>
             </MudExpansionPanel>
-            <MudExpansionPanel>
+            <MudExpansionPanel Expanded>
                 <TitleContent>
                     <MudText Typo="Typo.h5">Upload update</MudText>
                 </TitleContent>
@@ -83,3 +131,7 @@
         </MudExpansionPanels>
     </MudStack>
 </DefaultPage>
+
+@code {
+    private Func<string, RenderFragment?> _tooltipTransform = _ => null;
+}
