@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using MQTTnet;
 using MQTTnet.Protocol;
+using picamerasserver.pizerocamera.Requests;
 using picamerasserver.pizerocamera.Responses;
 
 namespace picamerasserver.pizerocamera.manager;
@@ -14,13 +15,14 @@ public partial class PiZeroCameraManager
     /// <summary>
     /// Request a NTP time sync.
     /// </summary>
-    public async Task RequestNtpSync()
+    public async Task RequestNtpSync(NtpRequest ntpRequest)
     {
         var options = _optionsMonitor.CurrentValue;
 
         var message = new MqttApplicationMessageBuilder()
             .WithContentType("application/json")
             .WithTopic(options.NtpTopic)
+            .WithPayload(Json.Serialize(ntpRequest))
             .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
             .Build();
 

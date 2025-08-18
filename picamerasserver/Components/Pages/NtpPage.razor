@@ -12,8 +12,12 @@
                     <StatusTable ColorTransform="@ColorTransform" TooltipTransform="@_tooltipTransform"></StatusTable>
                     <MudStack Row="true" Spacing="4" Class="pa-4" AlignItems="AlignItems.Center">
                         <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                   OnClick="@RequestNtpSync">
-                            Sync
+                                   OnClick="@RequestNtpSyncStep">
+                            Big (step)
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="@RequestNtpSyncSlew">
+                            Small (slew)
                         </MudButton>
                     </MudStack>
                 </ChildContent>
