@@ -21,6 +21,31 @@ public partial class NtpPage : ComponentBase, IDisposable
         await PiZeroCameraManager.RequestNtpSync(new NtpRequest.Slew());
     }
     
+    private List<float>? GetOffsets()
+    {
+        var offsets = PiZeroCameraManager.PiZeroCameras.Values
+            .Where(x => x.LastNtpOffsetMillis != null)
+            .Select(x => Math.Abs((float)x.LastNtpOffsetMillis!))
+            .ToList();
+
+        return offsets.Count == 0 ? null : offsets;
+    }
+
+    private List<float>? GetErrors()
+    {
+        var errors = PiZeroCameraManager.PiZeroCameras.Values
+            .Where(x => x.LastNtpErrorMillis != null)
+            .Select(x => Math.Abs((float)x.LastNtpErrorMillis!))
+            .ToList();
+
+        return errors.Count == 0 ? null : errors;
+    }
+
+    private float? MinOffset => GetOffsets()?.Min();
+    private float? MaxOffset => GetOffsets()?.Max();
+    private float? MinError => GetErrors()?.Min();
+    private float? MaxError => GetErrors()?.Max();
+    
     private void OnGlobalChanged()
     {
         InvokeAsync(() =>

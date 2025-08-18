@@ -39,7 +39,8 @@ public partial class PiZeroCameraManager
         {
             foreach (var piZeroCamera in PiZeroCameras.Values)
             {
-                piZeroCamera.NtpRequest = new PiZeroCameraNtpRequest.Failure.FailedToRequest(publishResult.ReasonString);
+                piZeroCamera.NtpRequest =
+                    new PiZeroCameraNtpRequest.Failure.FailedToRequest(publishResult.ReasonString);
             }
         }
 
