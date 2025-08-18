@@ -1,3 +1,5 @@
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using MQTTnet;
 using MudBlazor;
@@ -72,10 +74,20 @@ if (!app.Environment.IsDevelopment())
 // app.UseAntiforgery();
 
 app.MapStaticAssets();
-app.UseRequestLocalization("lv");
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .DisableAntiforgery();
+
+app.UseRequestLocalization(options =>
+{
+    var cinfo = CultureInfo.GetCultures(CultureTypes.AllCultures & ~CultureTypes.NeutralCultures);
+    var supportedCultures = cinfo.Select(t => t.Name).Distinct().ToArray();
+    options.AddSupportedCultures(supportedCultures)
+        .AddSupportedUICultures(supportedCultures)
+        .DefaultRequestCulture = new RequestCulture(
+        culture: "lv-LV",
+        uiCulture: "en");
+});
 
 // Force to instantly create
 app.Services.GetRequiredService<MqttStuff>();
