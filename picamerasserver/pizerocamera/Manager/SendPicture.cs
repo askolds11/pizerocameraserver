@@ -376,9 +376,8 @@ public partial class PiZeroCameraManager : ISendPictureManager
             {
                 await SendMessage(piDbContext);
                 // Stop early if there are no more cameras available
-                if (unsentCameras.Count == 0)
+                if (cameraQueue.Count == 0)
                 {
-                    channel.Writer.Complete();
                     break;
                 }
             }
@@ -387,14 +386,7 @@ public partial class PiZeroCameraManager : ISendPictureManager
             // Update UI
             OnPictureChange?.Invoke(uuid);
             await Task.Yield();
-
-            // Check that there are cameras that need to be sent requests
-            MqttClientPublishResult publishResult;
-            if (unsentCameras.Count <= 0)
-            {
-                return;
-            }
-
+            
             // Wait for messages
             while (await channel.Reader.WaitToReadAsync(cts.Token))
             {
@@ -405,12 +397,16 @@ public partial class PiZeroCameraManager : ISendPictureManager
                     unsentCameras.Remove(camera);
                 }
 
-                await SendMessage(piDbContext);
-
-                await piDbContext.SaveChangesAsync(cts.Token);
-                // Update UI
-                OnPictureChange?.Invoke(uuid);
-                await Task.Yield();
+                // Send request if there are cameras left to send
+                if (cameraQueue.Count > 0)
+                {
+                    await SendMessage(piDbContext);
+                    
+                    await piDbContext.SaveChangesAsync(cts.Token);
+                    // Update UI
+                    OnPictureChange?.Invoke(uuid);
+                    await Task.Yield();
+                }
 
                 // If no more cameras, complete the channel and break out
                 // Need break because, according to docs, Read could still run, if it's quick enough.
@@ -429,7 +425,7 @@ public partial class PiZeroCameraManager : ISendPictureManager
                 var (dbItem, piZeroCamera) = cameraQueue.Dequeue();
 
                 message.Topic = $"{options.CameraTopic}/{piZeroCamera.Id}";
-                publishResult = await _mqttClient.PublishAsync(message, cts.Token);
+                var publishResult = await _mqttClient.PublishAsync(message, cts.Token);
 
                 // Update statuses
                 dbItem.CameraPictureStatus = publishResult.IsSuccess
