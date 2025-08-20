@@ -39,6 +39,8 @@ builder.Services.Configure<MqttOptions>(
     builder.Configuration.GetSection(MqttOptions.Mqtt));
 builder.Services.Configure<ConnectionStringsOptions>(
     builder.Configuration.GetSection(ConnectionStringsOptions.ConnectionStrings));
+builder.Services.Configure<ServerOptions>(
+    builder.Configuration.GetSection(ServerOptions.Server));
 
 var connectionStrings = builder.Configuration
     .GetSection(ConnectionStringsOptions.ConnectionStrings)

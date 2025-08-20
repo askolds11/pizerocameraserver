@@ -1,0 +1,31 @@
+@page "/Utils"
+@using picamerasserver.Components.Components
+@inject ISnackbar Snackbar
+
+<DefaultPage>
+    <MudStack Style="width: 100%">
+        <MudExpansionPanels Elevation="5" MultiExpansion>
+            <MudExpansionPanel Expanded Gutters="false" Dense="true">
+                <TitleContent>
+                    <MudText Typo="Typo.h5">Utils</MudText>
+                </TitleContent>
+                <ChildContent>
+                    <MudStack Spacing="4" Class="pa-4" AlignItems="AlignItems.Start">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="@ShutdownCameras">
+                            Shutdown Cameras
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="@Shutdown">
+                            Shutdown Server
+                        </MudButton>
+                    </MudStack>
+                </ChildContent>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+    </MudStack>
+</DefaultPage>
+
+@code {
+    
+}

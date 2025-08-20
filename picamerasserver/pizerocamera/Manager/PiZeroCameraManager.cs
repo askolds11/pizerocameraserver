@@ -64,4 +64,23 @@ public partial class PiZeroCameraManager
 
         await _mqttClient.PublishAsync(message);
     }
+    
+    /// <summary>
+    /// Sends shutdown to all Pi Zeros
+    /// </summary>
+    public async Task<bool> ShutdownCameras()
+    {
+        var options = _optionsMonitor.CurrentValue;
+
+        var message = new MqttApplicationMessageBuilder()
+            .WithContentType("application/json")
+            .WithTopic(options.CommandTopic)
+            .WithPayload("sudo shutdown -h now")
+            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
+            .Build();
+
+        var publishResult = await _mqttClient.PublishAsync(message);
+
+        return publishResult.IsSuccess;
+    }
 }
