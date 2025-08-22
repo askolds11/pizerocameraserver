@@ -26,6 +26,39 @@ public partial class Utils : ComponentBase
             Snackbar.Add("Shutdown message failed to send!", Severity.Error);
         }
     }
+    
+    private async Task ShutdownCamerasQuadrant(char start)
+    {
+        var result = await PiZeroCameraManager.ShutdownCamerasQuadrant(start);
+        if (result)
+        {
+            Snackbar.Add("Shutdown message sent!", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Shutdown message failed to send!", Severity.Error);
+        }
+    }
+
+    private async Task ShutdownCamerasQuadrantA()
+    {
+        await ShutdownCamerasQuadrant('A');
+    }
+    
+    private async Task ShutdownCamerasQuadrantE()
+    {
+        await ShutdownCamerasQuadrant('E');
+    }
+    
+    private async Task ShutdownCamerasQuadrantI()
+    {
+        await ShutdownCamerasQuadrant('I');
+    }
+    
+    private async Task ShutdownCamerasQuadrantM()
+    {
+        await ShutdownCamerasQuadrant('M');
+    }
 
     private async Task Shutdown()
     {

@@ -15,6 +15,24 @@
                                    OnClick="@ShutdownCameras">
                             Shutdown Cameras
                         </MudButton>
+                        <MudStack Spacing="4" Class="pa-4" AlignItems="AlignItems.Start" Row="true">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       OnClick="@ShutdownCamerasQuadrantA">
+                                Shutdown A-D
+                            </MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       OnClick="@ShutdownCamerasQuadrantE">
+                                Shutdown E-H
+                            </MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       OnClick="@ShutdownCamerasQuadrantI">
+                                Shutdown I-L
+                            </MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       OnClick="@ShutdownCamerasQuadrantM">
+                                Shutdown M-P
+                            </MudButton>
+                        </MudStack>
                         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                    OnClick="@Shutdown">
                             Shutdown Server
