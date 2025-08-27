@@ -9,6 +9,8 @@ public partial class StatusTable : ComponentBase
     public required Func<string, Color> ColorTransform { get; set; }
     [Parameter, EditorRequired]
     public required Func<string, RenderFragment?> TooltipTransform { get; set; }
+    [Parameter]
+    public int Elevation { set; get; } = 1;
     
     // Letters as columns (A-P)
     private readonly List<string> _columns = Enumerable.Range('A', 16).Select(c => ((char)c).ToString()).ToList();
