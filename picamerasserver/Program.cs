@@ -60,6 +60,7 @@ builder.Services.AddSingleton<MqttStuff>();
 builder.Services.AddSingleton<PiZeroCameraManager>();
 builder.Services.AddSingleton<ISendPictureManager>(sp => sp.GetRequiredService<PiZeroCameraManager>());
 builder.Services.AddSingleton<ITakePictureManager>(sp => sp.GetRequiredService<PiZeroCameraManager>());
+builder.Services.AddSingleton<ISendPictureSetManager>(sp => sp.GetRequiredService<PiZeroCameraManager>());
 
 var app = builder.Build();
 
@@ -101,5 +102,6 @@ app.Services.GetRequiredService<PiZeroCameraManager>();
 app.AddDownloadUpdateEndpoint();
 app.AddUploadImageEndpoint();
 app.AddDownloadPicturesEndpoint();
+app.AddDownloadPictureSetEndpoint();
 
 app.Run();

@@ -63,7 +63,7 @@ public partial class CameraPage : ComponentBase, IDisposable
 
     private async Task TakePicture()
     {
-        var pictureRequestModel = await TakePictureManager.RequestTakePictureColumns();
+        var pictureRequestModel = await TakePictureManager.RequestTakePictureAll();
         _selectedPicture = new PictureElement(pictureRequestModel);
         await _gridData.ReloadServerData();
     }
@@ -179,7 +179,7 @@ public class PictureElement(PictureRequestModel pictureRequestModel)
     public readonly DateTime RequestTime = TimeZoneInfo.ConvertTime(pictureRequestModel.RequestTime.LocalDateTime,
         TimeZoneInfo.FindSystemTimeZoneById("Europe/Riga"));
 
-    public readonly int TakenCount = pictureRequestModel.CameraPictures.Count(x => x.ReceivedTaken != null);
+    public readonly int TakenCount = pictureRequestModel.CameraPictures.Count(x => x.ReceivedSaved != null);
     public readonly int SentCount = pictureRequestModel.CameraPictures.Count(x => x.ReceivedSent != null);
     public readonly int TotalCount = pictureRequestModel.CameraPictures.Count(x => x.CameraPictureStatus != null);
 

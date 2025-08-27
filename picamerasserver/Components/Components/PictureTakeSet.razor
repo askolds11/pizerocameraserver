@@ -1,0 +1,127 @@
+﻿@using picamerasserver.Database.Models
+@using Color = System.Drawing.Color
+<MudExpansionPanel Gutters="false" Dense="true" HideIcon="true" HeaderClass="pa-0" Disabled="PictureRequestModel == null && Disabled">
+    <TitleContent>
+        @* <MudPaper Elevation="10" Class="d-inline-flex"> *@
+        <MudStack Style="width: 100%">
+            <MudProgressLinear Color="MudBlazor.Color.Tertiary" Value="@ProgressTaken"/>
+            <MudProgressLinear Color="MudBlazor.Color.Primary" Value="@ProgressSent"/>
+            <MudStack Row="true" Spacing="4" Class="pa-4 d-inline-flex" AlignItems="AlignItems.Center">
+                <MudText Style="min-width: 10em">
+                    @(PictureRequestType switch
+                    {
+                        PictureRequestType.StandingSpread => "Stāv rokas izplestas",
+                        PictureRequestType.StandingTogether => "Stāv rokas gar",
+                        PictureRequestType.Sitting => "Sēž",
+                        PictureRequestType.Mask => "Maska",
+                        PictureRequestType.Other => "Cits",
+                        _ => throw new ArgumentOutOfRangeException()
+                    })
+                </MudText>
+                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Tertiary" Size="Size.Large"
+                           EndIcon="@Icons.Material.Outlined.PhotoCamera" OnClick="@TakePicture"
+                           Disabled="Disabled || (PictureRequestModel != null && !_canTryAgain)">
+                    Take picture
+                </MudButton>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudText>
+                        Taken @TakenCount / @RequestCount
+                    </MudText>
+                    @if (TakenCount != 0 && TakenCount == @RequestCount)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success" Size="Size.Large"/>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error" Size="Size.Large"/>
+                    }
+                </MudStack>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudText>
+                        Saved @SavedCount / @RequestCount
+                    </MudText>
+                    @if (SavedCount != 0 && SavedCount == @RequestCount)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success" Size="Size.Large"/>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error" Size="Size.Large"/>
+                    }
+                </MudStack>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudText>
+                        Failed @FailedCount
+                    </MudText>
+                    @if (FailedCount == 0)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success" Size="Size.Large"/>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error" Size="Size.Large"/>
+                    }
+                </MudStack>
+                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error" Size="Size.Large"
+                           EndIcon="@Icons.Material.Outlined.Refresh" OnClick="@TryAgain"
+                           Disabled="Disabled || (PictureRequestModel == null || _canTryAgain)">
+                    Try again
+                </MudButton>
+            </MudStack>
+        </MudStack>
+        @* </MudPaper> *@
+    </TitleContent>
+    <ChildContent>
+        <StatusTable
+            ColorTransform="@ColorTransform"
+            TooltipTransform="@_tooltipTransform">
+        </StatusTable>
+    </ChildContent>
+</MudExpansionPanel>
+
+@code {
+    private Func<string, RenderFragment?> _tooltipTransform = _ => null;
+
+    private void UpdateTooltipTransform()
+    {
+        _tooltipTransform = cameraId =>
+        {
+            var item = PictureRequestModel?.CameraPictures.FirstOrDefault(x => x.CameraId == cameraId);
+            if (item == null)
+                return null;
+
+            return @<PictureRequestTooltip CameraPicture="item"/>;
+        };
+    }
+    
+    private Color ColorTransform(string cameraId)
+    {
+        var cameraPicture = PictureRequestModel?.CameraPictures.FirstOrDefault(x => x.CameraId == cameraId);
+        if (cameraPicture == null)
+        {
+            return Color.FromArgb(0x00, 0x00, 0x00);
+        }
+
+        return cameraPicture.CameraPictureStatus switch
+        {
+            CameraPictureStatus.Requested => Color.FromArgb(0x55, 0x55, 0x00),
+            CameraPictureStatus.FailedToRequest => Color.FromArgb(0xFF, 0x00, 0x00),
+            CameraPictureStatus.Taken => Color.FromArgb(0x00, 0x55, 0x55),
+            CameraPictureStatus.SavedOnDevice => Color.FromArgb(0x00, 0x55, 0x00),
+            CameraPictureStatus.Failed => Color.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.PictureFailedToSave => Color.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.PictureFailedToSchedule => Color.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.PictureFailedToTake => Color.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.RequestedSend => Color.FromArgb(0x55, 0x55, 0x00),
+            CameraPictureStatus.FailedToRequestSend => Color.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.FailureSend => Color.FromArgb(0x99, 0x00, 0x00),
+            CameraPictureStatus.Success => Color.FromArgb(0x00, 0xFF, 0x00),
+            CameraPictureStatus.Unknown => Color.FromArgb(0x00, 0x00, 0xFF),
+            CameraPictureStatus.PictureFailedToRead => Color.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.PictureFailedToSend => Color.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.Cancelled => Color.FromArgb(0xFF, 0x55, 0x00),
+            null => Color.FromArgb(0x00, 0x00, 0x00),
+            _ => throw new ArgumentOutOfRangeException(),
+        };
+    }
+}

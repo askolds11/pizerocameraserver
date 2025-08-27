@@ -12,18 +12,28 @@ public interface ITakePictureManager
     /// Makes requests to take pictures. <br />
     /// Makes requests to all cameras at once.
     /// </summary>
+    /// <param name="pictureRequestType">Type of picture</param>
+    /// <param name="pictureSetUId">UUID of picture set, if exists</param>
     /// <param name="futureMillis">How far in the future to take the photo</param>
     /// <returns>The resulting request model with cameras</returns>
-    Task<PictureRequestModel> RequestTakePictureAll(int futureMillis = 2000);
+    Task<PictureRequestModel> RequestTakePictureAll(PictureRequestType pictureRequestType = PictureRequestType.Other,
+        Guid? pictureSetUId = null, int futureMillis = 1000);
 
     /// <summary>
     /// Makes requests to take pictures. <br />
     /// Makes requests to a column of cameras at once every <paramref name="columnDelayMillis"/>
     /// </summary>
+    /// <param name="pictureRequestType">Type for picture</param>
+    /// <param name="pictureSetUId">UUID of picture set, if exists</param>
     /// <param name="futureMillis">How far in the future to take the photo</param>
     /// <param name="columnDelayMillis">Time between column requests</param>
     /// <returns>The resulting request model with cameras</returns>
-    Task<PictureRequestModel> RequestTakePictureColumns(int futureMillis = 2000, int columnDelayMillis = 50);
+    Task<PictureRequestModel> RequestTakePictureColumns(
+        PictureRequestType pictureRequestType = PictureRequestType.Other,
+        Guid? pictureSetUId = null,
+        int futureMillis = 2000,
+        int columnDelayMillis = 50
+    );
 
     /// <summary>
     /// Handle a TakePicture response
@@ -45,9 +55,14 @@ public partial class PiZeroCameraManager : ITakePictureManager
     /// Creates request model and MQTT message for take picture request
     /// </summary>
     /// <param name="futureMillis">How far in the future to take the photo</param>
+    /// <param name="pictureRequestType">Type for picture</param>
+    /// <param name="pictureSetUId">UUID for picture set</param>
     /// <returns>PictureRequest model and MQTT message</returns>
     private static (PictureRequestModel pictureRequest, MqttApplicationMessage message) CreateRequestModels(
-        int futureMillis)
+        int futureMillis,
+        PictureRequestType pictureRequestType,
+        Guid? pictureSetUId
+    )
     {
         var uuid = Guid.CreateVersion7();
         var currentTime = DateTimeOffset.UtcNow;
@@ -57,7 +72,10 @@ public partial class PiZeroCameraManager : ITakePictureManager
         {
             Uuid = uuid,
             RequestTime = currentTime,
-            PictureTime = pictureTime
+            PictureTime = pictureTime,
+            PictureRequestType = pictureRequestType,
+            IsActive = true,
+            PictureSetId = pictureSetUId
         };
 
         CameraRequest takePictureRequest = new CameraRequest.TakePicture(
@@ -93,20 +111,21 @@ public partial class PiZeroCameraManager : ITakePictureManager
     }
 
     /// <inheritdoc />
-    public async Task<PictureRequestModel> RequestTakePictureAll(int futureMillis)
+    public async Task<PictureRequestModel> RequestTakePictureAll(PictureRequestType pictureRequestType,
+        Guid? pictureSetUId, int futureMillis)
     {
         await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
         var options = _optionsMonitor.CurrentValue;
 
-        var (pictureRequest, message) = CreateRequestModels(futureMillis);
+        var (pictureRequest, message) = CreateRequestModels(futureMillis, pictureRequestType, pictureSetUId);
 
         // must save request to db before requests
         piDbContext.PictureRequests.Add(pictureRequest);
         await piDbContext.SaveChangesAsync();
 
         var expectedCams = GetTakeableCameras(
-            requirePing: false,
-            requireDeviceStatus: false
+            requirePing: true,
+            requireDeviceStatus: true
         ).ToList();
 
 
@@ -134,20 +153,25 @@ public partial class PiZeroCameraManager : ITakePictureManager
 
     /// <inheritdoc />
     /// TODO: implement form part for millis
-    public async Task<PictureRequestModel> RequestTakePictureColumns(int futureMillis, int columnDelayMillis)
+    public async Task<PictureRequestModel> RequestTakePictureColumns(
+        PictureRequestType pictureRequestType,
+        Guid? pictureSetUId,
+        int futureMillis,
+        int columnDelayMillis
+    )
     {
         await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
         var options = _optionsMonitor.CurrentValue;
 
-        var (pictureRequest, message) = CreateRequestModels(futureMillis);
+        var (pictureRequest, message) = CreateRequestModels(futureMillis, pictureRequestType, pictureSetUId);
 
         // must save request to db before requests
         piDbContext.PictureRequests.Add(pictureRequest);
         await piDbContext.SaveChangesAsync();
 
         var expectedCams = GetTakeableCameras(
-            requirePing: false,
-            requireDeviceStatus: false
+            requirePing: true,
+            requireDeviceStatus: true
         ).ToList();
 
         var columns = Enumerable.Range('A', 16).Select(c => ((char)c).ToString()).ToList();

@@ -1,6 +1,56 @@
 @page "/"
-<h3>Dashboard</h3>
+@using picamerasserver.Components.Components
 
-@code {
-    
-}
+<PageTitle>Dashboard - PiCam</PageTitle>
+<DefaultPage>
+    <MudStack Style="width: 100%" Class="pt-4 pb-4 mt-4 mb-20">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                   EndIcon="@Icons.Material.Outlined.Add" OnClick="@NavigateToNew">
+            New picture set
+        </MudButton>
+        <MudDataGrid @ref="_gridData" T="PictureSetElement" ServerData="ServerReload" Filterable="false"
+                     SortMode="SortMode.None">
+            <Columns>
+                <TemplateColumn Title="Name">
+                    <CellTemplate>
+                        <MudStack Row>
+                            <MudLink Href="@($"NewPicturePage/{context.Item.Uuid}")">@context.Item.Name</MudLink>
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+                <PropertyColumn Property="x => x.IsDone" Title="Is finished"/>
+                <TemplateColumn Title="Taken">
+                    <CellTemplate>
+                        <MudStack Row>
+                            @context.Item.TakenCount / @context.Item.TotalCount
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Sent">
+                    <CellTemplate>
+                        <MudStack Row>
+                            @context.Item.SentCount / @context.Item.TakenCount
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Actions" HeaderStyle="text-align: center" CellClass="pa-0 ma-0"
+                                CellStyle="text-align: center">
+                    <CellTemplate>
+                        <MudStack Row>
+                            <MudIconButton OnClick="@(() => SendPicture(context.Item.Uuid))" Target="_top"
+                                           Icon="@Icons.Material.Rounded.Send" aria-label="send"
+                                           Size="Size.Medium" Class="pa-3 ma-0"
+                                           Disabled="@SendSetActive"/>
+                            <MudIconButton Href="@($"downloadpictureset/{context.Item.Uuid}")" Target="_top"
+                                           Icon="@Icons.Material.Rounded.Download" aria-label="download"
+                                           Size="Size.Medium" Class="pa-3 ma-0"/>
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="PictureSetElement"/>
+            </PagerContent>
+        </MudDataGrid>
+    </MudStack>
+</DefaultPage>

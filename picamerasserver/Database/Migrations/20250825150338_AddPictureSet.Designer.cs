@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using picamerasserver.Database;
@@ -11,9 +12,11 @@ using picamerasserver.Database;
 namespace picamerasserver.Database.Migrations
 {
     [DbContext(typeof(PiDbContext))]
-    partial class PiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250825150338_AddPictureSet")]
+    partial class AddPictureSet
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -120,14 +123,6 @@ namespace picamerasserver.Database.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("Note")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("PictureRequestType")
-                        .IsRequired()
-                        .HasColumnType("varchar(50)");
-
                     b.Property<Guid?>("PictureSetId")
                         .HasColumnType("uuid");
 
@@ -136,6 +131,10 @@ namespace picamerasserver.Database.Migrations
 
                     b.Property<DateTimeOffset>("RequestTime")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Type")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.HasKey("Uuid");
 

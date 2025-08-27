@@ -1,0 +1,244 @@
+@page "/NewPicturePage/{uuid:guid?}"
+@using System.Globalization
+@using picamerasserver.Components.Components
+@using picamerasserver.Database.Models
+@using picamerasserver.pizerocamera
+@using Color = System.Drawing.Color
+
+<PageTitle>New picture set - PiCam</PageTitle>
+<DefaultPage>
+    <MudStack Style="width: 100%" Class="pt-4 pb-4 mt-4 mb-20">
+        <MudExpansionPanels Elevation="5" MultiExpansion>
+            <MudStack Spacing="4">
+                <MudExpansionPanel Expanded>
+                    <TitleContent>
+                        <MudText Typo="Typo.h5">Create new picture set</MudText>
+                    </TitleContent>
+                    <ChildContent>
+                        <MudStack>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Class="d-flex">
+                                <MudText Typo="Typo.h6">Name</MudText>
+                                <MudTextField @bind-Value="Name" MaxLength="200" Label="Name" Variant="Variant.Outlined"
+                                              Class="flex-1" TextUpdateSuppression="false" Immediate="true"
+                                              Disabled="_pictureSet is { IsDone: true }">
+                                    Name
+                                </MudTextField>
+                                <MudSpacer/>
+                                <MudSpacer/>
+                            </MudStack>
+                            <MudStack Row="true" AlignItems="AlignItems.Center">
+                                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Size="Size.Large"
+                                           EndIcon="@Icons.Material.Outlined.Add" OnClick="@CreatePictureSet"
+                                           Disabled="_pictureSet != null || Name.Trim().Length == 0">
+                                    Create
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Size="Size.Large"
+                                           EndIcon="@Icons.Material.Outlined.Save" OnClick="@UpdatePictureSet"
+                                           Disabled="_pictureSet == null || _pictureSet.IsDone || Name.Trim().Length == 0">
+                                    Update
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error" Size="Size.Large"
+                                           EndIcon="@Icons.Material.Outlined.FireTruck" OnClick="@FinishPictureSet"
+                                           Disabled="_pictureSet == null || _pictureSet.IsDone">
+                                    Finish
+                                </MudButton>
+                            </MudStack>
+                        </MudStack>
+                    </ChildContent>
+                </MudExpansionPanel>
+                @if (_pictureSet == null || !_pictureSet.IsDone)
+                {
+                    <MudExpansionPanel Gutters="false" Dense="true" HideIcon="true" HeaderClass="pa-0"
+                                       Disabled="_pictureSet == null || _pictureSet.IsDone">
+                        <TitleContent>
+                            @* <MudPaper Elevation="10" Class="d-inline-flex"> *@
+                            <MudStack Style="width: 100%">
+                                @* <MudProgressLinear Color="Color.Tertiary" Value="@ProgressTaken"/> *@
+                                @* <MudProgressLinear Color="Color.Primary" Value="@ProgressSent"/> *@
+                                <MudStack Row="true" Spacing="4" Class="pa-4 d-inline-flex"
+                                          AlignItems="AlignItems.Center">
+                                    <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Size="Size.Large"
+                                               EndIcon="@Icons.Material.Outlined.Blind" OnClick="@GetAlive"
+                                               Disabled="_pictureSet == null || _pictureSet.IsDone">
+                                        Get alive
+                                    </MudButton>
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                        <MudText>
+                                            Alive @AliveCount / @TotalCount
+                                        </MudText>
+                                        @if (_pictureSet != null && AliveCount == @TotalCount)
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                                                     Size="Size.Large"/>
+                                        }
+                                        else
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                                                     Size="Size.Large"/>
+                                        }
+                                    </MudStack>
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                        <MudText>
+                                            Ping @PingedCount / @TotalCount
+                                        </MudText>
+                                    </MudStack>
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                        <MudText>
+                                            Status @StatusCount / @TotalCount
+                                        </MudText>
+                                    </MudStack>
+                                </MudStack>
+                            </MudStack>
+                            @* </MudPaper> *@
+                        </TitleContent>
+                        <ChildContent>
+                            <MudText Typo="Typo.h6" Class="px-4">Ping</MudText>
+                            <StatusTable
+                                Elevation="5"
+                                ColorTransform="@ColorTransformPing"
+                                TooltipTransform="@_tooltipTransformStatus">
+                            </StatusTable>
+                            <MudText Typo="Typo.h6" Class="px-4">Status</MudText>
+                            <StatusTable
+                                Elevation="5"
+                                ColorTransform="@ColorTransformStatus"
+                                TooltipTransform="@_tooltipTransformStatus">
+                            </StatusTable>
+                        </ChildContent>
+                    </MudExpansionPanel>
+                    <MudExpansionPanel Gutters="false" Dense="true" HideIcon="true" HeaderClass="pa-0"
+                                       Disabled="_pictureSet == null || !Alived || AliveCount == 0">
+                        <TitleContent>
+                            @* <MudPaper Elevation="10" Class="d-inline-flex"> *@
+                            <MudStack Style="width: 100%">
+                                @* <MudProgressLinear Color="Color.Tertiary" Value="@ProgressTaken"/> *@
+                                @* <MudProgressLinear Color="Color.Primary" Value="@ProgressSent"/> *@
+                                <MudStack Row="true" Spacing="4" Class="pa-4 d-inline-flex"
+                                          AlignItems="AlignItems.Center">
+                                    <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Size="Size.Large"
+                                               EndIcon="@Icons.Material.Outlined.Alarm" OnClick="@RequestNtpSyncStep"
+                                               Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || AliveCount == 0">
+                                        Big NTP
+                                    </MudButton>
+                                    <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Size="Size.Large"
+                                               EndIcon="@Icons.Material.Outlined.Alarm" OnClick="@RequestNtpSyncSlew"
+                                               Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || AliveCount == 0">
+                                        Small NTP
+                                    </MudButton>
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                        <MudText>
+                                            Synced @SyncedCount / @AliveCount
+                                        </MudText>
+                                        @if (_pictureSet != null && Alived && AliveCount > 0 && SyncedCount == AliveCount)
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                                                     Size="Size.Large"/>
+                                        }
+                                        else
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                                                     Size="Size.Large"/>
+                                        }
+                                    </MudStack>
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                        <MudText>
+                                            <MudText Typo="Typo.h6">Offset</MudText>
+                                            Min @(MinOffset == null ? "-------" : string.Format(CultureInfo.CurrentCulture, "{0:N2}", MinOffset)) ms
+                                            <br/>
+                                            Max @(MaxOffset == null ? "-------" : string.Format(CultureInfo.CurrentCulture, "{0:N2}", MaxOffset)) ms
+                                        </MudText>
+                                    </MudStack>
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                        <MudText>
+                                            <MudText Typo="Typo.h6">Error</MudText>
+                                            Min @(MinError == null ? "-------" : string.Format(CultureInfo.CurrentCulture, "{0:N2}", MinError)) ms
+                                            <br/>
+                                            Max @(MaxError == null ? "-------" : string.Format(CultureInfo.CurrentCulture, "{0:N2}", MaxError)) ms
+                                        </MudText>
+                                    </MudStack>
+                                </MudStack>
+                            </MudStack>
+                            @* </MudPaper> *@
+                        </TitleContent>
+                        <ChildContent>
+                            <StatusTable
+                                Elevation="5"
+                                ColorTransform="@ColorTransformNtp"
+                                TooltipTransform="@_tooltipTransformNtp">
+                            </StatusTable>
+                        </ChildContent>
+                    </MudExpansionPanel>
+                }
+                <PictureTakeSet PictureRequestType="PictureRequestType.StandingSpread"
+                                PictureRequestModel="PictureRequestStandingSpread"
+                                PictureSetUId="_pictureSet?.Uuid"
+                                Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || !Synced || AliveCount == 0 || SyncedCount == 0"/>
+                <PictureTakeSet PictureRequestType="PictureRequestType.StandingTogether"
+                                PictureRequestModel="PictureRequestStandingTogether"
+                                PictureSetUId="_pictureSet?.Uuid"
+                                Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || !Synced || AliveCount == 0 || SyncedCount == 0"/>
+                <PictureTakeSet PictureRequestType="PictureRequestType.Sitting"
+                                PictureRequestModel="PictureRequestSitting"
+                                PictureSetUId="_pictureSet?.Uuid"
+                                Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || !Synced || AliveCount == 0 || SyncedCount == 0"/>
+                <PictureTakeSet PictureRequestType="PictureRequestType.Mask"
+                                PictureRequestModel="PictureRequestMask"
+                                PictureSetUId="_pictureSet?.Uuid"
+                                Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || !Synced || AliveCount == 0 || SyncedCount == 0"/>
+            </MudStack>
+        </MudExpansionPanels>
+    </MudStack>
+</DefaultPage>
+
+@code {
+
+    private readonly Func<string, RenderFragment?> _tooltipTransformStatus = _ => null;
+
+    private Func<string, RenderFragment?> _tooltipTransformNtp = _ => null;
+
+    private void UpdateTooltipTransformNtp()
+    {
+        _tooltipTransformNtp = cameraId =>
+        {
+            var item = PiZeroCameraManager.PiZeroCameras[cameraId];
+
+            return @<NtpRequestTooltip PiZeroCamera="item"/>;
+        };
+    }
+
+    private Color ColorTransformPing(string cameraId)
+    {
+        return PiZeroCameraManager.PiZeroCameras[cameraId].Pingable switch
+        {
+            true => Color.FromArgb(0x00, 0xFF, 0x00),
+            false => Color.FromArgb(0xFF, 0x00, 0x00),
+            null => Color.FromArgb(0x00, 0x00, 0x00)
+        };
+    }
+
+    private Color ColorTransformStatus(string id)
+    {
+        return PiZeroCameraManager.PiZeroCameras[id].Status switch
+        {
+            null => Color.FromArgb(0xFF, 0x00, 0x00),
+            _ => Color.FromArgb(0x00, 0xFF, 0x00),
+        };
+    }
+
+    private Color ColorTransformNtp(string id)
+    {
+        var piZeroCamera = PiZeroCameraManager.PiZeroCameras[id];
+        return piZeroCamera.NtpRequest switch
+        {
+            null => Color.FromArgb(0x00, 0x00, 0x00),
+            PiZeroCameraNtpRequest.Failure.Failed _ => Color.FromArgb(0xff, 0x00, 0x00),
+            PiZeroCameraNtpRequest.Failure.FailedToParseJson _ => Color.FromArgb(0xff, 0x00, 0x00),
+            PiZeroCameraNtpRequest.Failure.FailedToParseRegex _ => Color.FromArgb(0xff, 0x00, 0x00),
+            PiZeroCameraNtpRequest.Failure.FailedToRequest _ => Color.FromArgb(0xff, 0x00, 0x00),
+            PiZeroCameraNtpRequest.Requested _ => Color.FromArgb(0x55, 0x55, 0x00),
+            PiZeroCameraNtpRequest.Success _ => Color.FromArgb(0x00, 0xFF, 0x00),
+            _ => throw new ArgumentOutOfRangeException()
+        };
+    }
+
+}

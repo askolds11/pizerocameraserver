@@ -11,6 +11,7 @@ public class PiDbContext(DbContextOptions<PiDbContext> options) : DbContext(opti
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
     }
 
+    public DbSet<PictureSetModel> PictureSets { get; init; }
     public DbSet<PictureRequestModel> PictureRequests { get; init; }
     public DbSet<CameraModel> Cameras { get; init; }
     public DbSet<CameraPictureModel> CameraPictures { get; init; }
