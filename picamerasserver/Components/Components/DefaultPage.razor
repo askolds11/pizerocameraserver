@@ -1,6 +1,6 @@
 @using picamerasserver.Components.Layout
 <MudContainer MaxWidth="MaxWidth.Large">
-    <MudPaper Height="@($"calc(100vh - {MyThemeProvider.MyCustomTheme.LayoutProperties.AppbarHeight})")">
+    <MudPaper MinHeight="@($"calc(100vh - {MyThemeProvider.MyCustomTheme.LayoutProperties.AppbarHeight})")">
         @ChildContent
     </MudPaper>
 </MudContainer>
