@@ -33,6 +33,9 @@ public partial class PiZeroCameraManager
             foreach (var piZeroCamera in PiZeroCameras.Values)
             {
                 piZeroCamera.NtpRequest = new PiZeroCameraNtpRequest.Requested();
+                piZeroCamera.LastNtpErrorMillis = null;
+                piZeroCamera.LastNtpOffsetMillis = null;
+                piZeroCamera.LastNtpSync = null;
             }
         }
         else
