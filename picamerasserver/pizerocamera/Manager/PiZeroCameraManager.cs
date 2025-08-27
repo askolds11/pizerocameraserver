@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MQTTnet;
@@ -31,13 +32,13 @@ public partial class PiZeroCameraManager
         using var piDbContext = _dbContextFactory.CreateDbContext();
 
         // Add all cameras
-        var piZeroCameras = new Dictionary<string, PiZeroCamera>();
+        var piZeroCameras = new ConcurrentDictionary<string, PiZeroCamera>();
         foreach (var letter in Enumerable.Range('A', 16).Select(c => ((char)c).ToString()))
         {
             foreach (var number in Enumerable.Range(1, 6))
             {
                 var id = letter + number;
-                piZeroCameras.Add(id, new PiZeroCamera { Id = id });
+                piZeroCameras.TryAdd(id, new PiZeroCamera { Id = id });
 
                 if (!piDbContext.Cameras.Any(x => x.Id == id))
                 {
