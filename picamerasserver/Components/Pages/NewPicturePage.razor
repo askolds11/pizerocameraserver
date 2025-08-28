@@ -37,16 +37,11 @@
                                            Disabled="_pictureSet == null || _pictureSet.IsDone || Name.Trim().Length == 0">
                                     Update
                                 </MudButton>
-                                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error" Size="Size.Large"
-                                           EndIcon="@Icons.Material.Outlined.FireTruck" OnClick="@FinishPictureSet"
-                                           Disabled="_pictureSet == null || _pictureSet.IsDone">
-                                    Finish
-                                </MudButton>
                             </MudStack>
                         </MudStack>
                     </ChildContent>
                 </MudExpansionPanel>
-                @if (_pictureSet == null || !_pictureSet.IsDone)
+                @if (_pictureSet is not { IsDone: true })
                 {
                     <MudExpansionPanel Gutters="false" Dense="true" HideIcon="true" HeaderClass="pa-0"
                                        Disabled="_pictureSet == null || _pictureSet.IsDone">
@@ -57,7 +52,8 @@
                                 @* <MudProgressLinear Color="Color.Primary" Value="@ProgressSent"/> *@
                                 <MudStack Row="true" Spacing="4" Class="pa-4 d-inline-flex"
                                           AlignItems="AlignItems.Center">
-                                    <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Size="Size.Large"
+                                    <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary"
+                                               Size="Size.Large"
                                                EndIcon="@Icons.Material.Outlined.Blind" OnClick="@GetAlive"
                                                Disabled="_pictureSet == null || _pictureSet.IsDone">
                                         Get alive
@@ -115,12 +111,14 @@
                                 @* <MudProgressLinear Color="Color.Primary" Value="@ProgressSent"/> *@
                                 <MudStack Row="true" Spacing="4" Class="pa-4 d-inline-flex"
                                           AlignItems="AlignItems.Center">
-                                    <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Size="Size.Large"
+                                    <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary"
+                                               Size="Size.Large"
                                                EndIcon="@Icons.Material.Outlined.Alarm" OnClick="@RequestNtpSyncStep"
                                                Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || AliveCount == 0">
                                         Big NTP
                                     </MudButton>
-                                    <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Size="Size.Large"
+                                    <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary"
+                                               Size="Size.Large"
                                                EndIcon="@Icons.Material.Outlined.Alarm" OnClick="@RequestNtpSyncSlew"
                                                Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || AliveCount == 0">
                                         Small NTP
@@ -185,6 +183,39 @@
                                 PictureRequestModel="PictureRequestMask"
                                 PictureSetUId="_pictureSet?.Uuid"
                                 Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || !Synced || AliveCount == 0 || SyncedCount == 0"/>
+                <MudExpansionPanel Expanded>
+                    <TitleContent>
+                        <MudText Typo="Typo.h5">Actions</MudText>
+                    </TitleContent>
+                    <ChildContent>
+                        <MudStack>
+                            <MudStack Row="true" AlignItems="AlignItems.Center">
+                                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error" Size="Size.Large"
+                                           EndIcon="@Icons.Material.Outlined.FireTruck" OnClick="@FinishPictureSet"
+                                           Disabled="_pictureSet == null || _pictureSet.IsDone">
+                                    Finish
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Size="Size.Large"
+                                           EndIcon="@Icons.Material.Outlined.Send" OnClick="@SendPictureSet"
+                                           Disabled="_pictureSet is not { IsDone: true } || SendSetActive || AllSentCount == AllTotalCount">
+                                    Send
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Size="Size.Large"
+                                           EndIcon="@Icons.Material.Outlined.Download"
+                                           Href="@($"downloadpictureset/{_pictureSet?.Uuid}")"
+                                           Disabled="_pictureSet is not { IsDone: true } || SendSetActive || AllTotalCount == 0 || AllSentCount != AllTotalCount">
+                                    Download
+                                </MudButton>
+                                @if (_pictureSet is { IsDone: true })
+                                {
+                                    <MudText>
+                                        Sent @AllSentCount / @AllTotalCount
+                                    </MudText>
+                                }
+                            </MudStack>
+                        </MudStack>
+                    </ChildContent>
+                </MudExpansionPanel>
             </MudStack>
         </MudExpansionPanels>
     </MudStack>

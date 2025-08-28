@@ -15,8 +15,10 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; init; } = null!;
     [Inject] protected IDbContextFactory<PiDbContext> DbContextFactory { get; init; } = null!;
     [Inject] protected NavigationManager NavigationManager { get; init; } = null!;
+    [Inject] protected ISendPictureSetManager SendPictureSetManager { get; init; } = null!;
 
     private PictureSetModel? _pictureSet;
+    private bool SendSetActive => SendPictureSetManager.SendSetActive;
 
     private PictureRequestModel? PictureRequestStandingSpread => _pictureSet?.PictureRequests.FirstOrDefault(x =>
         x is { PictureRequestType: PictureRequestType.StandingSpread, IsActive: true });
@@ -74,6 +76,15 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         piDbContext.PictureSets.Update(_pictureSet);
         await piDbContext.SaveChangesAsync();
     }
+    
+    private async Task SendPictureSet()
+    {
+        if (_pictureSet == null)
+        {
+            throw new ArgumentNullException(nameof(_pictureSet));
+        }
+        await SendPictureSetManager.RequestSendPictureSet(_pictureSet.Uuid);
+    }
 
     private bool Alived { get; set; } = false;
     private bool Synced { get; set; } = false;
@@ -88,6 +99,13 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         PiZeroCameraManager.PiZeroCameras.Values.Count(x => x is { Pingable: true, Status: not null });
 
     private int TotalCount => PiZeroCameraManager.PiZeroCameras.Count;
+    
+    private int AllSentCount => _pictureSet?.PictureRequests
+            .Sum(x => x.CameraPictures.Count(y => y.ReceivedSent != null)) ?? 0;
+
+    private int AllTotalCount =>
+        _pictureSet?.PictureRequests
+            .Sum(x => x.CameraPictures.Count(y => y.CameraPictureStatus != null)) ?? 0;
 
 
     private CancellationTokenSource? _pingCancellationTokenSource;
@@ -182,6 +200,22 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         InvokeAsync(StateHasChanged);
     }
 
+    /// <summary>
+    /// Refreshes list
+    /// </summary>
+    /// <param name="uuid"></param>
+    private void OnPictureSetChanged(Guid uuid)
+    {
+        InvokeAsync(async () =>
+        {
+            if (_pictureSet != null && _pictureSet.Uuid == uuid)
+            {
+                await RefreshPictureSet();
+                StateHasChanged();
+            }
+        });
+    }
+
     private void OnNtpChanged()
     {
         InvokeAsync(() =>
@@ -219,12 +253,14 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     {
         PiZeroCameraManager.OnChangePing += OnGlobalChanged;
         PiZeroCameraManager.OnNtpChange += OnNtpChanged;
+        PiZeroCameraManager.OnPictureSetChange += OnPictureSetChanged;
     }
 
     public void Dispose()
     {
         PiZeroCameraManager.OnChangePing -= OnGlobalChanged;
         PiZeroCameraManager.OnNtpChange -= OnNtpChanged;
+        PiZeroCameraManager.OnPictureSetChange -= OnPictureSetChanged;
         GC.SuppressFinalize(this);
     }
 }
