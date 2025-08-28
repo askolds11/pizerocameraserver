@@ -20,22 +20,6 @@ public interface ITakePictureManager
         Guid? pictureSetUId = null, int futureMillis = 1000);
 
     /// <summary>
-    /// Makes requests to take pictures. <br />
-    /// Makes requests to a column of cameras at once every <paramref name="columnDelayMillis"/>
-    /// </summary>
-    /// <param name="pictureRequestType">Type for picture</param>
-    /// <param name="pictureSetUId">UUID of picture set, if exists</param>
-    /// <param name="futureMillis">How far in the future to take the photo</param>
-    /// <param name="columnDelayMillis">Time between column requests</param>
-    /// <returns>The resulting request model with cameras</returns>
-    Task<PictureRequestModel> RequestTakePictureColumns(
-        PictureRequestType pictureRequestType = PictureRequestType.Other,
-        Guid? pictureSetUId = null,
-        int futureMillis = 2000,
-        int columnDelayMillis = 50
-    );
-
-    /// <summary>
     /// Handle a TakePicture response
     /// </summary>
     /// <param name="message">MQTT message</param>
@@ -146,74 +130,6 @@ public partial class PiZeroCameraManager : ITakePictureManager
 
         piDbContext.AddRange(dbItems);
         await piDbContext.SaveChangesAsync();
-
-        await piDbContext.Entry(pictureRequest).Collection(x => x.CameraPictures).LoadAsync();
-        return pictureRequest;
-    }
-
-    /// <inheritdoc />
-    /// TODO: implement form part for millis
-    public async Task<PictureRequestModel> RequestTakePictureColumns(
-        PictureRequestType pictureRequestType,
-        Guid? pictureSetUId,
-        int futureMillis,
-        int columnDelayMillis
-    )
-    {
-        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
-        var options = _optionsMonitor.CurrentValue;
-
-        var (pictureRequest, message) = CreateRequestModels(futureMillis, pictureRequestType, pictureSetUId);
-
-        // must save request to db before requests
-        piDbContext.PictureRequests.Add(pictureRequest);
-        await piDbContext.SaveChangesAsync();
-
-        var expectedCams = GetTakeableCameras(
-            requirePing: true,
-            requireDeviceStatus: true
-        ).ToList();
-
-        var columns = Enumerable.Range('A', 16).Select(c => ((char)c).ToString()).ToList();
-        foreach (var column in columns)
-        {
-            var expectedColumnCams = expectedCams
-                .Where(x => x.Id.StartsWith(column))
-                .ToList();
-
-            // TODO: Probably delete - maybe we get lucky and get a response anyways
-
-            // If column has no useful cameras, skip it
-            // if (expectedColumnCams.Count == 0)
-            // {
-            //     continue;
-            // }
-
-            // Send message to column
-            message.Topic = $"{options.CameraTopic}/{column}";
-            var publishResult = await _mqttClient.PublishAsync(message);
-
-            // Add to database
-            var dbItems = expectedColumnCams.Select(x => new CameraPictureModel
-            {
-                CameraId = x.Id, PictureRequestId = pictureRequest.Uuid,
-                CameraPictureStatus = publishResult.IsSuccess
-                    ? CameraPictureStatus.Requested
-                    : CameraPictureStatus.FailedToRequest,
-                Requested = DateTimeOffset.UtcNow,
-                NtpErrorMillis = x.LastNtpErrorMillis
-            });
-            piDbContext.AddRange(dbItems);
-
-            // Have to save now, as request was already made.
-            await piDbContext.SaveChangesAsync();
-
-            // Allow time for the cameras to send
-            if (column != columns.Last())
-            {
-                await Task.Delay(columnDelayMillis);
-            }
-        }
 
         await piDbContext.Entry(pictureRequest).Collection(x => x.CameraPictures).LoadAsync();
         return pictureRequest;
