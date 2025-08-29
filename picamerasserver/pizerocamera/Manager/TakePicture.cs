@@ -13,7 +13,7 @@ public interface ITakePictureManager
     /// Makes requests to all cameras at once.
     /// </summary>
     /// <param name="pictureRequestType">Type of picture</param>
-    /// <param name="pictureSetUId">UUID of picture set, if exists</param>
+    /// <param name="pictureSetUId">UUID of the picture set, if exists</param>
     /// <param name="futureMillis">How far in the future to take the photo</param>
     /// <returns>The resulting request model with cameras</returns>
     Task<PictureRequestModel> RequestTakePictureAll(PictureRequestType pictureRequestType = PictureRequestType.Other,
@@ -23,7 +23,7 @@ public interface ITakePictureManager
     /// Handle a TakePicture response
     /// </summary>
     /// <param name="message">MQTT message</param>
-    /// <param name="messageReceived">Time when message was received</param>
+    /// <param name="messageReceived">Time when the message was received</param>
     /// <param name="takePicture">Deserialized TakePicture</param>
     /// <param name="id">Camera's id</param>
     /// <exception cref="ArgumentOutOfRangeException">Unknown failure type</exception>
@@ -38,9 +38,10 @@ public partial class PiZeroCameraManager : ITakePictureManager
     /// <summary>
     /// Creates request model and MQTT message for take picture request
     /// </summary>
+    /// <remarks>Message is not set!</remarks>
     /// <param name="futureMillis">How far in the future to take the photo</param>
     /// <param name="pictureRequestType">Type for picture</param>
-    /// <param name="pictureSetUId">UUID for picture set</param>
+    /// <param name="pictureSetUId">UUID for a picture set</param>
     /// <returns>PictureRequest model and MQTT message</returns>
     private static (PictureRequestModel pictureRequest, MqttApplicationMessage message) CreateRequestModels(
         int futureMillis,
@@ -78,10 +79,10 @@ public partial class PiZeroCameraManager : ITakePictureManager
     }
 
     /// <summary>
-    /// Get list of cameras based on criteria for taking pictures
+    /// Get a list of cameras based on criteria for taking pictures
     /// </summary>
-    /// <param name="requirePing">Should camera be pingable</param>
-    /// <param name="requireDeviceStatus">Should camera have status</param>
+    /// <param name="requirePing">Should a camera be pingable?</param>
+    /// <param name="requireDeviceStatus">Should a camera have status?</param>
     /// <returns>A collection of cameras that a request can be sent to</returns>
     private IEnumerable<PiZeroCamera> GetTakeableCameras(
         bool requirePing = true,
@@ -113,11 +114,11 @@ public partial class PiZeroCameraManager : ITakePictureManager
         ).ToList();
 
 
-        // Send message
+        // Send the message
         message.Topic = options.CameraTopic;
         var publishResult = await _mqttClient.PublishAsync(message);
 
-        // Add to database
+        // Add to the database
         var dbItems = expectedCams.Select(x => new CameraPictureModel
         {
             CameraId = x.Id, PictureRequestId = pictureRequest.Uuid,
@@ -143,11 +144,13 @@ public partial class PiZeroCameraManager : ITakePictureManager
         string id
     )
     {
-        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
-
         var successWrapper = takePicture.Response;
         var uuid = successWrapper.Value.Uuid;
+        
+        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
+        
         var dbItem = piDbContext.CameraPictures.FirstOrDefault(x => x.PictureRequestId == uuid && x.CameraId == id);
+        // Just in case create a database item if it does not exist
         if (dbItem == null)
         {
             dbItem = new CameraPictureModel
@@ -156,37 +159,36 @@ public partial class PiZeroCameraManager : ITakePictureManager
         }
 
         // Handle times
+        switch (successWrapper.Value)
         {
-            if (successWrapper.Value is TakePictureResponse.PictureTaken pictureTaken)
-            {
+            case TakePictureResponse.PictureTaken pictureTaken:
                 dbItem.PictureRequestReceived =
                     DateTimeOffset.FromUnixTimeMilliseconds(pictureTaken.MessageReceivedNanos / 1000000);
                 dbItem.WaitTimeNanos = pictureTaken.WaitTimeNanos;
-            }
-            else if (successWrapper.Value is TakePictureResponse.Failure.PictureFailedToSchedule failedToSchedule)
-            {
+                break;
+            case TakePictureResponse.Failure.PictureFailedToSchedule failedToSchedule:
                 dbItem.PictureRequestReceived =
                     DateTimeOffset.FromUnixTimeMilliseconds(failedToSchedule.MessageReceivedNanos / 1000000);
                 dbItem.WaitTimeNanos = failedToSchedule.WaitTimeNanos;
-            }
-            else if (successWrapper.Value is TakePictureResponse.Failure.PictureFailedToTake failedToTake)
-            {
+                break;
+            case TakePictureResponse.Failure.PictureFailedToTake failedToTake:
                 dbItem.PictureRequestReceived =
                     DateTimeOffset.FromUnixTimeMilliseconds(failedToTake.MessageReceivedNanos / 1000000);
                 dbItem.WaitTimeNanos = failedToTake.WaitTimeNanos;
-            }
+                break;
         }
 
         if (successWrapper.Success)
         {
-            if (successWrapper.Value is TakePictureResponse.PictureTaken pictureTaken)
+            switch (successWrapper.Value)
             {
-                dbItem.ReceivedTaken = messageReceived;
-                dbItem.MonotonicTime = pictureTaken.MonotonicTime;
-            }
-            else if (successWrapper.Value is TakePictureResponse.PictureSavedOnDevice)
-            {
-                dbItem.ReceivedSaved = messageReceived;
+                case TakePictureResponse.PictureTaken pictureTaken:
+                    dbItem.ReceivedTaken = messageReceived;
+                    dbItem.MonotonicTime = pictureTaken.MonotonicTime;
+                    break;
+                case TakePictureResponse.PictureSavedOnDevice:
+                    dbItem.ReceivedSaved = messageReceived;
+                    break;
             }
 
             (dbItem.CameraPictureStatus, dbItem.StatusMessage) = successWrapper.Value switch
