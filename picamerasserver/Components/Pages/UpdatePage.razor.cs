@@ -45,7 +45,6 @@ public partial class UpdatePage(
                 b => b.IsCurrent,
                 true)
             );
-        await piDbContext.SaveChangesAsync();
         await _gridData.ReloadServerData();
     }
 
