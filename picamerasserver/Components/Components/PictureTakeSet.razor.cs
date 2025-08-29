@@ -28,9 +28,11 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
         if (PictureRequestModel != null)
         {
             await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
-            PictureRequestModel.IsActive = false;
-            piDbContext.PictureRequests.Update(PictureRequestModel);
-            await piDbContext.SaveChangesAsync();
+            await piDbContext.PictureRequests.Where(x => x.Uuid == PictureRequestModel.Uuid)
+                .ExecuteUpdateAsync(x => x.SetProperty(
+                    b => b.IsActive,
+                    false)
+                );
         }
 
         PictureRequestModel = await TakePictureManager.RequestTakePictureAll(PictureRequestType, PictureSetUId);
