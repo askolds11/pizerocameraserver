@@ -37,11 +37,11 @@
                                 CellStyle="text-align: center">
                     <CellTemplate>
                         <MudStack Row>
-                            <MudIconButton OnClick="@(() => SendPicture(context.Item.Uuid))" Target="_top"
+                            <MudIconButton OnClick="@(() => SendPicture(context.Item.Uuid))"
                                            Icon="@Icons.Material.Rounded.Send" aria-label="send"
                                            Size="Size.Medium" Class="pa-3 ma-0"
                                            Disabled="@SendSetActive"/>
-                            <MudIconButton Href="@($"downloadpictureset/{context.Item.Uuid}")" Target="_top"
+                            <MudIconButton Href="@($"downloadpictureset/{context.Item.Uuid}")" Target="_blank"
                                            Icon="@Icons.Material.Rounded.Download" aria-label="download"
                                            Size="Size.Medium" Class="pa-3 ma-0"/>
                         </MudStack>
