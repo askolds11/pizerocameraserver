@@ -63,7 +63,8 @@ public partial class CameraPage : ComponentBase, IDisposable
 
     private async Task TakePicture()
     {
-        var pictureRequestModel = await TakePictureManager.RequestTakePictureAll();
+        // TODO: Error handling
+        var pictureRequestModel = (await TakePictureManager.RequestTakePictureAll()).Value;
         _selectedPicture = new PictureElement(pictureRequestModel);
         await _gridData.ReloadServerData();
     }

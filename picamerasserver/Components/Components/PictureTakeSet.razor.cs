@@ -17,6 +17,8 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
     [Inject] protected ITakePictureManager TakePictureManager { get; init; } = null!;
     [Inject] protected IDbContextFactory<PiDbContext> DbContextFactory { get; init; } = null!;
 
+    private bool TakePicActive => PiZeroCameraManager.TakePictureActive;
+    
     private async Task TakePicture()
     {
         if (PictureSetUId == null)
@@ -24,7 +26,7 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
             throw new ArgumentNullException(nameof(PictureSetUId));
         }
 
-        // Make old one inactive
+        // Make the old one inactive
         if (PictureRequestModel != null)
         {
             await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
@@ -35,7 +37,8 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
                 );
         }
 
-        PictureRequestModel = await TakePictureManager.RequestTakePictureAll(PictureRequestType, PictureSetUId);
+        // TODO: Error handling
+        PictureRequestModel = (await TakePictureManager.RequestTakePictureAll(PictureRequestType, PictureSetUId)).Value;
         // _selectedPicture = new PictureElement(pictureRequestModel);
         // await _gridData.ReloadServerData();
         _canTryAgain = false;
@@ -80,20 +83,17 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
     {
         InvokeAsync(async () =>
         {
-            if (uuid != PictureRequestModel?.Uuid)
+            if (uuid == PictureRequestModel?.Uuid)
             {
-                return;
+                await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
+                PictureRequestModel = await piDbContext.PictureRequests
+                    .Include(x => x.CameraPictures)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Uuid == uuid);
+
+                UpdateTooltipTransform();
             }
-
-            await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
-            PictureRequestModel = await piDbContext.PictureRequests
-                .Include(x => x.CameraPictures)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Uuid == uuid);
-
-            UpdateTooltipTransform();
-
-            // State will only change if a picture is selected
+            
             StateHasChanged();
         });
     }
@@ -103,6 +103,8 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
         PiZeroCameraManager.OnChangePing += OnGlobalChanged;
         PiZeroCameraManager.OnNtpChange += OnGlobalChanged;
         PiZeroCameraManager.OnPictureChange += OnPictureChanged;
+        
+        UpdateTooltipTransform();
     }
 
     public void Dispose()

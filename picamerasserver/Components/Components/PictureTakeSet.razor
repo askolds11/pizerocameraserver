@@ -20,7 +20,7 @@
                 </MudText>
                 <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Tertiary" Size="Size.Large"
                            EndIcon="@Icons.Material.Outlined.PhotoCamera" OnClick="@TakePicture"
-                           Disabled="Disabled || (PictureRequestModel != null && !_canTryAgain)">
+                           Disabled="Disabled || TakePicActive || (PictureRequestModel != null && !_canTryAgain)">
                     Take picture
                 </MudButton>
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
