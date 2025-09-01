@@ -154,6 +154,8 @@ public partial class PiZeroCameraManager
                     piZeroCamera.LastNtpSync = null;
                 }
             }
+
+            throw;
         }
         catch (Exception e)
         {

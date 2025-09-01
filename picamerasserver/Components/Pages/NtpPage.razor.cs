@@ -13,12 +13,27 @@ public partial class NtpPage : ComponentBase, IDisposable
 
     private async Task RequestNtpSyncStep()
     {
-        await PiZeroCameraManager.RequestNtpSync(new NtpRequest.Step());
+        try
+        {
+            await PiZeroCameraManager.RequestNtpSync(new NtpRequest.Step());
+        }
+        catch (OperationCanceledException)
+        {
+            
+        }
     }
     
     private async Task RequestNtpSyncSlew()
     {
-        await PiZeroCameraManager.RequestNtpSync(new NtpRequest.Slew());
+        try
+        {
+            await PiZeroCameraManager.RequestNtpSync(new NtpRequest.Slew());
+        }
+        catch (OperationCanceledException)
+        {
+            
+        }
+        
     }
     
     private List<float>? GetOffsets()

@@ -139,8 +139,15 @@ public partial class NewPicturePage : ComponentBase, IDisposable
             await CreatePictureSet();
         }
 
-        await PiZeroCameraManager.RequestNtpSync(new NtpRequest.Step());
-        Synced = true;
+        try
+        {
+            await PiZeroCameraManager.RequestNtpSync(new NtpRequest.Step());
+            Synced = true;
+        }
+        catch (OperationCanceledException)
+        {
+            Synced = false;
+        }
     }
 
     private async Task RequestNtpSyncSlew()
@@ -151,8 +158,15 @@ public partial class NewPicturePage : ComponentBase, IDisposable
             await CreatePictureSet();
         }
 
-        await PiZeroCameraManager.RequestNtpSync(new NtpRequest.Slew());
-        Synced = true;
+        try
+        {
+            await PiZeroCameraManager.RequestNtpSync(new NtpRequest.Slew());
+            Synced = true;
+        }
+        catch (OperationCanceledException)
+        {
+            Synced = false;
+        }
     }
 
     private List<float>? GetOffsets()
