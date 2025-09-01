@@ -78,13 +78,14 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         piDbContext.PictureSets.Update(_pictureSet);
         await piDbContext.SaveChangesAsync();
     }
-    
+
     private async Task SendPictureSet()
     {
         if (_pictureSet == null)
         {
             throw new ArgumentNullException(nameof(_pictureSet));
         }
+
         await SendPictureSetManager.RequestSendPictureSet(_pictureSet.Uuid);
     }
 
@@ -101,16 +102,13 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         PiZeroCameraManager.PiZeroCameras.Values.Count(x => x is { Pingable: true, Status: not null });
 
     private int TotalCount => PiZeroCameraManager.PiZeroCameras.Count;
-    
+
     private int AllSentCount => _pictureSet?.PictureRequests
-            .Sum(x => x.CameraPictures.Count(y => y.ReceivedSent != null)) ?? 0;
+        .Sum(x => x.CameraPictures.Count(y => y.ReceivedSent != null)) ?? 0;
 
     private int AllTotalCount =>
         _pictureSet?.PictureRequests
             .Sum(x => x.CameraPictures.Count(y => y.CameraPictureStatus != null)) ?? 0;
-
-
-    private CancellationTokenSource? _pingCancellationTokenSource;
 
     private async Task GetAlive()
     {
@@ -120,19 +118,9 @@ public partial class NewPicturePage : ComponentBase, IDisposable
             await CreatePictureSet();
         }
 
-        // Cancel any existing ping operation
-        if (_pingCancellationTokenSource != null)
-        {
-            await _pingCancellationTokenSource.CancelAsync();
-        }
-
-        _pingCancellationTokenSource?.Dispose();
-
-        _pingCancellationTokenSource = new CancellationTokenSource();
-
         try
         {
-            var task1 = PiZeroCameraManager.Ping(null, _pingCancellationTokenSource.Token);
+            var task1 = PiZeroCameraManager.Ping();
             var task2 = PiZeroCameraManager.GetStatus();
             await Task.WhenAll(task1, task2);
             Alived = true;
@@ -140,11 +128,6 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         catch (OperationCanceledException)
         {
             Alived = false;
-        }
-        finally
-        {
-            _pingCancellationTokenSource?.Dispose();
-            _pingCancellationTokenSource = null;
         }
     }
 
@@ -245,23 +228,20 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     {
         await PiZeroCameraManager.CancelTakePicture();
     }
-    
+
     private async Task CancelSend()
     {
         await SendPictureSetManager.CancelSendSet();
     }
-    
+
     private async Task CancelNtpSync()
     {
         await PiZeroCameraManager.CancelNtpSync();
     }
-    
+
     private async Task CancelPing()
     {
-        if (_pingCancellationTokenSource != null)
-        {
-            await _pingCancellationTokenSource.CancelAsync();
-        }
+        await PiZeroCameraManager.CancelPing();
     }
 
     protected override async Task OnInitializedAsync()

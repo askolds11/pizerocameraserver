@@ -8,44 +8,18 @@ public partial class StatusPage : ComponentBase, IDisposable
 {
     [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; set; } = null!;
     private bool PingActive => PiZeroCameraManager.PingActive;
-    private bool CanStopPing => PiZeroCameraManager.PingActive && _pingCancellationTokenSource != null;
-    private CancellationTokenSource? _pingCancellationTokenSource;
 
 
     private async Task Ping()
     {
-        // Cancel any existing ping operation
-        if (_pingCancellationTokenSource != null)
-        {
-            await _pingCancellationTokenSource.CancelAsync();
-        }
-
-        _pingCancellationTokenSource?.Dispose();
-
-        _pingCancellationTokenSource = new CancellationTokenSource();
-
-        try
-        {
-            await PiZeroCameraManager.Ping(null, _pingCancellationTokenSource.Token);
-        }
-        catch (OperationCanceledException)
-        {
-        }
-        finally
-        {
-            _pingCancellationTokenSource?.Dispose();
-            _pingCancellationTokenSource = null;
-        }
+        await PiZeroCameraManager.Ping();
     }
 
     private async Task StopPing()
     {
-        if (_pingCancellationTokenSource != null)
-        {
-            await _pingCancellationTokenSource.CancelAsync();
-        }
+        await PiZeroCameraManager.CancelPing();
     }
-    
+
     private async Task GetStatus()
     {
         await PiZeroCameraManager.GetStatus();
@@ -64,8 +38,6 @@ public partial class StatusPage : ComponentBase, IDisposable
     public void Dispose()
     {
         PiZeroCameraManager.OnChangePing -= OnGlobalChanged;
-        _pingCancellationTokenSource?.Cancel();
-        _pingCancellationTokenSource?.Dispose();
         GC.SuppressFinalize(this);
     }
 
@@ -78,7 +50,7 @@ public partial class StatusPage : ComponentBase, IDisposable
             null => Color.FromArgb(0x00, 0x00, 0x00)
         };
     }
-    
+
     private Color ColorTransformStatus(string id)
     {
         return PiZeroCameraManager.PiZeroCameras[id].Status switch

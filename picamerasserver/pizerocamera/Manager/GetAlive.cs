@@ -10,6 +10,7 @@ public partial class PiZeroCameraManager
     public event Action? OnChangePing;
     public bool PingActive { get; private set; }
     private readonly SemaphoreSlim _pingSemaphore = new(1, 1);
+    private CancellationTokenSource? _pingCancellationTokenSource;
 
     private async Task PingSingle(string id, TimeSpan timespan, CancellationToken cancellationToken)
     {
@@ -47,14 +48,24 @@ public partial class PiZeroCameraManager
     }
 
     public async Task Ping(
-        int? timeoutMillis = null,
-        CancellationToken cancellationToken = default
+        int? timeoutMillis = null
     )
     {
-        if (!await _pingSemaphore.WaitAsync(TimeSpan.Zero, cancellationToken))
+        if (!await _pingSemaphore.WaitAsync(TimeSpan.Zero))
         {
             return; // Another ping operation is already running
         }
+
+        // Just in case, cancel existing ping operations (there shouldn't be any)
+        if (_pingCancellationTokenSource != null)
+        {
+            await _pingCancellationTokenSource.CancelAsync();
+        }
+
+        _pingCancellationTokenSource?.Dispose();
+        _pingCancellationTokenSource = new CancellationTokenSource();
+
+        var cancellationToken = _pingCancellationTokenSource.Token;
 
         try
         {
@@ -84,8 +95,13 @@ public partial class PiZeroCameraManager
         }
         finally
         {
-            PingActive = false;
+            _pingCancellationTokenSource.Dispose();
+            _pingCancellationTokenSource = null;
+
             _pingSemaphore.Release();
+
+            PingActive = false;
+
             OnChangePing?.Invoke();
             await Task.Yield();
         }
@@ -143,10 +159,19 @@ public partial class PiZeroCameraManager
                 {
                     piZeroCamera.UpdateRequest = new PiZeroCameraUpdateRequest.Failure.VersionMismatch();
                 }
+
                 OnUpdateChange?.Invoke();
             }
         }
 
         OnChangePing?.Invoke();
+    }
+
+    public async Task CancelPing()
+    {
+        if (_pingCancellationTokenSource != null)
+        {
+            await _pingCancellationTokenSource.CancelAsync();
+        }
     }
 }
