@@ -13,6 +13,7 @@ public abstract record PiZeroCameraNtpRequest
     public sealed record Requested : PiZeroCameraNtpRequest;
 
     public sealed record Success(string Message) : PiZeroCameraNtpRequest;
+    public sealed record Cancelled : PiZeroCameraNtpRequest;
 
     public abstract record Failure : PiZeroCameraNtpRequest
     {

@@ -98,7 +98,7 @@ public class MqttStuff
         var id = e.ApplicationMessage.Topic.Split("/").Last();
         if (topic == _currentOptions.NtpTopic)
         {
-            _piZeroCameraManager.ResponseNtpSync(e.ApplicationMessage, id);
+            await _piZeroCameraManager.ResponseNtpSync(e.ApplicationMessage, id);
         }
         else if (topic == _currentOptions.CameraTopic)
         {
