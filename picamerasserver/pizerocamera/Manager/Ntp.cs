@@ -246,4 +246,17 @@ public partial class PiZeroCameraManager
         OnNtpChange?.Invoke();
         await Task.Yield();
     }
+    
+    public async Task CancelNtpSync()
+    {
+        if (_ntpCancellationTokenSource != null)
+        {
+            await _ntpCancellationTokenSource.CancelAsync();
+        }
+
+        if (NtpActive)
+        {
+            await CancelCameraTasks();
+        }
+    }
 }

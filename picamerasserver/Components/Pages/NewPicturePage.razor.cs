@@ -19,6 +19,8 @@ public partial class NewPicturePage : ComponentBase, IDisposable
 
     private PictureSetModel? _pictureSet;
     private bool SendSetActive => SendPictureSetManager.SendSetActive;
+    private bool PingActive => PiZeroCameraManager.PingActive;
+    private bool NtpActive => PiZeroCameraManager.NtpActive;
 
     private PictureRequestModel? PictureRequestStandingSpread => _pictureSet?.PictureRequests.FirstOrDefault(x =>
         x is { PictureRequestType: PictureRequestType.StandingSpread, IsActive: true });
@@ -237,6 +239,29 @@ public partial class NewPicturePage : ComponentBase, IDisposable
             .Include(x => x.PictureRequests.Where(y => y.IsActive == true))
             .ThenInclude(x => x.CameraPictures)
             .FirstOrDefaultAsync(x => x.Uuid == Uuid);
+    }
+
+    private async Task CancelTakePic()
+    {
+        await PiZeroCameraManager.CancelTakePicture();
+    }
+    
+    private async Task CancelSend()
+    {
+        await SendPictureSetManager.CancelSendSet();
+    }
+    
+    private async Task CancelNtpSync()
+    {
+        await PiZeroCameraManager.CancelNtpSync();
+    }
+    
+    private async Task CancelPing()
+    {
+        if (_pingCancellationTokenSource != null)
+        {
+            await _pingCancellationTokenSource.CancelAsync();
+        }
     }
 
     protected override async Task OnInitializedAsync()

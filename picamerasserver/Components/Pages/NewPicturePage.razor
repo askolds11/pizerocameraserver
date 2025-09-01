@@ -55,7 +55,7 @@
                                     <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary"
                                                Size="Size.Large"
                                                EndIcon="@Icons.Material.Outlined.Blind" OnClick="@GetAlive"
-                                               Disabled="_pictureSet == null || _pictureSet.IsDone">
+                                               Disabled="_pictureSet == null || _pictureSet.IsDone || PingActive">
                                         Get alive
                                     </MudButton>
                                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
@@ -114,13 +114,13 @@
                                     <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary"
                                                Size="Size.Large"
                                                EndIcon="@Icons.Material.Outlined.Alarm" OnClick="@RequestNtpSyncStep"
-                                               Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || AliveCount == 0">
+                                               Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || AliveCount == 0 || NtpActive">
                                         Big NTP
                                     </MudButton>
                                     <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary"
                                                Size="Size.Large"
                                                EndIcon="@Icons.Material.Outlined.Alarm" OnClick="@RequestNtpSyncSlew"
-                                               Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || AliveCount == 0">
+                                               Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || AliveCount == 0 || NtpActive">
                                         Small NTP
                                     </MudButton>
                                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
@@ -216,6 +216,33 @@
                         </MudStack>
                     </ChildContent>
                 </MudExpansionPanel>
+                <MudExpansionPanel>
+                    <TitleContent>
+                        <MudText Typo="Typo.h5">Cancel</MudText>
+                    </TitleContent>
+                    <ChildContent>
+                        <MudStack>
+                            <MudStack Row="true" AlignItems="AlignItems.Center">
+                                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error" Size="Size.Large"
+                                           EndIcon="@Icons.Material.Outlined.Cancel" OnClick="@CancelPing">
+                                    Cancel Ping
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error" Size="Size.Large"
+                                           EndIcon="@Icons.Material.Outlined.Cancel" OnClick="@CancelNtpSync">
+                                    Cancel Ntp Sync
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error" Size="Size.Large"
+                                           EndIcon="@Icons.Material.Outlined.Cancel" OnClick="@CancelTakePic">
+                                    Cancel Take Picture
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error" Size="Size.Large"
+                                           EndIcon="@Icons.Material.Outlined.Cancel" OnClick="@CancelSend">
+                                    Cancel Send
+                                </MudButton>
+                            </MudStack>
+                        </MudStack>
+                    </ChildContent>
+                </MudExpansionPanel>
             </MudStack>
         </MudExpansionPanels>
     </MudStack>
@@ -262,6 +289,7 @@
         return piZeroCamera.NtpRequest switch
         {
             null => Color.FromArgb(0x00, 0x00, 0x00),
+            PiZeroCameraNtpRequest.Cancelled _ => Color.FromArgb(0xFF, 0x55, 0x00),
             PiZeroCameraNtpRequest.Failure.Failed _ => Color.FromArgb(0xff, 0x00, 0x00),
             PiZeroCameraNtpRequest.Failure.FailedToParseJson _ => Color.FromArgb(0xff, 0x00, 0x00),
             PiZeroCameraNtpRequest.Failure.FailedToParseRegex _ => Color.FromArgb(0xff, 0x00, 0x00),
