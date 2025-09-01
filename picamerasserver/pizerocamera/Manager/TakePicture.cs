@@ -330,13 +330,13 @@ public partial class PiZeroCameraManager : ITakePictureManager
                 }
 
                 await piDbContext.SaveChangesAsync(CancellationToken.None);
+                
+                // Set IsActive to false if saved to db
+                await piDbContext.PictureRequests.Where(x => x.Uuid == pictureRequest.Uuid)
+                    .ExecuteUpdateAsync(x => x.SetProperty(
+                        b => b.IsActive,
+                        false), cancellationToken: CancellationToken.None);
             }
-
-            // Set IsActive to false if saved to db
-            await piDbContext.PictureRequests.Where(x => x.Uuid == pictureRequest.Uuid)
-                .ExecuteUpdateAsync(x => x.SetProperty(
-                    b => b.IsActive,
-                    false), cancellationToken: CancellationToken.None);
 
             cts.Dispose();
             _takePictureCancellationTokenSource = null;
