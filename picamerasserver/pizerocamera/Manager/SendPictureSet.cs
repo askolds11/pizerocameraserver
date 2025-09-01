@@ -67,6 +67,7 @@ public partial class PiZeroCameraManager : ISendPictureSetManager
             foreach (var pictureRequest in pictureSet.PictureRequests)
             {
                 await RequestSendPictureChannels(pictureRequest.Uuid, maxConcurrentUploads);
+                _sendSetCancellationTokenSource.Token.ThrowIfCancellationRequested();
             }
 
             // Update UI
