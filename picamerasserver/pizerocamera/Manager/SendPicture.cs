@@ -161,11 +161,6 @@ public partial class PiZeroCameraManager : ISendPictureManager
         }
         catch (OperationCanceledException)
         {
-        }
-        finally
-        {
-            // Remove the channel and clean up
-            _sendPictureChannels.TryRemove(uuid, out _);
             if (unsentCameras is { Count: > 0 })
             {
                 foreach (var (dbItem, _) in unsentCameras)
@@ -176,6 +171,11 @@ public partial class PiZeroCameraManager : ISendPictureManager
 
                 await piDbContext.SaveChangesAsync();
             }
+        }
+        finally
+        {
+            // Remove the channel and clean up
+            _sendPictureChannels.TryRemove(uuid, out _);
 
             _sendCancellationTokenSource.Dispose();
             _sendCancellationTokenSource = null;
