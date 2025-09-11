@@ -140,9 +140,9 @@ public partial class PiZeroCameraManager : ISendPictureManager
 
             unsentCameras = GetSendableCameras(
                 pictureRequest,
-                requirePing: false,
-                requireDeviceStatus: false,
-                requireStatus: false
+                requirePing: true,
+                requireDeviceStatus: true,
+                requireStatus: true
             ).ToList();
             if (unsentCameras.Count == 0)
             {
