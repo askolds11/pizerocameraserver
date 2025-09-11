@@ -1,6 +1,6 @@
 ﻿@using picamerasserver.Database.Models
 @using Color = System.Drawing.Color
-<MudExpansionPanel Gutters="false" Dense="true" HideIcon="true" HeaderClass="pa-0" Disabled="PictureRequestModel == null && Disabled">
+<MudExpansionPanel Gutters="false" Dense="true" HideIcon="true" HeaderClass="pa-0" Disabled="_pictureRequestModel == null && Disabled">
     <TitleContent>
         @* <MudPaper Elevation="10" Class="d-inline-flex"> *@
         <MudStack Style="width: 100%">
@@ -20,7 +20,7 @@
                 </MudText>
                 <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Tertiary" Size="Size.Large"
                            EndIcon="@Icons.Material.Outlined.PhotoCamera" OnClick="@TakePicture"
-                           Disabled="Disabled || TakePicActive || (PictureRequestModel != null && !_canTryAgain)">
+                           Disabled="Disabled || TakePicActive || (_pictureRequestModel != null && !_canTryAgain)">
                     Take picture
                 </MudButton>
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
@@ -64,7 +64,7 @@
                 </MudStack>
                 <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error" Size="Size.Large"
                            EndIcon="@Icons.Material.Outlined.Refresh" OnClick="@TryAgain"
-                           Disabled="Disabled || (PictureRequestModel == null || _canTryAgain)">
+                           Disabled="Disabled || (_pictureRequestModel == null || _canTryAgain)">
                     Try again
                 </MudButton>
             </MudStack>
@@ -86,7 +86,7 @@
     {
         _tooltipTransform = cameraId =>
         {
-            var item = PictureRequestModel?.CameraPictures.FirstOrDefault(x => x.CameraId == cameraId);
+            var item = _pictureRequestModel?.CameraPictures.FirstOrDefault(x => x.CameraId == cameraId);
             if (item == null)
                 return null;
 
@@ -96,7 +96,7 @@
     
     private Color ColorTransform(string cameraId)
     {
-        var cameraPicture = PictureRequestModel?.CameraPictures.FirstOrDefault(x => x.CameraId == cameraId);
+        var cameraPicture = _pictureRequestModel?.CameraPictures.FirstOrDefault(x => x.CameraId == cameraId);
         if (cameraPicture == null)
         {
             return Color.FromArgb(0x00, 0x00, 0x00);

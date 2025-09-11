@@ -18,6 +18,9 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
     [Inject] protected IDbContextFactory<PiDbContext> DbContextFactory { get; init; } = null!;
 
     private bool TakePicActive => PiZeroCameraManager.TakePictureActive;
+
+    private PictureRequestModel? _pictureRequestModel = null;
+    
     
     private async Task TakePicture()
     {
@@ -27,10 +30,10 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
         }
 
         // Make the old one inactive
-        if (PictureRequestModel != null)
+        if (_pictureRequestModel != null)
         {
             await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
-            await piDbContext.PictureRequests.Where(x => x.Uuid == PictureRequestModel.Uuid)
+            await piDbContext.PictureRequests.Where(x => x.Uuid == _pictureRequestModel.Uuid)
                 .ExecuteUpdateAsync(x => x.SetProperty(
                     b => b.IsActive,
                     false)
@@ -38,7 +41,7 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
         }
 
         // TODO: Error handling
-        PictureRequestModel = (await TakePictureManager.RequestTakePictureAll(PictureRequestType, PictureSetUId)).Value;
+        _pictureRequestModel = (await TakePictureManager.RequestTakePictureAll(PictureRequestType, PictureSetUId)).Value;
         // _selectedPicture = new PictureElement(pictureRequestModel);
         // await _gridData.ReloadServerData();
         _canTryAgain = false;
@@ -52,13 +55,13 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
     private bool _canTryAgain = false;
 
     private int TakenCount =>
-        PictureRequestModel?.CameraPictures.Count(x => x.ReceivedTaken != null) ?? 0;
+        _pictureRequestModel?.CameraPictures.Count(x => x.ReceivedTaken != null) ?? 0;
 
     private int SavedCount =>
-        PictureRequestModel?.CameraPictures.Count(x => x.ReceivedSaved != null) ?? 0;
+        _pictureRequestModel?.CameraPictures.Count(x => x.ReceivedSaved != null) ?? 0;
 
     private int FailedCount =>
-        PictureRequestModel?.CameraPictures.Count(x =>
+        _pictureRequestModel?.CameraPictures.Count(x =>
             (x.ReceivedTaken == null || x.ReceivedSaved == null) &&
             x.CameraPictureStatus
                 is not CameraPictureStatus.Requested
@@ -69,7 +72,7 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
     private int AliveCount =>
         PiZeroCameraManager.PiZeroCameras.Values.Count(x => x is { Pingable: true, Status: not null });
 
-    private int RequestCount => PictureRequestModel?.CameraPictures.Count ?? AliveCount;
+    private int RequestCount => _pictureRequestModel?.CameraPictures.Count ?? AliveCount;
 
     private int ProgressTaken => RequestCount == 0 ? 0 : TakenCount * 100 / RequestCount;
     private int ProgressSent => RequestCount == 0 ? 0 : SavedCount * 100 / RequestCount;
@@ -79,21 +82,30 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
         InvokeAsync(StateHasChanged);
     }
 
-    private void OnPictureChanged(Guid uuid)
+    private static readonly Func<PiDbContext, Guid, Task<PictureRequestModel?>> GetPictureRequestModelByUuid =
+        EF.CompileAsyncQuery((PiDbContext context, Guid uuid) =>
+            context.PictureRequests
+                .Include(x => x.CameraPictures)
+                .AsNoTracking()
+                .FirstOrDefault(x => x.Uuid == uuid)
+        );
+
+    private async Task OnPictureChanged(Guid uuid)
     {
         InvokeAsync(async () =>
         {
-            if (uuid == PictureRequestModel?.Uuid)
+            if (uuid == _pictureRequestModel?.Uuid)
             {
                 await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
-                PictureRequestModel = await piDbContext.PictureRequests
-                    .Include(x => x.CameraPictures)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(x => x.Uuid == uuid);
-
+                // _pictureRequestModel = await piDbContext.PictureRequests
+                //     .Include(x => x.CameraPictures)
+                //     .AsNoTracking()
+                //     .FirstOrDefaultAsync(x => x.Uuid == uuid);
+                _pictureRequestModel = await GetPictureRequestModelByUuid(piDbContext, uuid);
+                
                 UpdateTooltipTransform();
             }
-            
+
             StateHasChanged();
         });
     }
@@ -103,8 +115,6 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
         PiZeroCameraManager.OnChangePing += OnGlobalChanged;
         PiZeroCameraManager.OnNtpChange += OnGlobalChanged;
         PiZeroCameraManager.OnPictureChange += OnPictureChanged;
-        
-        UpdateTooltipTransform();
     }
 
     public void Dispose()
@@ -114,4 +124,16 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
         PiZeroCameraManager.OnPictureChange -= OnPictureChanged;
         GC.SuppressFinalize(this);
     }
+    
+    protected override void OnParametersSet()
+    {
+        // Only set model if not already set to prevent desync
+        if (_pictureRequestModel == null)
+        {
+            _pictureRequestModel = PictureRequestModel;
+            
+            UpdateTooltipTransform();
+        }
+    }
+
 }
