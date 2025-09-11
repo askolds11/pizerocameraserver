@@ -212,6 +212,29 @@
                                     <MudText>
                                         Sent @AllSentCount / @AllTotalCount
                                     </MudText>
+                                    @if (AllSentCount > 0 && AllSentCount == AllTotalCount)
+                                    {
+                                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                                                 Size="Size.Large"/>
+                                    }
+                                    else
+                                    {
+                                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                                                 Size="Size.Large"/>
+                                    }
+                                    <MudText>
+                                        Failed to send @AllSentFailedCount
+                                    </MudText>
+                                    @if (AllSentFailedCount == 0)
+                                    {
+                                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                                                 Size="Size.Large"/>
+                                    }
+                                    else
+                                    {
+                                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                                                 Size="Size.Large"/>
+                                    }
                                 }
                             </MudStack>
                         </MudStack>

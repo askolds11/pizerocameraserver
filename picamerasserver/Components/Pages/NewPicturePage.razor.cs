@@ -102,9 +102,16 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     private int AllSentCount => _pictureSet?.PictureRequests
         .Sum(x => x.CameraPictures.Count(y => y.ReceivedSent != null)) ?? 0;
 
+    private int AllSentFailedCount => _pictureSet?.PictureRequests
+        .Sum(x => x.CameraPictures.Count(y =>
+            y is { ReceivedTaken: not null, CameraPictureStatus: CameraPictureStatus.Failed
+                or CameraPictureStatus.PictureFailedToRead or CameraPictureStatus.PictureFailedToSend
+                or CameraPictureStatus.Unknown or CameraPictureStatus.Cancelled
+            })) ?? 0;
+
     private int AllTotalCount =>
         _pictureSet?.PictureRequests
-            .Sum(x => x.CameraPictures.Count(y => y.CameraPictureStatus != null)) ?? 0;
+            .Sum(x => x.CameraPictures.Count(y => y.ReceivedTaken != null)) ?? 0;
 
     private async Task GetAlive()
     {
@@ -155,7 +162,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     {
         Synced = true;
     }
-    
+
     private List<float>? GetOffsets()
     {
         var offsets = PiZeroCameraManager.PiZeroCameras.Values
