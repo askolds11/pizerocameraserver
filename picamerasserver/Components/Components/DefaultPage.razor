@@ -1,11 +1,26 @@
 @using picamerasserver.Components.Layout
 <MudContainer MaxWidth="MaxWidth.Large">
+
     <MudPaper MinHeight="@($"calc(100vh - {MyThemeProvider.MyCustomTheme.LayoutProperties.AppbarHeight})")">
-        @ChildContent
+        <ErrorBoundary>
+            <ChildContent>
+                @ChildContent
+            </ChildContent>
+            <ErrorContent>
+                <MudStack Style="width: 100%" Class="pa-4">
+                    <MudText Typo="Typo.h3">
+                        😈 Ruh roh! Something went wrong.
+                    </MudText>
+                    <MudText>
+                        @context.ToString()
+                    </MudText>
+                </MudStack>
+            </ErrorContent>
+        </ErrorBoundary>
     </MudPaper>
+
 </MudContainer>
 
 @code {
-    [Parameter, EditorRequired]
-    public required RenderFragment ChildContent { get; set; }
+    [Parameter, EditorRequired] public required RenderFragment ChildContent { get; set; }
 }

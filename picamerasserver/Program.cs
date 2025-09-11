@@ -23,7 +23,7 @@ builder.Logging.AddSerilog(logger);
 builder.Services.AddLocalization();
 
 // Add services to the container.
-builder.Services.AddRazorComponents()
+builder.Services.AddRazorComponents(options => options.DetailedErrors = true)
     .AddInteractiveServerComponents();
 
 builder.Services.AddMudServices(config =>
