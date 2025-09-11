@@ -70,7 +70,7 @@ public partial class PiZeroCameraManager : ISendPictureManager
             });
         }
     }
-    
+
     /// <summary>
     /// Get a list of cameras based on criteria for sending pictures
     /// </summary>
@@ -78,21 +78,24 @@ public partial class PiZeroCameraManager : ISendPictureManager
     /// <param name="requirePing">Should the cameras be pingable?</param>
     /// <param name="requireDeviceStatus">Should the cameras have status?</param>
     /// <param name="requireStatus">Should the camera's picture's status be valid?</param>
+    /// <param name="requireTaken">Should the camera's picture be taken</param>
     /// <returns>A collection of tuples, where each tuple contains a database camera picture model and a PiZeroCamera instance meeting the criteria.</returns>
     private IEnumerable<(CameraPictureModel dbItem, PiZeroCamera dictItem)> GetSendableCameras(
         PictureRequestModel pictureRequest,
         bool requirePing = true,
         bool requireDeviceStatus = true,
-        bool requireStatus = true
+        bool requireStatus = true,
+        bool requireTaken = true
     )
     {
         var allowedStatuses = new[]
         {
             CameraPictureStatus.SavedOnDevice, CameraPictureStatus.FailedToRequestSend, CameraPictureStatus.FailureSend,
-            CameraPictureStatus.PictureFailedToRead, CameraPictureStatus.PictureFailedToSend
+            CameraPictureStatus.PictureFailedToRead, CameraPictureStatus.PictureFailedToSend, CameraPictureStatus.Cancelled
         };
         // Cameras to send request to
         return pictureRequest.CameraPictures
+            .Where(x => !requireTaken || x.ReceivedTaken != null)
             .Where(x => !requireStatus || x.CameraPictureStatus != null &&
                 allowedStatuses.Contains((CameraPictureStatus)x.CameraPictureStatus)
             )
