@@ -150,25 +150,16 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         }
     }
 
-    private async Task RequestNtpSyncSlew()
+    private void OverrideGetAlive()
     {
-        Synced = true;
-        if (_pictureSet == null)
-        {
-            await CreatePictureSet();
-        }
-
-        try
-        {
-            await PiZeroCameraManager.RequestNtpSync(new NtpRequest.Slew());
-            Synced = true;
-        }
-        catch (OperationCanceledException)
-        {
-            Synced = false;
-        }
+        Alived = true;
     }
 
+    private void OverrideNtp()
+    {
+        Synced = true;
+    }
+    
     private List<float>? GetOffsets()
     {
         var offsets = PiZeroCameraManager.PiZeroCameras.Values
