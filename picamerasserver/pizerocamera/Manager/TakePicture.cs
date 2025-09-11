@@ -270,17 +270,10 @@ public partial class PiZeroCameraManager : ITakePictureManager
 
         if (pictureSetUId != null)
         {
-            if (OnPictureChange != null)
-            {
-                await OnPictureChange(pictureRequest.Uuid);
-            }
-            if (OnPictureSetChange != null)
-            {
-                await OnPictureSetChange((Guid) pictureSetUId);
-            }
-            await Task.Yield();
+            // No point updating the picture, unless there is a picture set, because it does not exist elsewhere yet
+            UpdatePicture(pictureRequest.Uuid);
+            UpdatePictureSet((Guid) pictureSetUId);
         }
-        
 
         return pictureRequest;
     }
@@ -353,16 +346,9 @@ public partial class PiZeroCameraManager : ITakePictureManager
             // Update UI
             if (pictureRequest.PictureSetId != null)
             {
-                if (OnPictureSetChange != null)
-                {
-                    await OnPictureSetChange((Guid) pictureRequest.PictureSetId);
-                }
+                UpdatePictureSet((Guid) pictureRequest.PictureSetId);
             }
-            if (OnPictureChange != null)
-            {
-                await OnPictureChange(pictureRequest.Uuid);
-            }
-            await Task.Yield();
+            UpdatePicture(pictureRequest.Uuid);
         }
     }
 
@@ -516,7 +502,7 @@ public partial class PiZeroCameraManager : ITakePictureManager
         }
 
         await piDbContext.SaveChangesAsync();
-        OnPictureChange?.Invoke(uuid);
+        UpdatePicture(uuid);
     }
 
     /// <inheritdoc />

@@ -30,6 +30,18 @@ public partial class PiZeroCameraManager : ISendPictureSetManager
     public bool SendSetActive { get; private set; }
     private readonly SemaphoreSlim _sendSetSemaphore = new(1, 1);
     private CancellationTokenSource? _sendSetCancellationTokenSource;
+
+    private void UpdatePictureSet(Guid pictureSetUuid)
+    {
+        if (OnPictureSetChange != null)
+        {
+            Task.Run(async () =>
+            {
+                await OnPictureSetChange.Invoke(pictureSetUuid);
+                await Task.Yield();
+            });
+        }
+    }
     
     /// <inheritdoc />
     public async Task RequestSendPictureSet(Guid uuid, int maxConcurrentUploads)
@@ -71,11 +83,7 @@ public partial class PiZeroCameraManager : ISendPictureSetManager
             }
 
             // Update UI
-            if (OnPictureSetChange != null)
-            {
-                await OnPictureSetChange(uuid);
-                await Task.Yield();
-            }
+            UpdatePictureSet(uuid);
         }
         catch (OperationCanceledException)
         {
@@ -89,25 +97,19 @@ public partial class PiZeroCameraManager : ISendPictureSetManager
             _sendSetSemaphore.Release();
             // Update UI
             SendSetActive = false;
-            if (OnPictureSetChange != null)
-            {
-                await OnPictureSetChange(uuid);
-                await Task.Yield();
-            }
+            UpdatePictureSet(uuid);
         }
 
         return;
 
-        async Task PictureToPictureSetChange(Guid pictureUId)
+        // Callback to update the picture set based on individual picture request changes
+        Task PictureToPictureSetChange(Guid pictureUId)
         {
             if (pictureSet?.PictureRequests.Any(x => x.Uuid == pictureUId) == true)
             {
-                if (OnPictureSetChange != null)
-                {
-                    await OnPictureSetChange(uuid);
-                    await Task.Yield();
-                }
+                UpdatePictureSet(uuid);
             }
+            return Task.CompletedTask;
         }
     }
 
