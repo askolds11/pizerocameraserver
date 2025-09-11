@@ -5,6 +5,7 @@ namespace picamerasserver.pizerocamera.Responses;
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(PictureSent), nameof(PictureSent))]
 [JsonDerivedType(typeof(Failure.Failed), nameof(Failure.Failed))]
+[JsonDerivedType(typeof(Failure.PictureFailedToRead), nameof(Failure.PictureFailedToRead))]
 [JsonDerivedType(typeof(Failure.PictureFailedToSend), nameof(Failure.PictureFailedToSend))]
 public abstract record SendPictureResponse(Guid Uuid)
 {
