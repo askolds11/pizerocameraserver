@@ -203,7 +203,7 @@
                                 </MudButton>
                                 <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Size="Size.Large"
                                            EndIcon="@Icons.Material.Outlined.Download"
-                                           Href="@($"downloadpictureset/{_pictureSet?.Uuid}")"
+                                           Href="@($"downloadpictureset/{_pictureSet?.Uuid}")" Target="_blank"
                                            Disabled="_pictureSet is not { IsDone: true } || SendSetActive || AllTotalCount == 0 || AllSentCount != AllTotalCount">
                                     Download
                                 </MudButton>
