@@ -50,7 +50,7 @@ if (connectionStrings == null)
     throw new Exception("ConnectionStrings not found");
 }
 
-builder.Services.AddDbContextFactory<PiDbContext>(opt =>
+builder.Services.AddPooledDbContextFactory<PiDbContext>(opt =>
     opt.UseNpgsql(connectionStrings.Postgres));
 
 var mqttFactory = new MqttClientFactory();
