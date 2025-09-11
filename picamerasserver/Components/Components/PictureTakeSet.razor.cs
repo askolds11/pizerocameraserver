@@ -92,7 +92,7 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
 
     private async Task OnPictureChanged(Guid uuid)
     {
-        InvokeAsync(async () =>
+        await InvokeAsync(async () =>
         {
             if (uuid == _pictureRequestModel?.Uuid)
             {

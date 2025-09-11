@@ -183,8 +183,11 @@ public partial class PiZeroCameraManager : ISendPictureManager
             _sendSemaphore.Release();
             // Update UI
             SendActive = false;
-            OnPictureChange?.Invoke(uuid);
-            await Task.Yield();
+            if (OnPictureChange != null)
+            {
+                await OnPictureChange(uuid);
+                await Task.Yield();
+            }
         }
     }
 
@@ -222,8 +225,11 @@ public partial class PiZeroCameraManager : ISendPictureManager
 
             await piDbContext.SaveChangesAsync(cts.Token);
             // Update UI
-            OnPictureChange?.Invoke(uuid);
-            await Task.Yield();
+            if (OnPictureChange != null)
+            {
+                await OnPictureChange(uuid);
+                await Task.Yield();
+            }
             
             // Wait for messages
             while (await channel.Reader.WaitToReadAsync(cts.Token))
@@ -242,8 +248,11 @@ public partial class PiZeroCameraManager : ISendPictureManager
                     
                     await piDbContext.SaveChangesAsync(cts.Token);
                     // Update UI
-                    OnPictureChange?.Invoke(uuid);
-                    await Task.Yield();
+                    if (OnPictureChange != null)
+                    {
+                        await OnPictureChange(uuid);
+                        await Task.Yield();
+                    }
                 }
 
                 // If no more cameras, complete the channel and break out
@@ -325,8 +334,11 @@ public partial class PiZeroCameraManager : ISendPictureManager
         piDbContext.Update(cameraPicture);
 
         await piDbContext.SaveChangesAsync();
-        OnPictureChange?.Invoke(uuid);
-        await Task.Yield();
+        if (OnPictureChange != null)
+        {
+            await OnPictureChange(uuid);
+            await Task.Yield();
+        }
     }
 
     /// <inheritdoc />
@@ -427,8 +439,11 @@ public partial class PiZeroCameraManager : ISendPictureManager
         }
 
         await piDbContext.SaveChangesAsync();
-        OnPictureChange?.Invoke(uuid);
-        await Task.Yield();
+        if (OnPictureChange != null)
+        {
+            await OnPictureChange(uuid);
+            await Task.Yield();
+        }
     }
 
     /// <inheritdoc />

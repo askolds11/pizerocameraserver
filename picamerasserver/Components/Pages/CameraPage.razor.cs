@@ -25,9 +25,9 @@ public partial class CameraPage : ComponentBase, IDisposable
     /// Refreshes an individual picture
     /// </summary>
     /// <param name="uuid"></param>
-    private void OnPictureChanged(Guid uuid)
+    private async Task OnPictureChanged(Guid uuid)
     {
-        InvokeAsync(async () =>
+        await InvokeAsync(async () =>
         {
             if (_selectedPicture != null && _selectedPicture.Uuid == uuid)
             {

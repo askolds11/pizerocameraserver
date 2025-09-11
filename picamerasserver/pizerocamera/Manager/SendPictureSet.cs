@@ -25,7 +25,7 @@ public interface ISendPictureSetManager
 
 public partial class PiZeroCameraManager : ISendPictureSetManager
 {
-    public event Action<Guid>? OnPictureSetChange;
+    public event Func<Guid, Task>? OnPictureSetChange;
     
     public bool SendSetActive { get; private set; }
     private readonly SemaphoreSlim _sendSetSemaphore = new(1, 1);
@@ -71,8 +71,11 @@ public partial class PiZeroCameraManager : ISendPictureSetManager
             }
 
             // Update UI
-            OnPictureSetChange?.Invoke(uuid);
-            await Task.Yield();
+            if (OnPictureSetChange != null)
+            {
+                await OnPictureSetChange(uuid);
+                await Task.Yield();
+            }
         }
         catch (OperationCanceledException)
         {
@@ -86,17 +89,24 @@ public partial class PiZeroCameraManager : ISendPictureSetManager
             _sendSetSemaphore.Release();
             // Update UI
             SendSetActive = false;
-            OnPictureSetChange?.Invoke(uuid);
-            await Task.Yield();
+            if (OnPictureSetChange != null)
+            {
+                await OnPictureSetChange(uuid);
+                await Task.Yield();
+            }
         }
 
         return;
 
-        void PictureToPictureSetChange(Guid pictureUId)
+        async Task PictureToPictureSetChange(Guid pictureUId)
         {
             if (pictureSet?.PictureRequests.Any(x => x.Uuid == pictureUId) == true)
             {
-                OnPictureSetChange?.Invoke(uuid);
+                if (OnPictureSetChange != null)
+                {
+                    await OnPictureSetChange(uuid);
+                    await Task.Yield();
+                }
             }
         }
     }

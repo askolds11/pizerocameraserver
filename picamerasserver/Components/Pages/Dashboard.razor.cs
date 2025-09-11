@@ -21,9 +21,9 @@ public partial class Dashboard : ComponentBase, IDisposable
     /// Refreshes list
     /// </summary>
     /// <param name="uuid"></param>
-    private void OnPictureSetChanged(Guid uuid)
+    private async Task OnPictureSetChanged(Guid uuid)
     {
-        InvokeAsync(async () =>
+        await InvokeAsync(async () =>
         {
             StateHasChanged();
             await _gridData.ReloadServerData();

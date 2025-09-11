@@ -43,7 +43,7 @@ public interface ITakePictureManager
 
 public partial class PiZeroCameraManager : ITakePictureManager
 {
-    public event Action<Guid>? OnPictureChange;
+    public event Func<Guid, Task>? OnPictureChange;
     private readonly ConcurrentDictionary<Guid, Channel<string>> _takePictureChannels = new();
     private readonly ConcurrentDictionary<Guid, Channel<string>> _savePictureChannels = new();
     public bool TakePictureActive { get; private set; }
@@ -153,6 +153,7 @@ public partial class PiZeroCameraManager : ITakePictureManager
             ).ToList();
 
             // Create channels
+            // TODO: Throw and return in exception if channels cannot be created
             var takeChannel = Channel.CreateUnbounded<string>();
             if (!_takePictureChannels.TryAdd(pictureRequest.Uuid, takeChannel))
             {
@@ -269,8 +270,14 @@ public partial class PiZeroCameraManager : ITakePictureManager
 
         if (pictureSetUId != null)
         {
-            OnPictureChange?.Invoke(pictureRequest.Uuid);
-            OnPictureSetChange?.Invoke((Guid)pictureSetUId);
+            if (OnPictureChange != null)
+            {
+                await OnPictureChange(pictureRequest.Uuid);
+            }
+            if (OnPictureSetChange != null)
+            {
+                await OnPictureSetChange((Guid) pictureSetUId);
+            }
             await Task.Yield();
         }
         
@@ -346,10 +353,15 @@ public partial class PiZeroCameraManager : ITakePictureManager
             // Update UI
             if (pictureRequest.PictureSetId != null)
             {
-                OnPictureSetChange?.Invoke((Guid)pictureRequest.PictureSetId);
+                if (OnPictureSetChange != null)
+                {
+                    await OnPictureSetChange((Guid) pictureRequest.PictureSetId);
+                }
             }
-
-            OnPictureChange?.Invoke(pictureRequest.Uuid);
+            if (OnPictureChange != null)
+            {
+                await OnPictureChange(pictureRequest.Uuid);
+            }
             await Task.Yield();
         }
     }

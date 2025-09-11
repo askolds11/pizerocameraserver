@@ -190,9 +190,9 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     /// Refreshes list
     /// </summary>
     /// <param name="uuid"></param>
-    private void OnPictureSetChanged(Guid uuid)
+    private async Task OnPictureSetChanged(Guid uuid)
     {
-        InvokeAsync(async () =>
+        await InvokeAsync(async () =>
         {
             if (_pictureSet != null && _pictureSet.Uuid == uuid)
             {
