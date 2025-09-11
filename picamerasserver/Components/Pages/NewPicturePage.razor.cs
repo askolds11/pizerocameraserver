@@ -32,10 +32,6 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         _pictureSet?.PictureRequests.FirstOrDefault(x => x is
             { PictureRequestType: PictureRequestType.Sitting, IsActive: true });
 
-    private PictureRequestModel? PictureRequestMask =>
-        _pictureSet?.PictureRequests.FirstOrDefault(x => x is
-            { PictureRequestType: PictureRequestType.Mask, IsActive: true });
-
     [MaxLength(200)] private string Name { get; set; } = "";
 
     private async Task CreatePictureSet()
