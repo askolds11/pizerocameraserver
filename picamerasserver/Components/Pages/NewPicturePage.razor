@@ -57,6 +57,12 @@
                                                Disabled="_pictureSet == null || _pictureSet.IsDone || PingActive">
                                         Get alive
                                     </MudButton>
+                                    <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error"
+                                               Size="Size.Large"
+                                               OnClick="@OverrideGetAlive"
+                                               Disabled="_pictureSet == null || _pictureSet.IsDone || Alived || PingActive || AliveCount == 0">
+                                        Override
+                                    </MudButton>
                                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                                         <MudText>
                                             Alive @AliveCount / @TotalCount
@@ -116,11 +122,11 @@
                                                Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || AliveCount == 0 || NtpActive">
                                         Big NTP
                                     </MudButton>
-                                    <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary"
+                                    <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error"
                                                Size="Size.Large"
-                                               EndIcon="@Icons.Material.Outlined.Alarm" OnClick="@RequestNtpSyncSlew"
-                                               Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || AliveCount == 0 || NtpActive">
-                                        Small NTP
+                                               OnClick="@OverrideNtp"
+                                               Disabled="_pictureSet == null || _pictureSet.IsDone || Synced || NtpActive">
+                                        Override
                                     </MudButton>
                                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                                         <MudText>
