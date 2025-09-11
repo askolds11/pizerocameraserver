@@ -12,6 +12,7 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
     [Parameter, EditorRequired] public required Guid? PictureSetUId { get; set; }
     [Parameter, EditorRequired] public required PictureRequestModel? PictureRequestModel { get; set; }
     [Parameter, EditorRequired] public required bool Disabled { get; set; }
+    [Parameter, EditorRequired] public required bool Finished { get; set; }
 
     [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; init; } = null!;
     [Inject] protected ITakePictureManager TakePictureManager { get; init; } = null!;
@@ -20,8 +21,8 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
     private bool TakePicActive => PiZeroCameraManager.TakePictureActive;
 
     private PictureRequestModel? _pictureRequestModel = null;
-    
-    
+
+
     private async Task TakePicture()
     {
         if (PictureSetUId == null)
@@ -41,7 +42,8 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
         }
 
         // TODO: Error handling
-        _pictureRequestModel = (await TakePictureManager.RequestTakePictureAll(PictureRequestType, PictureSetUId)).Value;
+        _pictureRequestModel =
+            (await TakePictureManager.RequestTakePictureAll(PictureRequestType, PictureSetUId)).Value;
         // _selectedPicture = new PictureElement(pictureRequestModel);
         // await _gridData.ReloadServerData();
         _canTryAgain = false;
@@ -60,6 +62,9 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
     private int SavedCount =>
         _pictureRequestModel?.CameraPictures.Count(x => x.ReceivedSaved != null) ?? 0;
 
+    private int SentCount =>
+        _pictureRequestModel?.CameraPictures.Count(x => x.ReceivedSent != null) ?? 0;
+
     private int FailedCount =>
         _pictureRequestModel?.CameraPictures.Count(x =>
             (x.ReceivedTaken == null || x.ReceivedSaved == null) &&
@@ -69,13 +74,23 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
                 and not CameraPictureStatus.SavedOnDevice
         ) ?? 0;
 
+    private int FailedSendCount =>
+        _pictureRequestModel?.CameraPictures.Count(x =>
+            (x.ReceivedSent == null) &&
+            x.CameraPictureStatus
+                is not CameraPictureStatus.Success
+                and not CameraPictureStatus.RequestedSend
+                and not CameraPictureStatus.SavedOnDevice
+        ) ?? 0;
+
     private int AliveCount =>
         PiZeroCameraManager.PiZeroCameras.Values.Count(x => x is { Pingable: true, Status: not null });
 
     private int RequestCount => _pictureRequestModel?.CameraPictures.Count ?? AliveCount;
 
     private int ProgressTaken => RequestCount == 0 ? 0 : TakenCount * 100 / RequestCount;
-    private int ProgressSent => RequestCount == 0 ? 0 : SavedCount * 100 / RequestCount;
+    private int ProgressSaved => RequestCount == 0 ? 0 : SavedCount * 100 / RequestCount;
+    private int ProgressSent => RequestCount == 0 ? 0 : SentCount * 100 / RequestCount;
 
     private void OnGlobalChanged()
     {
@@ -102,7 +117,7 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
                 //     .AsNoTracking()
                 //     .FirstOrDefaultAsync(x => x.Uuid == uuid);
                 _pictureRequestModel = await GetPictureRequestModelByUuid(piDbContext, uuid);
-                
+
                 UpdateTooltipTransform();
             }
 
@@ -124,16 +139,15 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
         PiZeroCameraManager.OnPictureChange -= OnPictureChanged;
         GC.SuppressFinalize(this);
     }
-    
+
     protected override void OnParametersSet()
     {
         // Only set model if not already set to prevent desync
         if (_pictureRequestModel == null)
         {
             _pictureRequestModel = PictureRequestModel;
-            
+
             UpdateTooltipTransform();
         }
     }
-
 }

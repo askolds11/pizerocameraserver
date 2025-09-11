@@ -1,11 +1,20 @@
 ﻿@using picamerasserver.Database.Models
 @using Color = System.Drawing.Color
-<MudExpansionPanel Gutters="false" Dense="true" HideIcon="true" HeaderClass="pa-0" Disabled="_pictureRequestModel == null && Disabled">
+<MudExpansionPanel Gutters="false" Dense="true" HideIcon="true" HeaderClass="pa-0"
+                   Disabled="_pictureRequestModel == null && Disabled">
     <TitleContent>
         @* <MudPaper Elevation="10" Class="d-inline-flex"> *@
         <MudStack Style="width: 100%">
-            <MudProgressLinear Color="MudBlazor.Color.Tertiary" Value="@ProgressTaken"/>
-            <MudProgressLinear Color="MudBlazor.Color.Primary" Value="@ProgressSent"/>
+            @if (!Finished)
+            {
+                <MudProgressLinear Color="MudBlazor.Color.Tertiary" Value="@ProgressTaken"/>
+                <MudProgressLinear Color="MudBlazor.Color.Primary" Value="@ProgressSaved"/>
+            }
+            else
+            {
+                <MudProgressLinear Color="MudBlazor.Color.Tertiary" Value="@ProgressSent"/>
+            }
+
             <MudStack Row="true" Spacing="4" Class="pa-4 d-inline-flex" AlignItems="AlignItems.Center">
                 <MudText Style="min-width: 10em">
                     @(PictureRequestType switch
@@ -23,50 +32,107 @@
                            Disabled="Disabled || TakePicActive || (_pictureRequestModel != null && !_canTryAgain)">
                     Take picture
                 </MudButton>
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                    <MudText>
-                        Taken @TakenCount / @RequestCount
-                    </MudText>
-                    @if (TakenCount != 0 && TakenCount == @RequestCount)
-                    {
-                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success" Size="Size.Large"/>
-                    }
-                    else
-                    {
-                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error" Size="Size.Large"/>
-                    }
-                </MudStack>
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                    <MudText>
-                        Saved @SavedCount / @RequestCount
-                    </MudText>
-                    @if (SavedCount != 0 && SavedCount == @RequestCount)
-                    {
-                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success" Size="Size.Large"/>
-                    }
-                    else
-                    {
-                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error" Size="Size.Large"/>
-                    }
-                </MudStack>
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                    <MudText>
-                        Failed @FailedCount
-                    </MudText>
-                    @if (FailedCount == 0)
-                    {
-                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success" Size="Size.Large"/>
-                    }
-                    else
-                    {
-                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error" Size="Size.Large"/>
-                    }
-                </MudStack>
-                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error" Size="Size.Large"
-                           EndIcon="@Icons.Material.Outlined.Refresh" OnClick="@TryAgain"
-                           Disabled="Disabled || (_pictureRequestModel == null || _canTryAgain)">
-                    Try again
-                </MudButton>
+                @if (!Finished)
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudText>
+                            Taken @TakenCount / @RequestCount
+                        </MudText>
+                        @if (TakenCount != 0 && TakenCount == @RequestCount)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                                     Size="Size.Large"/>
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                                     Size="Size.Large"/>
+                        }
+                    </MudStack>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudText>
+                            Saved @SavedCount / @RequestCount
+                        </MudText>
+                        @if (SavedCount != 0 && SavedCount == @RequestCount)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                                     Size="Size.Large"/>
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                                     Size="Size.Large"/>
+                        }
+                    </MudStack>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudText>
+                            Failed @FailedCount
+                        </MudText>
+                        @if (FailedCount == 0)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                                     Size="Size.Large"/>
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                                     Size="Size.Large"/>
+                        }
+                    </MudStack>
+                    <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error" Size="Size.Large"
+                               EndIcon="@Icons.Material.Outlined.Refresh" OnClick="@TryAgain"
+                               Disabled="Disabled || (_pictureRequestModel == null || _canTryAgain)">
+                        Try again
+                    </MudButton>
+                }
+                else
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudText>
+                            Pictures @SavedCount / @RequestCount
+                        </MudText>
+                        @if (SavedCount != 0 && SavedCount == @RequestCount)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                                     Size="Size.Large"/>
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                                     Size="Size.Large"/>
+                        }
+                    </MudStack>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudText>
+                            Sent @SentCount / @TakenCount
+                        </MudText>
+                        @if (SentCount != 0 && SentCount == @TakenCount)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                                     Size="Size.Large"/>
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                                     Size="Size.Large"/>
+                        }
+                    </MudStack>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudText>
+                            Failed to send @FailedSendCount
+                        </MudText>
+                        @if (FailedSendCount == 0)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                                     Size="Size.Large"/>
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                                     Size="Size.Large"/>
+                        }
+                    </MudStack>
+                }
             </MudStack>
         </MudStack>
         @* </MudPaper> *@
@@ -93,7 +159,7 @@
             return @<PictureRequestTooltip CameraPicture="item"/>;
         };
     }
-    
+
     private Color ColorTransform(string cameraId)
     {
         var cameraPicture = _pictureRequestModel?.CameraPictures.FirstOrDefault(x => x.CameraId == cameraId);
@@ -124,4 +190,5 @@
             _ => throw new ArgumentOutOfRangeException(),
         };
     }
+
 }

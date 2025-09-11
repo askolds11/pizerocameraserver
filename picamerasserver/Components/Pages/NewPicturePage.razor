@@ -175,15 +175,18 @@
                 <PictureTakeSet PictureRequestType="PictureRequestType.StandingSpread"
                                 PictureRequestModel="PictureRequestStandingSpread"
                                 PictureSetUId="_pictureSet?.Uuid"
-                                Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || !Synced || AliveCount == 0 || PingActive || NtpActive"/>
+                                Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || !Synced || AliveCount == 0 || PingActive || NtpActive"
+                                Finished="_pictureSet is { IsDone: true}" />
                 <PictureTakeSet PictureRequestType="PictureRequestType.StandingTogether"
                                 PictureRequestModel="PictureRequestStandingTogether"
                                 PictureSetUId="_pictureSet?.Uuid"
-                                Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || !Synced || AliveCount == 0 || PingActive || NtpActive"/>
+                                Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || !Synced || AliveCount == 0 || PingActive || NtpActive"
+                                Finished="_pictureSet is { IsDone: true}"/>
                 <PictureTakeSet PictureRequestType="PictureRequestType.Sitting"
                                 PictureRequestModel="PictureRequestSitting"
                                 PictureSetUId="_pictureSet?.Uuid"
-                                Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || !Synced || AliveCount == 0 || PingActive || NtpActive"/>
+                                Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || !Synced || AliveCount == 0 || PingActive || NtpActive"
+                                Finished="_pictureSet is { IsDone: true}"/>
                 <MudExpansionPanel Expanded>
                     <TitleContent>
                         <MudText Typo="Typo.h5">Actions</MudText>
