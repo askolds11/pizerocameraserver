@@ -37,7 +37,7 @@ public partial class Dashboard : ComponentBase, IDisposable
     
     private void NavigateToNew()
     {
-        NavigationManager.NavigateTo($"/NewPicturePage", replace: true);
+        NavigationManager.NavigateTo($"/NewPicturePage", replace: false);
     }
 
     private async Task<GridData<PictureSetElement>> ServerReload(GridState<PictureSetElement> state)
