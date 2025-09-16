@@ -17,7 +17,7 @@ public static class DownloadPictureSetEndpoint
             [FromServices] IOptionsMonitor<DirectoriesOptions> dirOptionsMonitor,
             [FromServices] IDbContextFactory<PiDbContext> dbContextFactory) =>
         {
-            var piDbContext = await dbContextFactory.CreateDbContextAsync();
+            await using var piDbContext = await dbContextFactory.CreateDbContextAsync();
             var pictureSet = await piDbContext.PictureSets
                 .Include(x => x.PictureRequests.Where(y => y.IsActive))
                 .FirstOrDefaultAsync(x => x.Uuid == uuid);
