@@ -41,6 +41,8 @@ builder.Services.Configure<ConnectionStringsOptions>(
     builder.Configuration.GetSection(ConnectionStringsOptions.ConnectionStrings));
 builder.Services.Configure<ServerOptions>(
     builder.Configuration.GetSection(ServerOptions.Server));
+builder.Services.Configure<SmbOptions>(
+    builder.Configuration.GetSection(SmbOptions.Smb));
 
 var connectionStrings = builder.Configuration
     .GetSection(ConnectionStringsOptions.ConnectionStrings)
@@ -61,6 +63,7 @@ builder.Services.AddSingleton<PiZeroCameraManager>();
 builder.Services.AddSingleton<ISendPictureManager>(sp => sp.GetRequiredService<PiZeroCameraManager>());
 builder.Services.AddSingleton<ITakePictureManager>(sp => sp.GetRequiredService<PiZeroCameraManager>());
 builder.Services.AddSingleton<ISendPictureSetManager>(sp => sp.GetRequiredService<PiZeroCameraManager>());
+builder.Services.AddSingleton<UploadToServer>();
 
 var app = builder.Build();
 

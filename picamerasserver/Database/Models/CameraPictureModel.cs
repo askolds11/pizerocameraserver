@@ -29,6 +29,11 @@ public class CameraPictureModel
     /// Time when the "sent" message was received
     /// </summary>
     public DateTimeOffset? ReceivedSent { get; set; }
+
+    /// <summary>
+    /// Whether the picture was synced to the server
+    /// </summary>
+    public bool Synced { get; set; }
     
     /// <summary>
     /// Time when the picture request was received according to the Pi

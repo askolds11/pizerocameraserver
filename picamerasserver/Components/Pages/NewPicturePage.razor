@@ -4,6 +4,7 @@
 @using picamerasserver.Database.Models
 @using picamerasserver.pizerocamera
 @using Color = System.Drawing.Color
+@inject ISnackbar Snackbar
 
 <PageTitle>New picture set - PiCam</PageTitle>
 <DefaultPage>
@@ -210,6 +211,11 @@
                                            Disabled="_pictureSet is not { IsDone: true } || SendSetActive || AllTotalCount == 0 || AllSentCount != AllTotalCount">
                                     Download
                                 </MudButton>
+                                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Size="Size.Large"
+                                           EndIcon="@Icons.Material.Outlined.Upload" OnClick="@UploadSmb"
+                                           Disabled="_pictureSet is not { IsDone: true } || SendSetActive || UploadActive || AllSentCount == 0 || AllUploadedCount == AllTotalCount">
+                                    Upload
+                                </MudButton>
                                 @if (_pictureSet is { IsDone: true })
                                 {
                                     <MudText>
@@ -238,6 +244,9 @@
                                         <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
                                                  Size="Size.Large"/>
                                     }
+                                    <MudText>
+                                        Uploaded @AllUploadedCount / @AllSentCount
+                                    </MudText>
                                 }
                             </MudStack>
                         </MudStack>
@@ -265,6 +274,10 @@
                                 <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error" Size="Size.Large"
                                            EndIcon="@Icons.Material.Outlined.Cancel" OnClick="@CancelSend">
                                     Cancel Send
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error" Size="Size.Large"
+                                           EndIcon="@Icons.Material.Outlined.Cancel" OnClick="@CancelUpload">
+                                    Cancel Upload
                                 </MudButton>
                             </MudStack>
                         </MudStack>

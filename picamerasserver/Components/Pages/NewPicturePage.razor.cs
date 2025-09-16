@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
+using MudBlazor;
 using picamerasserver.Database;
 using picamerasserver.Database.Models;
 using picamerasserver.pizerocamera;
@@ -16,11 +17,13 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     [Inject] protected IDbContextFactory<PiDbContext> DbContextFactory { get; init; } = null!;
     [Inject] protected NavigationManager NavigationManager { get; init; } = null!;
     [Inject] protected ISendPictureSetManager SendPictureSetManager { get; init; } = null!;
+    [Inject] protected UploadToServer UploadToServer { get; init; } = null!;
 
     private PictureSetModel? _pictureSet;
     private bool SendSetActive => SendPictureSetManager.SendSetActive;
     private bool PingActive => PiZeroCameraManager.PingActive;
     private bool NtpActive => PiZeroCameraManager.NtpActive;
+    private bool UploadActive => UploadToServer.UploadActive;
 
     private PictureRequestModel? PictureRequestStandingSpread => _pictureSet?.PictureRequests.FirstOrDefault(x =>
         x is { PictureRequestType: PictureRequestType.StandingSpread, IsActive: true });
@@ -39,7 +42,8 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         _pictureSet = new PictureSetModel
         {
             Uuid = Guid.CreateVersion7(),
-            Name = Name
+            Name = Name,
+            Created = DateTimeOffset.UtcNow
         };
         await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
         piDbContext.PictureSets.Add(_pictureSet);
@@ -104,7 +108,9 @@ public partial class NewPicturePage : ComponentBase, IDisposable
 
     private int AllSentFailedCount => _pictureSet?.PictureRequests
         .Sum(x => x.CameraPictures.Count(y =>
-            y is { ReceivedTaken: not null, CameraPictureStatus: CameraPictureStatus.Failed
+            y is
+            {
+                ReceivedTaken: not null, CameraPictureStatus: CameraPictureStatus.Failed
                 or CameraPictureStatus.PictureFailedToRead or CameraPictureStatus.PictureFailedToSend
                 or CameraPictureStatus.Unknown or CameraPictureStatus.Cancelled
             })) ?? 0;
@@ -112,6 +118,10 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     private int AllTotalCount =>
         _pictureSet?.PictureRequests
             .Sum(x => x.CameraPictures.Count(y => y.ReceivedTaken != null)) ?? 0;
+    
+    private int AllUploadedCount =>
+        _pictureSet?.PictureRequests
+            .Sum(x => x.CameraPictures.Count(y => y.Synced)) ?? 0;
 
     private async Task GetAlive()
     {
@@ -251,6 +261,11 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     {
         await PiZeroCameraManager.CancelPing();
     }
+    
+    private async Task CancelUpload()
+    {
+        await UploadToServer.CancelUpload();
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -275,5 +290,24 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         PiZeroCameraManager.OnNtpChange -= OnNtpChanged;
         PiZeroCameraManager.OnPictureSetChange -= OnPictureSetChanged;
         GC.SuppressFinalize(this);
+    }
+
+    private async Task UploadSmb()
+    {
+        if (Uuid == null)
+        {
+            throw new ArgumentNullException(nameof(Uuid));
+        }
+
+        var result = await UploadToServer.Upload((Guid)Uuid);
+
+        if (result.IsFailure)
+        {
+            Snackbar.Add($"Upload failed: {result.Error}!", Severity.Error);
+        }
+        else
+        {
+            Snackbar.Add($"Upload completed!", Severity.Success);
+        }
     }
 }

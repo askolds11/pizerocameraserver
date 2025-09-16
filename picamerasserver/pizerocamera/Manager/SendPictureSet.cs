@@ -31,7 +31,7 @@ public partial class PiZeroCameraManager : ISendPictureSetManager
     private readonly SemaphoreSlim _sendSetSemaphore = new(1, 1);
     private CancellationTokenSource? _sendSetCancellationTokenSource;
 
-    private void UpdatePictureSet(Guid pictureSetUuid)
+    public void UpdatePictureSet(Guid pictureSetUuid)
     {
         if (OnPictureSetChange != null)
         {
