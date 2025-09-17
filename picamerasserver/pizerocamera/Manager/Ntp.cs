@@ -261,4 +261,40 @@ public partial class PiZeroCameraManager
             await CancelCameraTasks();
         }
     }
+    
+    public async Task RequestNtpSyncIndividual(string cameraId)
+    {
+        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
+
+        var options = _optionsMonitor.CurrentValue;
+        
+        var piZeroCamera = PiZeroCameras[cameraId];
+
+        if (piZeroCamera.Pingable != true || piZeroCamera.Status == null)
+        {
+            return;
+        }
+        
+        NtpRequest ntpRequest = new NtpRequest.Step();
+        
+        var message = new MqttApplicationMessageBuilder()
+            .WithContentType("application/json")
+            .WithTopic($"{options.NtpTopic}/{cameraId}")
+            .WithPayload(Json.Serialize(ntpRequest))
+            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
+            .Build();
+
+        var publishResult = await _mqttClient.PublishAsync(message);
+
+        piZeroCamera.LastNtpErrorMillis = null;
+        piZeroCamera.LastNtpOffsetMillis = null;
+        piZeroCamera.LastNtpSync = null;
+                
+        piZeroCamera.NtpRequest = publishResult.IsSuccess
+            ? new PiZeroCameraNtpRequest.Requested()
+            : new PiZeroCameraNtpRequest.Failure.FailedToRequest(publishResult.ReasonString);
+        
+        OnNtpChange?.Invoke();
+        await Task.Yield();
+    }
 }
