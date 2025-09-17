@@ -34,7 +34,8 @@ public partial class PiZeroCameraManager
         // Cameras to send request to
         return PiZeroCameras.Values
             .Where(x => !requirePing || x.Pingable == true)
-            .Where(x => !requireDeviceStatus || x.Status != null);
+            .Where(x => !requireDeviceStatus || x.Status != null)
+            .OrderBy(x => x.Id);
     }
     
     /// <summary>
