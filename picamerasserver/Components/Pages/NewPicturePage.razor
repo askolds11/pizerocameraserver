@@ -177,7 +177,7 @@
                                 PictureRequestModel="PictureRequestStandingSpread"
                                 PictureSetUId="_pictureSet?.Uuid"
                                 Disabled="_pictureSet == null || _pictureSet.IsDone || !Alived || !Synced || AliveCount == 0 || PingActive || NtpActive"
-                                Finished="_pictureSet is { IsDone: true}" />
+                                Finished="_pictureSet is { IsDone: true}"/>
                 <PictureTakeSet PictureRequestType="PictureRequestType.StandingTogether"
                                 PictureRequestModel="PictureRequestStandingTogether"
                                 PictureSetUId="_pictureSet?.Uuid"
@@ -231,6 +231,7 @@
                                         <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
                                                  Size="Size.Large"/>
                                     }
+
                                     <MudText>
                                         Failed to send @AllSentFailedCount
                                     </MudText>
@@ -244,6 +245,7 @@
                                         <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
                                                  Size="Size.Large"/>
                                     }
+
                                     <MudText>
                                         Uploaded @AllUploadedCount / @AllSentCount
                                     </MudText>
@@ -335,7 +337,9 @@
             PiZeroCameraNtpRequest.Failure.FailedToParseRegex _ => Color.FromArgb(0xff, 0x00, 0x00),
             PiZeroCameraNtpRequest.Failure.FailedToRequest _ => Color.FromArgb(0xff, 0x00, 0x00),
             PiZeroCameraNtpRequest.Requested _ => Color.FromArgb(0x55, 0x55, 0x00),
-            PiZeroCameraNtpRequest.Success _ => Color.FromArgb(0x00, 0xFF, 0x00),
+            PiZeroCameraNtpRequest.Success _ => piZeroCamera.LastNtpErrorMillis < 10
+                ? Color.FromArgb(0x00, 0xFF, 0x00)
+                : Color.FromArgb(0xFF, 0xFF, 0x00),
             _ => throw new ArgumentOutOfRangeException()
         };
     }
