@@ -10,7 +10,6 @@ namespace picamerasserver.pizerocamera.manager;
 
 public partial class PiZeroCameraManager
 {
-    public event Action? OnUpdateChange;
     private Channel<string>? _updateChannel;
 
     public bool UpdateActive { get; private set; }
@@ -46,7 +45,7 @@ public partial class PiZeroCameraManager
         {
             return;
         }
-        
+
         // No version
         var activeVersion = await GetActiveVersion();
         if (activeVersion == null)
@@ -66,7 +65,7 @@ public partial class PiZeroCameraManager
         List<PiZeroCamera>? unsentCameras = null;
         await using var piDbContext =
             await _dbContextFactory.CreateDbContextAsync(_updateCancellationTokenSource.Token);
-        
+
         try
         {
             UpdateActive = true;
@@ -90,7 +89,7 @@ public partial class PiZeroCameraManager
             activeVersion.UpdatedTime = DateTimeOffset.UtcNow;
             piDbContext.Update(activeVersion);
             await piDbContext.SaveChangesAsync();
-            
+
             // Make a message
             var message = new MqttApplicationMessageBuilder()
                 // .WithContentType("application/json")
@@ -111,9 +110,9 @@ public partial class PiZeroCameraManager
             }
 
             // Update UI
-            OnUpdateChange?.Invoke();
+            _changeListener.UpdateUpdate();
             await Task.Yield();
-            
+
             // Wait for messages
             while (await _updateChannel.Reader.WaitToReadAsync(_updateCancellationTokenSource.Token))
             {
@@ -129,7 +128,7 @@ public partial class PiZeroCameraManager
                 {
                     await SendMessage(_updateCancellationTokenSource);
                     // Update UI
-                    OnUpdateChange?.Invoke();
+                    _changeListener.UpdateUpdate();
                     await Task.Yield();
                 }
 
@@ -179,7 +178,7 @@ public partial class PiZeroCameraManager
             _updateSemaphore.Release();
             // Update UI
             UpdateActive = false;
-            OnUpdateChange?.Invoke();
+            _changeListener.UpdateUpdate();
             await Task.Yield();
         }
     }
@@ -222,21 +221,22 @@ public partial class PiZeroCameraManager
         }
         else
         {
-            piZeroCamera.UpdateRequest= successWrapper.Value switch
+            piZeroCamera.UpdateRequest = successWrapper.Value switch
             {
                 UpdateResponse.Failure failure => failure switch
                 {
-                    UpdateResponse.Failure.Failed failed => new PiZeroCameraUpdateRequest.Failure.Failed(failed.Message),
+                    UpdateResponse.Failure.Failed failed =>
+                        new PiZeroCameraUpdateRequest.Failure.Failed(failed.Message),
                     _ => throw new ArgumentOutOfRangeException(nameof(failure))
                 },
                 _ => new PiZeroCameraUpdateRequest.Failure.UnknownFailure()
             };
         }
 
-        OnUpdateChange?.Invoke();
+        _changeListener.UpdateUpdate();
         await Task.Yield();
     }
-    
+
     public async Task CancelUpdate()
     {
         if (_updateCancellationTokenSource != null)

@@ -59,18 +59,6 @@ public partial class PiZeroCameraManager : ISendPictureManager
     private readonly SemaphoreSlim _sendSemaphore = new(1, 1);
     private CancellationTokenSource? _sendCancellationTokenSource;
 
-    private void UpdatePicture(Guid pictureRequestUuid)
-    {
-        if (OnPictureChange != null)
-        {
-            Task.Run(async () =>
-            {
-                await OnPictureChange.Invoke(pictureRequestUuid);
-                await Task.Yield();
-            });
-        }
-    }
-
     /// <summary>
     /// Get a list of cameras based on criteria for sending pictures
     /// </summary>
@@ -91,7 +79,8 @@ public partial class PiZeroCameraManager : ISendPictureManager
         var allowedStatuses = new[]
         {
             CameraPictureStatus.SavedOnDevice, CameraPictureStatus.FailedToRequestSend, CameraPictureStatus.FailureSend,
-            CameraPictureStatus.PictureFailedToRead, CameraPictureStatus.PictureFailedToSend, CameraPictureStatus.Cancelled
+            CameraPictureStatus.PictureFailedToRead, CameraPictureStatus.PictureFailedToSend,
+            CameraPictureStatus.Cancelled
         };
         // Cameras to send request to
         return pictureRequest.CameraPictures
@@ -198,7 +187,7 @@ public partial class PiZeroCameraManager : ISendPictureManager
             _sendSemaphore.Release();
             // Update UI
             SendActive = false;
-            UpdatePicture(uuid);
+            _changeListener.UpdatePicture(uuid);
         }
     }
 
@@ -236,8 +225,8 @@ public partial class PiZeroCameraManager : ISendPictureManager
 
             await piDbContext.SaveChangesAsync(cts.Token);
             // Update UI
-            UpdatePicture(uuid);
-            
+            _changeListener.UpdatePicture(uuid);
+
             // Wait for messages
             while (await channel.Reader.WaitToReadAsync(cts.Token))
             {
@@ -252,10 +241,10 @@ public partial class PiZeroCameraManager : ISendPictureManager
                 if (cameraQueue.Count > 0)
                 {
                     await SendMessage(piDbContext);
-                    
+
                     await piDbContext.SaveChangesAsync(cts.Token);
                     // Update UI
-                    UpdatePicture(uuid);
+                    _changeListener.UpdatePicture(uuid);
                 }
 
                 // If no more cameras, complete the channel and break out
@@ -337,7 +326,7 @@ public partial class PiZeroCameraManager : ISendPictureManager
         piDbContext.Update(cameraPicture);
 
         await piDbContext.SaveChangesAsync();
-        UpdatePicture(uuid);
+        _changeListener.UpdatePicture(uuid);
     }
 
     /// <inheritdoc />
@@ -438,7 +427,7 @@ public partial class PiZeroCameraManager : ISendPictureManager
         }
 
         await piDbContext.SaveChangesAsync();
-        UpdatePicture(uuid);
+        _changeListener.UpdatePicture(uuid);
     }
 
     /// <inheritdoc />

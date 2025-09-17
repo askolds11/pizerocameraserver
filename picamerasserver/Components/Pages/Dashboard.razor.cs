@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MudBlazor;
 using picamerasserver.Database;
 using picamerasserver.Database.Models;
+using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.manager;
 
 namespace picamerasserver.Components.Pages;
@@ -13,6 +14,7 @@ public partial class Dashboard : ComponentBase, IDisposable
     [Inject] protected IDbContextFactory<PiDbContext> DbContextFactory { get; init; } = null!;
     [Inject] protected NavigationManager NavigationManager { get; init; } = null!;
     [Inject] protected ISendPictureSetManager SendPictureSetManager { get; init; } = null!;
+    [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
 
     private MudDataGrid<PictureSetElement> _gridData = null!;
     private bool SendSetActive => SendPictureSetManager.SendSetActive;
@@ -29,12 +31,12 @@ public partial class Dashboard : ComponentBase, IDisposable
             await _gridData.ReloadServerData();
         });
     }
-    
+
     private async Task SendPicture(Guid uuid)
     {
         await SendPictureSetManager.RequestSendPictureSet(uuid);
     }
-    
+
     private void NavigateToNew()
     {
         NavigationManager.NavigateTo($"/NewPicturePage", replace: false);
@@ -59,15 +61,15 @@ public partial class Dashboard : ComponentBase, IDisposable
             Items = pagedData
         };
     }
-    
+
     protected override void OnInitialized()
     {
-        PiZeroCameraManager.OnPictureSetChange += OnPictureSetChanged;
+        ChangeListener.OnPictureSetChange += OnPictureSetChanged;
     }
 
     public void Dispose()
     {
-        PiZeroCameraManager.OnPictureSetChange -= OnPictureSetChanged;
+        ChangeListener.OnPictureSetChange -= OnPictureSetChanged;
         GC.SuppressFinalize(this);
     }
 }

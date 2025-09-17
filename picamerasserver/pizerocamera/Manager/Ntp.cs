@@ -12,8 +12,6 @@ namespace picamerasserver.pizerocamera.manager;
 
 public partial class PiZeroCameraManager
 {
-    public event Action? OnNtpChange;
-
     private Channel<string>? _ntpChannel;
 
     public bool NtpActive { get; private set; }
@@ -37,7 +35,7 @@ public partial class PiZeroCameraManager
             .Where(x => !requireDeviceStatus || x.Status != null)
             .OrderBy(x => x.Id);
     }
-    
+
     /// <summary>
     /// Request a NTP time sync.
     /// </summary>
@@ -82,14 +80,14 @@ public partial class PiZeroCameraManager
             async Task SendMessage()
             {
                 var piZeroCamera = cameraQueue.Dequeue();
-                
+
                 piZeroCamera.LastNtpErrorMillis = null;
                 piZeroCamera.LastNtpOffsetMillis = null;
                 piZeroCamera.LastNtpSync = null;
 
                 message.Topic = $"{options.NtpTopic}/{piZeroCamera.Id}";
                 var publishResult = await _mqttClient.PublishAsync(message, cancellationToken);
-                
+
                 piZeroCamera.NtpRequest = publishResult.IsSuccess
                     ? new PiZeroCameraNtpRequest.Requested()
                     : new PiZeroCameraNtpRequest.Failure.FailedToRequest(publishResult.ReasonString);
@@ -105,10 +103,8 @@ public partial class PiZeroCameraManager
                     break;
                 }
             }
-            
-            // Update UI
-            OnNtpChange?.Invoke();
-            await Task.Yield();
+
+            _changeListener.UpdateNtp();
 
             // Wait for messages
             while (await _ntpChannel.Reader.WaitToReadAsync(cancellationToken))
@@ -127,10 +123,8 @@ public partial class PiZeroCameraManager
                 if (cameraQueue.Count > 0)
                 {
                     await SendMessage();
-                    
-                    // Update UI
-                    OnNtpChange?.Invoke();
-                    await Task.Yield();
+
+                    _changeListener.UpdateNtp();
                 }
 
                 // If no more cameras, complete the channel and break out
@@ -179,14 +173,14 @@ public partial class PiZeroCameraManager
         finally
         {
             _ntpChannel = null;
-            
+
             _ntpCancellationTokenSource.Dispose();
             _ntpCancellationTokenSource = null;
             // Release semaphore
             _ntpSemaphore.Release();
             // Update UI
             NtpActive = false;
-            OnNtpChange?.Invoke();
+            _changeListener.UpdateNtp();
             await Task.Yield();
         }
 
@@ -211,13 +205,13 @@ public partial class PiZeroCameraManager
                 piZeroCamera.NtpRequest = new PiZeroCameraNtpRequest.Success(successWrapper.Value);
                 const string pattern = @"(?:^CLOCK:.*?\\n)?(.*?)\s([-+]?\d+\.\d+)\s\+\/-\s(\d+\.\d+)";
                 var match = Regex.Match(successWrapper.Value, pattern, RegexOptions.Multiline);
-                
+
                 if (match.Success)
                 {
                     var timestamp = match.Groups[1].Value;
                     var offset = match.Groups[2].Value;
                     var error = match.Groups[3].Value;
-                    
+
                     var date = DateTimeOffset.ParseExact(
                         timestamp,
                         "yyyy-MM-dd HH:mm:ss.FFFFFF (zzz)",
@@ -225,7 +219,7 @@ public partial class PiZeroCameraManager
                     );
                     var offsetSeconds = float.Parse(offset, CultureInfo.InvariantCulture);
                     var errorSeconds = float.Parse(error, CultureInfo.InvariantCulture);
-                    
+
                     piZeroCamera.LastNtpSync = date;
                     piZeroCamera.LastNtpOffsetMillis = offsetSeconds * 1000;
                     piZeroCamera.LastNtpErrorMillis = errorSeconds * 1000;
@@ -246,10 +240,9 @@ public partial class PiZeroCameraManager
             piZeroCamera.NtpRequest = new PiZeroCameraNtpRequest.Failure.FailedToParseJson(response.Error.ToString());
         }
 
-        OnNtpChange?.Invoke();
-        await Task.Yield();
+        _changeListener.UpdateNtp();
     }
-    
+
     public async Task CancelNtpSync()
     {
         if (_ntpCancellationTokenSource != null)
@@ -262,22 +255,22 @@ public partial class PiZeroCameraManager
             await CancelCameraTasks();
         }
     }
-    
+
     public async Task RequestNtpSyncIndividual(string cameraId)
     {
         await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
 
         var options = _optionsMonitor.CurrentValue;
-        
+
         var piZeroCamera = PiZeroCameras[cameraId];
 
         if (piZeroCamera.Pingable != true || piZeroCamera.Status == null)
         {
             return;
         }
-        
+
         NtpRequest ntpRequest = new NtpRequest.Step();
-        
+
         var message = new MqttApplicationMessageBuilder()
             .WithContentType("application/json")
             .WithTopic($"{options.NtpTopic}/{cameraId}")
@@ -290,12 +283,11 @@ public partial class PiZeroCameraManager
         piZeroCamera.LastNtpErrorMillis = null;
         piZeroCamera.LastNtpOffsetMillis = null;
         piZeroCamera.LastNtpSync = null;
-                
+
         piZeroCamera.NtpRequest = publishResult.IsSuccess
             ? new PiZeroCameraNtpRequest.Requested()
             : new PiZeroCameraNtpRequest.Failure.FailedToRequest(publishResult.ReasonString);
-        
-        OnNtpChange?.Invoke();
-        await Task.Yield();
+
+        _changeListener.UpdateNtp();
     }
 }

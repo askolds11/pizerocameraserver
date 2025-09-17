@@ -13,6 +13,7 @@ namespace picamerasserver.pizerocamera.manager;
 
 public class UploadToServer(
     PiZeroCameraManager piZeroCameraManager,
+    ChangeListener changeListener,
     IOptionsMonitor<DirectoriesOptions> dirOptionsMonitor,
     IOptionsMonitor<SmbOptions> smbOptionsMonitor,
     IDbContextFactory<PiDbContext> dbContextFactory,
@@ -50,8 +51,8 @@ public class UploadToServer(
         try
         {
             UploadActive = true;
-            piZeroCameraManager.UpdatePictureSet(pictureSetUuid);
-            
+            changeListener.UpdatePictureSet(pictureSetUuid);
+
             var pictureSetResult =
                 await GetAndValidatePictureSet(piDbContext, pictureSetUuid, _uploadCancellationTokenSource.Token);
 
@@ -63,7 +64,7 @@ public class UploadToServer(
             _uploadCancellationTokenSource.Token.ThrowIfCancellationRequested();
 
             var pictureSet = pictureSetResult.Value;
-            
+
             var smbOptions = smbOptionsMonitor.CurrentValue;
 
             var connectResult = ConnectToSmb(smbOptions, _uploadCancellationTokenSource.Token);
@@ -82,6 +83,7 @@ public class UploadToServer(
                 _uploadCancellationTokenSource.Token.ThrowIfCancellationRequested();
                 CreateDirectory(fileStore, PathCombineWithBackslashes(smbOptions.FileDirectory, pictureSet.Name));
             }
+
             _uploadCancellationTokenSource.Token.ThrowIfCancellationRequested();
 
             // Make sure that the "pictureSet.Name/pictureSet.Uuid" directory exists
@@ -93,6 +95,7 @@ public class UploadToServer(
                 _uploadCancellationTokenSource.Token.ThrowIfCancellationRequested();
                 CreateDirectory(fileStore, nestedDir);
             }
+
             _uploadCancellationTokenSource.Token.ThrowIfCancellationRequested();
 
             foreach (var pictureRequest in pictureSet.PictureRequests)
@@ -117,6 +120,7 @@ public class UploadToServer(
                     _uploadCancellationTokenSource.Token.ThrowIfCancellationRequested();
                     CreateDirectory(fileStore, PathCombineWithBackslashes(nestedDir, dir));
                 }
+
                 _uploadCancellationTokenSource.Token.ThrowIfCancellationRequested();
 
                 // metadata directory
@@ -125,6 +129,7 @@ public class UploadToServer(
                     _uploadCancellationTokenSource.Token.ThrowIfCancellationRequested();
                     CreateDirectory(fileStore, PathCombineWithBackslashes(nestedDir, dir, "metadata"));
                 }
+
                 _uploadCancellationTokenSource.Token.ThrowIfCancellationRequested();
 
                 var sentCameraPictures = pictureRequest.CameraPictures.Where(x =>
@@ -138,7 +143,7 @@ public class UploadToServer(
                 foreach (var cameraPicture in sentCameraPictures)
                 {
                     _uploadCancellationTokenSource.Token.ThrowIfCancellationRequested();
-                    
+
                     var picturePath = Path.Combine(path, $"{pictureRequest.Uuid}_{cameraPicture.CameraId}.jpg");
                     var pictureFileName = Path.GetFileName(picturePath).Replace(pictureRequest.Uuid + "_", "");
 
@@ -147,6 +152,7 @@ public class UploadToServer(
                     {
                         return Result.Failure<PictureSetModel>($"File {picturePath} not found");
                     }
+
                     _uploadCancellationTokenSource.Token.ThrowIfCancellationRequested();
 
                     var copyResult = CopyFileToSmb(
@@ -177,7 +183,7 @@ public class UploadToServer(
                     }
 
                     await piDbContext.SaveChangesAsync(_uploadCancellationTokenSource.Token);
-                    piZeroCameraManager.UpdatePictureSet(pictureSetUuid);
+                    changeListener.UpdatePictureSet(pictureSetUuid);
                 }
             }
         }
@@ -201,12 +207,12 @@ public class UploadToServer(
             {
                 smbClient.Disconnect();
             }
-            
+
             UploadActive = false;
             _uploadCancellationTokenSource?.Dispose();
             _uploadCancellationTokenSource = null;
             _uploadSemaphore.Release();
-            piZeroCameraManager.UpdatePictureSet(pictureSetUuid);
+            changeListener.UpdatePictureSet(pictureSetUuid);
         }
 
         return Result.Success();
@@ -396,7 +402,8 @@ public class UploadToServer(
     /// <param name="targetPath">SMB path</param>
     /// <param name="maxWriteSize">SMB client's max write size</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    private Result CopyFileToSmb(ISMBFileStore fileStore, string sourcePath, string targetPath, uint maxWriteSize, CancellationToken cancellationToken)
+    private Result CopyFileToSmb(ISMBFileStore fileStore, string sourcePath, string targetPath, uint maxWriteSize,
+        CancellationToken cancellationToken)
     {
         object? fileHandle = null;
 
@@ -421,6 +428,7 @@ public class UploadToServer(
                 logger.LogError("Failed to create target file: {TargetPath}", targetPath);
                 return Result.Failure($"Failed to create target file {targetPath}");
             }
+
             cancellationToken.ThrowIfCancellationRequested();
 
             // Write in chunks, as the SMB client's max write size may be smaller than the file size
@@ -465,7 +473,7 @@ public class UploadToServer(
         // Replace any forward slashes with backslashes for consistency
         return combinedPath.Replace('/', '\\');
     }
-    
+
     public async Task CancelUpload()
     {
         if (_uploadCancellationTokenSource != null)

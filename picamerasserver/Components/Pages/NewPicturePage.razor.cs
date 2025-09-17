@@ -18,6 +18,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     [Inject] protected NavigationManager NavigationManager { get; init; } = null!;
     [Inject] protected ISendPictureSetManager SendPictureSetManager { get; init; } = null!;
     [Inject] protected UploadToServer UploadToServer { get; init; } = null!;
+    [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
 
     private PictureSetModel? _pictureSet;
     private bool SendSetActive => SendPictureSetManager.SendSetActive;
@@ -118,7 +119,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     private int AllTotalCount =>
         _pictureSet?.PictureRequests
             .Sum(x => x.CameraPictures.Count(y => y.ReceivedTaken != null)) ?? 0;
-    
+
     private int AllUploadedCount =>
         _pictureSet?.PictureRequests
             .Sum(x => x.CameraPictures.Count(y => y.Synced)) ?? 0;
@@ -198,9 +199,9 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     private float? MinError => GetErrors()?.Min();
     private float? MaxError => GetErrors()?.Max();
 
-    private void OnGlobalChanged()
+    private async Task OnPingGlobalChanged()
     {
-        InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged);
     }
 
     /// <summary>
@@ -219,9 +220,9 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         });
     }
 
-    private void OnNtpChanged()
+    private async Task OnNtpChanged()
     {
-        InvokeAsync(() =>
+        await InvokeAsync(() =>
         {
             UpdateTooltipTransformNtp();
             StateHasChanged();
@@ -261,7 +262,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     {
         await PiZeroCameraManager.CancelPing();
     }
-    
+
     private async Task CancelUpload()
     {
         await UploadToServer.CancelUpload();
@@ -279,16 +280,16 @@ public partial class NewPicturePage : ComponentBase, IDisposable
 
     protected override void OnInitialized()
     {
-        PiZeroCameraManager.OnChangePing += OnGlobalChanged;
-        PiZeroCameraManager.OnNtpChange += OnNtpChanged;
-        PiZeroCameraManager.OnPictureSetChange += OnPictureSetChanged;
+        ChangeListener.OnPingChange += OnPingGlobalChanged;
+        ChangeListener.OnNtpChange += OnNtpChanged;
+        ChangeListener.OnPictureSetChange += OnPictureSetChanged;
     }
 
     public void Dispose()
     {
-        PiZeroCameraManager.OnChangePing -= OnGlobalChanged;
-        PiZeroCameraManager.OnNtpChange -= OnNtpChanged;
-        PiZeroCameraManager.OnPictureSetChange -= OnPictureSetChanged;
+        ChangeListener.OnPingChange -= OnPingGlobalChanged;
+        ChangeListener.OnNtpChange -= OnNtpChanged;
+        ChangeListener.OnPictureSetChange -= OnPictureSetChanged;
         GC.SuppressFinalize(this);
     }
 

@@ -9,6 +9,7 @@ using picamerasserver.Database;
 using picamerasserver.Endpoints;
 using picamerasserver.mqtt;
 using picamerasserver.Options;
+using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.manager;
 using Serilog;
 
@@ -59,6 +60,7 @@ var mqttFactory = new MqttClientFactory();
 var mqttClient = mqttFactory.CreateMqttClient();
 builder.Services.AddSingleton(mqttClient);
 builder.Services.AddSingleton<MqttStuff>();
+builder.Services.AddSingleton<ChangeListener>();
 builder.Services.AddSingleton<PiZeroCameraManager>();
 builder.Services.AddSingleton<ISendPictureManager>(sp => sp.GetRequiredService<PiZeroCameraManager>());
 builder.Services.AddSingleton<ITakePictureManager>(sp => sp.GetRequiredService<PiZeroCameraManager>());
@@ -97,6 +99,7 @@ app.UseRequestLocalization(options =>
 
 // Force to instantly create
 app.Services.GetRequiredService<MqttStuff>();
+app.Services.GetRequiredService<ChangeListener>();
 app.Services.GetRequiredService<PiZeroCameraManager>();
 
 // Console.WriteLine("Test.");

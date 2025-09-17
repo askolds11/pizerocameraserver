@@ -7,7 +7,6 @@ namespace picamerasserver.pizerocamera.manager;
 
 public partial class PiZeroCameraManager
 {
-    public event Action? OnChangePing;
     public bool PingActive { get; private set; }
     private readonly SemaphoreSlim _pingSemaphore = new(1, 1);
     private CancellationTokenSource? _pingCancellationTokenSource;
@@ -42,9 +41,7 @@ public partial class PiZeroCameraManager
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        // update listeners
-        OnChangePing?.Invoke();
-        await Task.Yield();
+        _changeListener.UpdatePing();
     }
 
     public async Task Ping(
@@ -70,8 +67,7 @@ public partial class PiZeroCameraManager
         try
         {
             PingActive = true;
-            OnChangePing?.Invoke();
-            await Task.Yield();
+            _changeListener.UpdatePing();
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -80,8 +76,7 @@ public partial class PiZeroCameraManager
                 piZeroCamera.Pingable = null;
             }
 
-            OnChangePing?.Invoke();
-            await Task.Yield();
+            _changeListener.UpdatePing();
 
             // if timeout provided, use that, else infinite
             // BUG: TimeSpan.FromMilliseconds() always times out with values greater than or equal to 2147483100
@@ -102,8 +97,7 @@ public partial class PiZeroCameraManager
 
             PingActive = false;
 
-            OnChangePing?.Invoke();
-            await Task.Yield();
+            _changeListener.UpdatePing();
         }
     }
 
@@ -116,8 +110,7 @@ public partial class PiZeroCameraManager
             piZeroCamera.Status = null;
         }
 
-        OnChangePing?.Invoke();
-        await Task.Yield();
+        _changeListener.UpdatePing();
 
         var options = _optionsMonitor.CurrentValue;
 
@@ -129,7 +122,7 @@ public partial class PiZeroCameraManager
 
         await _mqttClient.PublishAsync(message);
 
-        OnChangePing?.Invoke();
+        _changeListener.UpdatePing();
     }
 
     public async Task ResponseGetStatus(MqttApplicationMessage message, string id)
@@ -160,11 +153,11 @@ public partial class PiZeroCameraManager
                     piZeroCamera.UpdateRequest = new PiZeroCameraUpdateRequest.Failure.VersionMismatch();
                 }
 
-                OnUpdateChange?.Invoke();
+                _changeListener.UpdateUpdate();
             }
         }
 
-        OnChangePing?.Invoke();
+        _changeListener.UpdatePing();
     }
 
     public async Task CancelPing()

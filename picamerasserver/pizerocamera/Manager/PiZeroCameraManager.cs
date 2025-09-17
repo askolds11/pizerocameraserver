@@ -12,6 +12,7 @@ namespace picamerasserver.pizerocamera.manager;
 public partial class PiZeroCameraManager
 {
     private readonly IMqttClient _mqttClient;
+    private readonly ChangeListener _changeListener;
     private readonly ILogger<PiZeroCameraManager> _logger;
     private readonly IOptionsMonitor<MqttOptions> _optionsMonitor;
     private readonly IOptionsMonitor<DirectoriesOptions> _dirOptionsMonitor;
@@ -21,13 +22,14 @@ public partial class PiZeroCameraManager
 
     public PiZeroCameraManager(IMqttClient mqttClient, ILogger<PiZeroCameraManager> logger,
         IOptionsMonitor<MqttOptions> optionsMonitor, IDbContextFactory<PiDbContext> dbContextFactory,
-        IOptionsMonitor<DirectoriesOptions> dirOptionsMonitor)
+        IOptionsMonitor<DirectoriesOptions> dirOptionsMonitor, ChangeListener changeListener)
     {
         _mqttClient = mqttClient;
         _logger = logger;
         _optionsMonitor = optionsMonitor;
         _dbContextFactory = dbContextFactory;
         _dirOptionsMonitor = dirOptionsMonitor;
+        _changeListener = changeListener;
 
         using var piDbContext = _dbContextFactory.CreateDbContext();
 
@@ -65,7 +67,7 @@ public partial class PiZeroCameraManager
 
         await _mqttClient.PublishAsync(message);
     }
-    
+
     /// <summary>
     /// Sends shutdown to all Pi Zeros
     /// </summary>
@@ -84,21 +86,21 @@ public partial class PiZeroCameraManager
 
         return publishResult.IsSuccess;
     }
-    
+
     /// <summary>
     /// Sends shutdown to all Pi Zeros
     /// </summary>
     public async Task<bool> ShutdownCamerasQuadrant(char start)
     {
         var options = _optionsMonitor.CurrentValue;
-        
+
         var message = new MqttApplicationMessageBuilder()
             .WithContentType("application/json")
             .WithTopic("temp")
             .WithPayload("sudo shutdown -h now")
             .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
             .Build();
-        
+
         var cols = Enumerable.Range(start, 4).Select(c => ((char)c).ToString()).ToList();
 
         var publishResult = true;
@@ -108,7 +110,7 @@ public partial class PiZeroCameraManager
             var thisPublishResult = await _mqttClient.PublishAsync(message);
             publishResult = publishResult && thisPublishResult.IsSuccess;
         }
-        
+
         return publishResult;
     }
 }

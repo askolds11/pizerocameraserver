@@ -21,6 +21,7 @@ public partial class UpdatePage(
 {
     [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; set; } = null!;
     [Inject] protected IDbContextFactory<PiDbContext> DbContextFactory { get; init; } = null!;
+    [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
 
     [GeneratedRegex(@"\[MYAPPVERSION:([^\]]+)\]", RegexOptions.IgnoreCase)]
     private static partial Regex Version();
@@ -218,9 +219,9 @@ public partial class UpdatePage(
         };
     }
 
-    private void OnGlobalChanged()
+    private async Task OnGlobalChanged()
     {
-        InvokeAsync(async () =>
+        await InvokeAsync(async () =>
         {
             StateHasChanged();
             await _gridData.ReloadServerData();
@@ -229,12 +230,12 @@ public partial class UpdatePage(
 
     protected override void OnInitialized()
     {
-        PiZeroCameraManager.OnUpdateChange += OnGlobalChanged;
+        ChangeListener.OnUpdateChange += OnGlobalChanged;
     }
 
     public void Dispose()
     {
-        PiZeroCameraManager.OnUpdateChange -= OnGlobalChanged;
+        ChangeListener.OnUpdateChange -= OnGlobalChanged;
         GC.SuppressFinalize(this);
     }
 }

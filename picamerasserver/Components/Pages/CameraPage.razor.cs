@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MudBlazor;
 using picamerasserver.Database;
 using picamerasserver.Database.Models;
+using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.manager;
 using Color = System.Drawing.Color;
 
@@ -14,11 +15,12 @@ public partial class CameraPage : ComponentBase, IDisposable
     [Inject] protected ITakePictureManager TakePictureManager { get; init; } = null!;
     [Inject] protected ISendPictureManager SendPictureManager { get; init; } = null!;
     [Inject] protected IDbContextFactory<PiDbContext> DbContextFactory { get; init; } = null!;
+    [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
 
     private MudDataGrid<PictureElement> _gridData = null!;
     private PictureElement? _selectedPicture;
     private string? _previewStreamUrl;
-    
+
     private bool SendActive => SendPictureManager.SendActive;
 
     /// <summary>
@@ -42,22 +44,23 @@ public partial class CameraPage : ComponentBase, IDisposable
                     _selectedPicture = new PictureElement(updatedItem);
                     UpdateTooltipTransform();
                 }
-                
+
                 // State will only change if a picture is selected
                 StateHasChanged();
             }
+
             await _gridData.ReloadServerData();
         });
     }
 
     protected override void OnInitialized()
     {
-        PiZeroCameraManager.OnPictureChange += OnPictureChanged;
+        ChangeListener.OnPictureChange += OnPictureChanged;
     }
 
     public void Dispose()
     {
-        PiZeroCameraManager.OnPictureChange -= OnPictureChanged;
+        ChangeListener.OnPictureChange -= OnPictureChanged;
         GC.SuppressFinalize(this);
     }
 
@@ -78,7 +81,7 @@ public partial class CameraPage : ComponentBase, IDisposable
 
         await SendPictureManager.RequestSendPictureChannels(_selectedPicture.Uuid);
     }
-    
+
     private async Task CancelSend()
     {
         await SendPictureManager.CancelSend();

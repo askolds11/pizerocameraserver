@@ -8,8 +8,8 @@ namespace picamerasserver.Components.Pages;
 
 public partial class NtpPage : ComponentBase, IDisposable
 {
-    [Inject]
-    protected PiZeroCameraManager PiZeroCameraManager { get; set; } = null!;
+    [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; set; } = null!;
+    [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
 
     private async Task RequestNtpSyncStep()
     {
@@ -61,9 +61,9 @@ public partial class NtpPage : ComponentBase, IDisposable
     private float? MinError => GetErrors()?.Min();
     private float? MaxError => GetErrors()?.Max();
     
-    private void OnGlobalChanged()
+    private async Task OnGlobalChanged()
     {
-        InvokeAsync(() =>
+        await InvokeAsync(() =>
         {
             UpdateTooltipTransform();
             StateHasChanged();
@@ -72,12 +72,12 @@ public partial class NtpPage : ComponentBase, IDisposable
     
     protected override void OnInitialized()
     {
-        PiZeroCameraManager.OnNtpChange += OnGlobalChanged;
+        ChangeListener.OnNtpChange += OnGlobalChanged;
     }
 
     public void Dispose()
     {
-        PiZeroCameraManager.OnNtpChange -= OnGlobalChanged;
+        ChangeListener.OnNtpChange -= OnGlobalChanged;
         GC.SuppressFinalize(this);
     }
     

@@ -25,23 +25,9 @@ public interface ISendPictureSetManager
 
 public partial class PiZeroCameraManager : ISendPictureSetManager
 {
-    public event Func<Guid, Task>? OnPictureSetChange;
-    
     public bool SendSetActive { get; private set; }
     private readonly SemaphoreSlim _sendSetSemaphore = new(1, 1);
     private CancellationTokenSource? _sendSetCancellationTokenSource;
-
-    public void UpdatePictureSet(Guid pictureSetUuid)
-    {
-        if (OnPictureSetChange != null)
-        {
-            Task.Run(async () =>
-            {
-                await OnPictureSetChange.Invoke(pictureSetUuid);
-                await Task.Yield();
-            });
-        }
-    }
     
     /// <inheritdoc />
     public async Task RequestSendPictureSet(Guid uuid, int maxConcurrentUploads)
@@ -68,7 +54,7 @@ public partial class PiZeroCameraManager : ISendPictureSetManager
 
         try
         {
-            OnPictureChange += PictureToPictureSetChange;
+            _changeListener.OnPictureChange += PictureToPictureSetChange;
             SendSetActive = true;
 
             if (pictureSet == null)
@@ -83,21 +69,21 @@ public partial class PiZeroCameraManager : ISendPictureSetManager
             }
 
             // Update UI
-            UpdatePictureSet(uuid);
+            _changeListener.UpdatePictureSet(uuid);
         }
         catch (OperationCanceledException)
         {
         }
         finally
         {
-            OnPictureChange -= PictureToPictureSetChange;
+            _changeListener.OnPictureChange -= PictureToPictureSetChange;
             _sendSetCancellationTokenSource.Dispose();
             _sendSetCancellationTokenSource = null;
             // Release semaphore
             _sendSetSemaphore.Release();
             // Update UI
             SendSetActive = false;
-            UpdatePictureSet(uuid);
+            _changeListener.UpdatePictureSet(uuid);
         }
 
         return;
@@ -107,7 +93,7 @@ public partial class PiZeroCameraManager : ISendPictureSetManager
         {
             if (pictureSet?.PictureRequests.Any(x => x.Uuid == pictureUId) == true)
             {
-                UpdatePictureSet(uuid);
+                _changeListener.UpdatePictureSet(uuid);
             }
             return Task.CompletedTask;
         }

@@ -43,7 +43,6 @@ public interface ITakePictureManager
 
 public partial class PiZeroCameraManager : ITakePictureManager
 {
-    public event Func<Guid, Task>? OnPictureChange;
     private readonly ConcurrentDictionary<Guid, Channel<string>> _takePictureChannels = new();
     private readonly ConcurrentDictionary<Guid, Channel<string>> _savePictureChannels = new();
     public bool TakePictureActive { get; private set; }
@@ -271,13 +270,13 @@ public partial class PiZeroCameraManager : ITakePictureManager
         if (pictureSetUId != null)
         {
             // No point updating the picture, unless there is a picture set, because it does not exist elsewhere yet
-            UpdatePicture(pictureRequest.Uuid);
-            UpdatePictureSet((Guid) pictureSetUId);
+            _changeListener.UpdatePicture(pictureRequest.Uuid);
+            _changeListener.UpdatePictureSet((Guid)pictureSetUId);
         }
 
         return pictureRequest;
     }
-    
+
     /// <summary>
     /// Handles responses for taking and saving pictures
     /// </summary>
@@ -330,7 +329,7 @@ public partial class PiZeroCameraManager : ITakePictureManager
                 }
 
                 await piDbContext.SaveChangesAsync(CancellationToken.None);
-                
+
                 // Set IsActive to false if saved to db
                 await piDbContext.PictureRequests.Where(x => x.Uuid == pictureRequest.Uuid)
                     .ExecuteUpdateAsync(x => x.SetProperty(
@@ -346,9 +345,10 @@ public partial class PiZeroCameraManager : ITakePictureManager
             // Update UI
             if (pictureRequest.PictureSetId != null)
             {
-                UpdatePictureSet((Guid) pictureRequest.PictureSetId);
+                _changeListener.UpdatePictureSet((Guid)pictureRequest.PictureSetId);
             }
-            UpdatePicture(pictureRequest.Uuid);
+
+            _changeListener.UpdatePicture(pictureRequest.Uuid);
         }
     }
 
@@ -502,7 +502,7 @@ public partial class PiZeroCameraManager : ITakePictureManager
         }
 
         await piDbContext.SaveChangesAsync();
-        UpdatePicture(uuid);
+        _changeListener.UpdatePicture(uuid);
     }
 
     /// <inheritdoc />
