@@ -1,8 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using picamerasserver.Database;
-using picamerasserver.pizerocamera.SendPicture;
 
-namespace picamerasserver.pizerocamera.manager;
+namespace picamerasserver.pizerocamera.SendPicture;
 
 public interface ISendPictureSetManager
 {
@@ -25,13 +24,14 @@ public interface ISendPictureSetManager
     Task CancelSendSet();
 }
 
-public partial class SendPictureSet(
+public class SendPictureSet(
     ISendPictureManager sendPictureManager,
     ChangeListener changeListener,
     IDbContextFactory<PiDbContext> dbContextFactory,
     ILogger<SendPictureSet> logger
 ) : ISendPictureSetManager
 {
+    /// <inheritdoc />
     public bool SendSetActive { get; private set; }
     private readonly SemaphoreSlim _sendSetSemaphore = new(1, 1);
     private CancellationTokenSource? _sendSetCancellationTokenSource;
@@ -109,14 +109,16 @@ public partial class SendPictureSet(
     /// <inheritdoc />
     public async Task CancelSendSet()
     {
+        var tasks = new List<Task>();
         if (_sendSetCancellationTokenSource != null)
         {
-            await _sendSetCancellationTokenSource.CancelAsync();
+            tasks.Add(_sendSetCancellationTokenSource.CancelAsync());
         }
         
         if (sendPictureManager.SendActive)
         {
-            await sendPictureManager.CancelSend();
+            tasks.Add(sendPictureManager.CancelSend());
         }
+        await Task.WhenAll(tasks);
     }
 }

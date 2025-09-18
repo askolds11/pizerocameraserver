@@ -7,6 +7,7 @@ using picamerasserver.Database.Models;
 using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.manager;
 using picamerasserver.pizerocamera.Requests;
+using picamerasserver.pizerocamera.SendPicture;
 using picamerasserver.pizerocamera.TakePicture;
 
 namespace picamerasserver.Components.Pages;
