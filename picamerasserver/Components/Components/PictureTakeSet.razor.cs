@@ -4,6 +4,7 @@ using picamerasserver.Database;
 using picamerasserver.Database.Models;
 using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.manager;
+using picamerasserver.pizerocamera.TakePicture;
 
 namespace picamerasserver.Components.Components;
 
@@ -20,7 +21,7 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
     [Inject] protected IDbContextFactory<PiDbContext> DbContextFactory { get; init; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
 
-    private bool TakePicActive => PiZeroCameraManager.TakePictureActive;
+    private bool TakePicActive => TakePictureManager.TakePictureActive;
 
     private PictureRequestModel? _pictureRequestModel = null;
 

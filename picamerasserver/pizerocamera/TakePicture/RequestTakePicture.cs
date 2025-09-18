@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Threading.Channels;
 using CSharpFunctionalExtensions;
 using Microsoft.EntityFrameworkCore;
@@ -6,49 +5,11 @@ using MQTTnet;
 using MQTTnet.Protocol;
 using picamerasserver.Database.Models;
 using picamerasserver.pizerocamera.Requests;
-using picamerasserver.pizerocamera.Responses;
 
-namespace picamerasserver.pizerocamera.manager;
+namespace picamerasserver.pizerocamera.TakePicture;
 
-public interface ITakePictureManager
+public partial class TakePicture
 {
-    /// <summary>
-    /// Makes requests to take pictures. <br />
-    /// Makes requests to all cameras at once.
-    /// </summary>
-    /// <param name="pictureRequestType">Type of picture</param>
-    /// <param name="pictureSetUId">UUID of the picture set, if exists</param>
-    /// <param name="futureMillis">How far in the future to take the photo</param>
-    /// <returns>The resulting request model with cameras</returns>
-    Task<Result<PictureRequestModel>> RequestTakePictureAll(
-        PictureRequestType pictureRequestType = PictureRequestType.Other,
-        Guid? pictureSetUId = null, int futureMillis = 1000);
-
-    /// <summary>
-    /// Handle a TakePicture response
-    /// </summary>
-    /// <param name="message">MQTT message</param>
-    /// <param name="messageReceived">Time when the message was received</param>
-    /// <param name="takePicture">Deserialized TakePicture</param>
-    /// <param name="id">Camera's id</param>
-    /// <exception cref="ArgumentOutOfRangeException">Unknown failure type</exception>
-    Task ResponseTakePicture(MqttApplicationMessage message, DateTimeOffset messageReceived,
-        CameraResponse.TakePicture takePicture, string id);
-
-    /// <summary>
-    /// Cancels the ongoing take picture operation
-    /// </summary>
-    Task CancelTakePicture();
-}
-
-public partial class PiZeroCameraManager : ITakePictureManager
-{
-    private readonly ConcurrentDictionary<Guid, Channel<string>> _takePictureChannels = new();
-    private readonly ConcurrentDictionary<Guid, Channel<string>> _savePictureChannels = new();
-    public bool TakePictureActive { get; private set; }
-    private readonly SemaphoreSlim _takePictureSemaphore = new(1, 1);
-    private CancellationTokenSource? _takePictureCancellationTokenSource;
-
     /// <summary>
     /// Creates request model and MQTT message for take picture request
     /// </summary>
@@ -91,7 +52,7 @@ public partial class PiZeroCameraManager : ITakePictureManager
 
         return (pictureRequest, message);
     }
-
+    
     /// <summary>
     /// Get a list of cameras based on criteria for taking pictures
     /// </summary>
@@ -99,12 +60,12 @@ public partial class PiZeroCameraManager : ITakePictureManager
     /// <param name="requireDeviceStatus">Should a camera have status?</param>
     /// <returns>A collection of cameras that a request can be sent to</returns>
     private IEnumerable<PiZeroCamera> GetTakeableCameras(
-        bool requirePing = true,
-        bool requireDeviceStatus = true
+        bool requirePing,
+        bool requireDeviceStatus
     )
     {
         // Cameras to send request to
-        return PiZeroCameras.Values
+        return piZeroCameraManager.PiZeroCameras.Values
             .Where(x => !requirePing || x.Pingable == true)
             .Where(x => !requireDeviceStatus || x.Status != null);
     }
@@ -137,8 +98,8 @@ public partial class PiZeroCameraManager : ITakePictureManager
         try
         {
             TakePictureActive = true;
-            await using var piDbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-            var options = _optionsMonitor.CurrentValue;
+            await using var piDbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+            var options = optionsMonitor.CurrentValue;
 
             (pictureRequest, var message) = CreateRequestModels(futureMillis, pictureRequestType, pictureSetUId);
 
@@ -152,22 +113,21 @@ public partial class PiZeroCameraManager : ITakePictureManager
             ).ToList();
 
             // Create channels
-            // TODO: Throw and return in exception if channels cannot be created
             var takeChannel = Channel.CreateUnbounded<string>();
             if (!_takePictureChannels.TryAdd(pictureRequest.Uuid, takeChannel))
             {
-                return Result.Failure<PictureRequestModel>("Failed to create take picture channel");
+                throw new Exception("Failed to create take picture channel");
             }
 
             var sendChannel = Channel.CreateUnbounded<string>();
             if (!_savePictureChannels.TryAdd(pictureRequest.Uuid, sendChannel))
             {
-                return Result.Failure<PictureRequestModel>("Failed to create save picture channel");
+                throw new Exception("Failed to create send picture channel");
             }
 
             // Send the message
             message.Topic = options.CameraTopic;
-            var publishResult = await _mqttClient.PublishAsync(message, cancellationToken);
+            var publishResult = await mqttClient.PublishAsync(message, cancellationToken);
             success = publishResult.IsSuccess;
 
             // Add to the database
@@ -210,7 +170,7 @@ public partial class PiZeroCameraManager : ITakePictureManager
         {
             if (e is not OperationCanceledException)
             {
-                _logger.LogError(e, "Failed to take picture");
+                logger.LogError(e, "Failed to take picture");
             }
 
             var isCancelled = e is OperationCanceledException;
@@ -222,7 +182,7 @@ public partial class PiZeroCameraManager : ITakePictureManager
             }
 
             // Update statuses
-            await using var piDbContext = await _dbContextFactory.CreateDbContextAsync(CancellationToken.None);
+            await using var piDbContext = await dbContextFactory.CreateDbContextAsync(CancellationToken.None);
             if (cameraPictureModels is { Count: > 0 })
             {
                 foreach (var dbItem in cameraPictureModels)
@@ -270,13 +230,13 @@ public partial class PiZeroCameraManager : ITakePictureManager
         if (pictureSetUId != null)
         {
             // No point updating the picture, unless there is a picture set, because it does not exist elsewhere yet
-            _changeListener.UpdatePicture(pictureRequest.Uuid);
-            _changeListener.UpdatePictureSet((Guid)pictureSetUId);
+            changeListener.UpdatePicture(pictureRequest.Uuid);
+            changeListener.UpdatePictureSet((Guid)pictureSetUId);
         }
 
         return pictureRequest;
     }
-
+    
     /// <summary>
     /// Handles responses for taking and saving pictures
     /// </summary>
@@ -315,7 +275,7 @@ public partial class PiZeroCameraManager : ITakePictureManager
             _savePictureChannels.TryRemove(pictureRequest.Uuid, out _);
 
             // Update statuses
-            await using var piDbContext = await _dbContextFactory.CreateDbContextAsync(CancellationToken.None);
+            await using var piDbContext = await dbContextFactory.CreateDbContextAsync(CancellationToken.None);
             var cancelledCameraIds = takeCameras.Union(saveCameras).ToList();
             var cancelledCameras = pictureRequest.CameraPictures
                 .Where(x => cancelledCameraIds.Contains(x.CameraId))
@@ -345,13 +305,19 @@ public partial class PiZeroCameraManager : ITakePictureManager
             // Update UI
             if (pictureRequest.PictureSetId != null)
             {
-                _changeListener.UpdatePictureSet((Guid)pictureRequest.PictureSetId);
+                changeListener.UpdatePictureSet((Guid)pictureRequest.PictureSetId);
             }
 
-            _changeListener.UpdatePicture(pictureRequest.Uuid);
+            changeListener.UpdatePicture(pictureRequest.Uuid);
         }
     }
 
+    /// <summary>
+    /// Handles responses for a channel until no more responses are expected or cancellation.
+    /// </summary>
+    /// <param name="channel">Channel for responses</param>
+    /// <param name="sentCameras">Cameras that responses are expected for</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     private static async Task HandleChannelResponses(
         Channel<string> channel,
         List<string> sentCameras,
@@ -379,143 +345,6 @@ public partial class PiZeroCameraManager : ITakePictureManager
                 channel.Writer.Complete();
                 return;
             }
-        }
-    }
-
-    /// <inheritdoc />
-    public async Task ResponseTakePicture(
-        MqttApplicationMessage message,
-        DateTimeOffset messageReceived,
-        CameraResponse.TakePicture takePicture,
-        string id
-    )
-    {
-        var successWrapper = takePicture.Response;
-        var uuid = successWrapper.Value.Uuid;
-
-        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
-
-        var dbItem = piDbContext.CameraPictures.FirstOrDefault(x => x.PictureRequestId == uuid && x.CameraId == id);
-        // Just in case create a database item if it does not exist
-        if (dbItem == null)
-        {
-            dbItem = new CameraPictureModel
-                { CameraId = id, PictureRequestId = uuid };
-            piDbContext.Add(dbItem);
-        }
-
-        // Handle times
-        switch (successWrapper.Value)
-        {
-            case TakePictureResponse.PictureTaken pictureTaken:
-                dbItem.PictureRequestReceived =
-                    DateTimeOffset.FromUnixTimeMilliseconds(pictureTaken.MessageReceivedNanos / 1000000);
-                dbItem.WaitTimeNanos = pictureTaken.WaitTimeNanos;
-                break;
-            case TakePictureResponse.Failure.PictureFailedToSchedule failedToSchedule:
-                dbItem.PictureRequestReceived =
-                    DateTimeOffset.FromUnixTimeMilliseconds(failedToSchedule.MessageReceivedNanos / 1000000);
-                dbItem.WaitTimeNanos = failedToSchedule.WaitTimeNanos;
-                break;
-            case TakePictureResponse.Failure.PictureFailedToTake failedToTake:
-                dbItem.PictureRequestReceived =
-                    DateTimeOffset.FromUnixTimeMilliseconds(failedToTake.MessageReceivedNanos / 1000000);
-                dbItem.WaitTimeNanos = failedToTake.WaitTimeNanos;
-                break;
-        }
-
-        switch (successWrapper.Value)
-        {
-            case TakePictureResponse.PictureTaken:
-            {
-                if (_takePictureChannels.TryGetValue(uuid, out var channel))
-                {
-                    channel.Writer.TryWrite(id);
-                }
-
-                break;
-            }
-            case TakePictureResponse.PictureSavedOnDevice:
-            {
-                if (_savePictureChannels.TryGetValue(uuid, out var channel))
-                {
-                    channel.Writer.TryWrite(id);
-                }
-
-                break;
-            }
-            default:
-            {
-                if (_takePictureChannels.TryGetValue(uuid, out var takeChannel))
-                {
-                    takeChannel.Writer.TryWrite(id);
-                }
-
-                if (_savePictureChannels.TryGetValue(uuid, out var saveChannel))
-                {
-                    saveChannel.Writer.TryWrite(id);
-                }
-
-                break;
-            }
-        }
-
-        if (successWrapper.Success)
-        {
-            switch (successWrapper.Value)
-            {
-                case TakePictureResponse.PictureTaken pictureTaken:
-                    dbItem.ReceivedTaken = messageReceived;
-                    dbItem.MonotonicTime = pictureTaken.MonotonicTime;
-                    break;
-                case TakePictureResponse.PictureSavedOnDevice:
-                    dbItem.ReceivedSaved = messageReceived;
-                    break;
-            }
-
-            (dbItem.CameraPictureStatus, dbItem.StatusMessage) = successWrapper.Value switch
-            {
-                TakePictureResponse.PictureTaken =>
-                    (CameraPictureStatus.Taken, null),
-                TakePictureResponse.PictureSavedOnDevice =>
-                    (CameraPictureStatus.SavedOnDevice, null),
-                _ => (CameraPictureStatus.Unknown, "Unknown Success")
-            };
-        }
-        else
-        {
-            (dbItem.CameraPictureStatus, dbItem.StatusMessage) = successWrapper.Value switch
-            {
-                TakePictureResponse.Failure failure => failure switch
-                {
-                    TakePictureResponse.Failure.Failed failed => (CameraPictureStatus.Failed, failed.Message),
-                    TakePictureResponse.Failure.PictureFailedToSave pictureFailedToSave => (
-                        CameraPictureStatus.PictureFailedToSave, pictureFailedToSave.Message),
-                    TakePictureResponse.Failure.PictureFailedToSchedule pictureFailedToSchedule => (
-                        CameraPictureStatus.PictureFailedToSchedule, pictureFailedToSchedule.Message),
-                    TakePictureResponse.Failure.PictureFailedToTake pictureFailedToTake => (
-                        CameraPictureStatus.PictureFailedToTake, pictureFailedToTake.Message),
-                    _ => throw new ArgumentOutOfRangeException(nameof(failure))
-                },
-                _ => (CameraPictureStatus.Unknown, "Unknown failure")
-            };
-        }
-
-        await piDbContext.SaveChangesAsync();
-        _changeListener.UpdatePicture(uuid);
-    }
-
-    /// <inheritdoc />
-    public async Task CancelTakePicture()
-    {
-        if (TakePictureActive)
-        {
-            await CancelCameraTasks();
-        }
-
-        if (_takePictureCancellationTokenSource != null)
-        {
-            await _takePictureCancellationTokenSource.CancelAsync();
         }
     }
 }

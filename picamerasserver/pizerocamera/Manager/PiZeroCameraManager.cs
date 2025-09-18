@@ -57,7 +57,7 @@ public partial class PiZeroCameraManager
     /// <summary>
     /// Sends a cancel message to cameras to stop existing tasks
     /// </summary>
-    private async Task CancelCameraTasks()
+    public async Task CancelCameraTasks()
     {
         var message = new MqttApplicationMessageBuilder()
             .WithContentType("application/json")

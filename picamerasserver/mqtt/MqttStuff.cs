@@ -7,6 +7,7 @@ using picamerasserver.Options;
 using picamerasserver.pizerocamera.manager;
 using picamerasserver.pizerocamera.Requests;
 using picamerasserver.pizerocamera.Responses;
+using picamerasserver.pizerocamera.TakePicture;
 
 namespace picamerasserver.mqtt;
 

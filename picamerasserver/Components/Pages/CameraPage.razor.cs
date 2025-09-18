@@ -5,6 +5,7 @@ using picamerasserver.Database;
 using picamerasserver.Database.Models;
 using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.manager;
+using picamerasserver.pizerocamera.TakePicture;
 using Color = System.Drawing.Color;
 
 namespace picamerasserver.Components.Pages;

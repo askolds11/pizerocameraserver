@@ -11,6 +11,7 @@ using picamerasserver.mqtt;
 using picamerasserver.Options;
 using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.manager;
+using picamerasserver.pizerocamera.TakePicture;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -63,7 +64,7 @@ builder.Services.AddSingleton<MqttStuff>();
 builder.Services.AddSingleton<ChangeListener>();
 builder.Services.AddSingleton<PiZeroCameraManager>();
 builder.Services.AddSingleton<ISendPictureManager>(sp => sp.GetRequiredService<PiZeroCameraManager>());
-builder.Services.AddSingleton<ITakePictureManager>(sp => sp.GetRequiredService<PiZeroCameraManager>());
+builder.Services.AddSingleton<ITakePictureManager, TakePicture>();
 builder.Services.AddSingleton<ISendPictureSetManager>(sp => sp.GetRequiredService<PiZeroCameraManager>());
 builder.Services.AddSingleton<UploadToServer>();
 

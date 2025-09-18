@@ -7,6 +7,7 @@ using picamerasserver.Database.Models;
 using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.manager;
 using picamerasserver.pizerocamera.Requests;
+using picamerasserver.pizerocamera.TakePicture;
 
 namespace picamerasserver.Components.Pages;
 
@@ -17,6 +18,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     [Inject] protected IDbContextFactory<PiDbContext> DbContextFactory { get; init; } = null!;
     [Inject] protected NavigationManager NavigationManager { get; init; } = null!;
     [Inject] protected ISendPictureSetManager SendPictureSetManager { get; init; } = null!;
+    [Inject] protected ITakePictureManager TakePictureManager { get; init; } = null!;
     [Inject] protected UploadToServer UploadToServer { get; init; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
 
@@ -245,7 +247,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
 
     private async Task CancelTakePic()
     {
-        await PiZeroCameraManager.CancelTakePicture();
+        await TakePictureManager.CancelTakePicture();
     }
 
     private async Task CancelSend()
