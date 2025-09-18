@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-using System.Text.Json;
 using System.Threading.Channels;
 using Microsoft.EntityFrameworkCore;
 using MQTTnet;
@@ -8,57 +6,11 @@ using picamerasserver.Database;
 using picamerasserver.Database.Models;
 using picamerasserver.Options;
 using picamerasserver.pizerocamera.Requests;
-using picamerasserver.pizerocamera.Responses;
 
-namespace picamerasserver.pizerocamera.manager;
+namespace picamerasserver.pizerocamera.SendPicture;
 
-public interface ISendPictureManager
+public partial class SendPicture
 {
-    /// <summary>
-    /// Is a send operation ongoing?
-    /// </summary>
-    bool SendActive { get; }
-
-    /// <summary>
-    /// Makes requests to send pictures from cameras to server. <br />
-    /// Makes requests to <paramref name="maxConcurrentUploads"/> cameras at once.
-    /// </summary>
-    /// <param name="uuid">Uuid of PictureRequest</param>
-    /// <param name="maxConcurrentUploads">How many uploads to do at once</param>
-    Task RequestSendPictureChannels(Guid uuid, int maxConcurrentUploads = 3);
-
-    /// <summary>
-    /// Request to send picture for individual camera
-    /// </summary>
-    /// <param name="uuid">Uuid of PictureRequest</param>
-    /// <param name="cameraId">Camera id of wanted camera</param>
-    Task RequestSendPictureIndividual(Guid uuid, string cameraId);
-
-    /// <summary>
-    /// Handle a SendPicture response
-    /// </summary>
-    /// <param name="message">MQTT message</param>
-    /// <param name="messageReceived">Time when the message was received</param>
-    /// <param name="sendPicture">Deserialized SendPicture</param>
-    /// <param name="id">Camera's id</param>
-    /// <exception cref="ArgumentOutOfRangeException">Unknown failure type</exception>
-    Task ResponseSendPicture(MqttApplicationMessage message, DateTimeOffset messageReceived,
-        CameraResponse.SendPicture sendPicture, string id);
-
-    /// <summary>
-    /// Cancels the ongoing send operation
-    /// </summary>
-    Task CancelSend();
-}
-
-public partial class PiZeroCameraManager : ISendPictureManager
-{
-    private readonly ConcurrentDictionary<Guid, Channel<string>> _sendPictureChannels = new();
-
-    public bool SendActive { get; private set; }
-    private readonly SemaphoreSlim _sendSemaphore = new(1, 1);
-    private CancellationTokenSource? _sendCancellationTokenSource;
-
     /// <summary>
     /// Get a list of cameras based on criteria for sending pictures
     /// </summary>
@@ -66,7 +18,7 @@ public partial class PiZeroCameraManager : ISendPictureManager
     /// <param name="requirePing">Should the cameras be pingable?</param>
     /// <param name="requireDeviceStatus">Should the cameras have status?</param>
     /// <param name="requireStatus">Should the camera's picture's status be valid?</param>
-    /// <param name="requireTaken">Should the camera's picture be taken</param>
+    /// <param name="requireTaken">Should the camera's picture be taken?</param>
     /// <returns>A collection of tuples, where each tuple contains a database camera picture model and a PiZeroCamera instance meeting the criteria.</returns>
     private IEnumerable<(CameraPictureModel dbItem, PiZeroCamera dictItem)> GetSendableCameras(
         PictureRequestModel pictureRequest,
@@ -88,7 +40,7 @@ public partial class PiZeroCameraManager : ISendPictureManager
             .Where(x => !requireStatus || x.CameraPictureStatus != null &&
                 allowedStatuses.Contains((CameraPictureStatus)x.CameraPictureStatus)
             )
-            .Select(x => (dbItem: x, dictItem: PiZeroCameras[x.CameraId]))
+            .Select(x => (dbItem: x, dictItem: piZeroCameraManager.PiZeroCameras[x.CameraId]))
             .Where(x => !requirePing || x.dictItem.Pingable == true)
             .Where(x => !requireDeviceStatus || x.dictItem.Status != null);
     }
@@ -126,12 +78,12 @@ public partial class PiZeroCameraManager : ISendPictureManager
         _sendCancellationTokenSource = new CancellationTokenSource();
 
         List<(CameraPictureModel dbItem, PiZeroCamera dictItem)>? unsentCameras = null;
-        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync(_sendCancellationTokenSource.Token);
+        await using var piDbContext = await dbContextFactory.CreateDbContextAsync(_sendCancellationTokenSource.Token);
         try
         {
             SendActive = true;
 
-            var options = _optionsMonitor.CurrentValue;
+            var options = optionsMonitor.CurrentValue;
 
             // Get the request
             var pictureRequest = await piDbContext.PictureRequests
@@ -187,7 +139,7 @@ public partial class PiZeroCameraManager : ISendPictureManager
             _sendSemaphore.Release();
             // Update UI
             SendActive = false;
-            _changeListener.UpdatePicture(uuid);
+            changeListener.UpdatePicture(uuid);
         }
     }
 
@@ -225,7 +177,7 @@ public partial class PiZeroCameraManager : ISendPictureManager
 
             await piDbContext.SaveChangesAsync(cts.Token);
             // Update UI
-            _changeListener.UpdatePicture(uuid);
+            changeListener.UpdatePicture(uuid);
 
             // Wait for messages
             while (await channel.Reader.WaitToReadAsync(cts.Token))
@@ -244,7 +196,7 @@ public partial class PiZeroCameraManager : ISendPictureManager
 
                     await piDbContext.SaveChangesAsync(cts.Token);
                     // Update UI
-                    _changeListener.UpdatePicture(uuid);
+                    changeListener.UpdatePicture(uuid);
                 }
 
                 // If no more cameras, complete the channel and break out
@@ -264,7 +216,7 @@ public partial class PiZeroCameraManager : ISendPictureManager
                 var (dbItem, piZeroCamera) = cameraQueue.Dequeue();
 
                 message.Topic = $"{options.CameraTopic}/{piZeroCamera.Id}";
-                var publishResult = await _mqttClient.PublishAsync(message, cts.Token);
+                var publishResult = await mqttClient.PublishAsync(message, cts.Token);
 
                 // Update statuses
                 dbItem.CameraPictureStatus = publishResult.IsSuccess
@@ -278,9 +230,9 @@ public partial class PiZeroCameraManager : ISendPictureManager
     /// <inheritdoc />
     public async Task RequestSendPictureIndividual(Guid uuid, string cameraId)
     {
-        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
+        await using var piDbContext = await dbContextFactory.CreateDbContextAsync();
 
-        var options = _optionsMonitor.CurrentValue;
+        var options = optionsMonitor.CurrentValue;
 
         var pictureRequest = await piDbContext.PictureRequests
             .Include(x => x.CameraPictures)
@@ -298,7 +250,7 @@ public partial class PiZeroCameraManager : ISendPictureManager
             return;
         }
 
-        var piZeroCamera = PiZeroCameras[cameraId];
+        var piZeroCamera = piZeroCameraManager.PiZeroCameras[cameraId];
         // Can't do anything if unreachable
         if (piZeroCamera.Pingable == null || piZeroCamera.Status == null)
         {
@@ -316,7 +268,7 @@ public partial class PiZeroCameraManager : ISendPictureManager
             .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
             .Build();
 
-        var publishResult = await _mqttClient.PublishAsync(message);
+        var publishResult = await mqttClient.PublishAsync(message);
 
 
         // First because it exists based on previous
@@ -326,121 +278,6 @@ public partial class PiZeroCameraManager : ISendPictureManager
         piDbContext.Update(cameraPicture);
 
         await piDbContext.SaveChangesAsync();
-        _changeListener.UpdatePicture(uuid);
-    }
-
-    /// <inheritdoc />
-    public async Task ResponseSendPicture(
-        MqttApplicationMessage message,
-        DateTimeOffset messageReceived,
-        CameraResponse.SendPicture sendPicture,
-        string id
-    )
-    {
-        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
-
-        var successWrapper = sendPicture.Response;
-        var uuid = successWrapper.Value.Uuid;
-        // Get the database item, create if it doesn't exist
-        var dbItem = piDbContext.CameraPictures.FirstOrDefault(x => x.PictureRequestId == uuid && x.CameraId == id);
-        if (dbItem == null)
-        {
-            dbItem = new CameraPictureModel { CameraId = id, PictureRequestId = uuid };
-            piDbContext.Add(dbItem);
-        }
-
-        // Send received signal so that next pictures can be sent
-        if (successWrapper.Value is SendPictureResponse.PictureSent or SendPictureResponse.Failure)
-        {
-            if (_sendPictureChannels.TryGetValue(uuid, out var channel))
-            {
-                channel.Writer.TryWrite(id);
-            }
-        }
-
-        if (successWrapper.Success)
-        {
-            if (successWrapper.Value is SendPictureResponse.PictureSent)
-            {
-                dbItem.ReceivedSent = messageReceived;
-            }
-
-            (dbItem.CameraPictureStatus, dbItem.StatusMessage) = successWrapper.Value switch
-            {
-                SendPictureResponse.PictureSent => (CameraPictureStatus.Success, null),
-                _ => (CameraPictureStatus.Unknown, "Unknown Success")
-            };
-
-            // Fill data on picture taken
-            // TODO: Generate filename in one
-            // var metadataFileName = image.FileName.Split('.').First() + "_metadata.json";
-            if (successWrapper.Value is SendPictureResponse.PictureSent)
-            {
-                var directory = Path.Combine(_dirOptionsMonitor.CurrentValue.UploadDirectory, uuid.ToString());
-                if (Directory.Exists(directory))
-                {
-                    var filePath = Path.Combine(directory, $"{uuid}_{id}_metadata.json");
-                    if (File.Exists(filePath))
-                    {
-                        var json = await File.ReadAllTextAsync(filePath);
-                        var jsonOptions = new JsonSerializerOptions(Json.GetDefaultOptions())
-                        {
-                            PropertyNamingPolicy = null,
-                            Converters = { new MetadataConverter() }
-                        };
-                        var metadata = Json.TryDeserializeWithOptions<Metadata>(json, _logger, jsonOptions);
-                        if (metadata.IsSuccess)
-                        {
-                            var val = metadata.Value;
-                            dbItem.SensorTimestamp = val.SensorTimestamp;
-                            dbItem.PictureTaken = val.FrameWallClock != null
-                                ? DateTimeOffset.FromUnixTimeMilliseconds(val.FrameWallClock.Value / 1000)
-                                : null;
-                            dbItem.FocusFoM = val.FocusFoM;
-                            dbItem.AnalogueGain = val.AnalogueGain;
-                            dbItem.DigitalGain = val.DigitalGain;
-                            dbItem.ExposureTime = val.ExposureTime;
-                            dbItem.ColourTemperature = val.ColourTemperature;
-                            dbItem.Lux = val.Lux;
-                            dbItem.FrameDuration = val.FrameDuration;
-                            dbItem.AeState = val.AeState;
-                        }
-                    }
-                }
-            }
-        }
-        else
-        {
-            (dbItem.CameraPictureStatus, dbItem.StatusMessage) = successWrapper.Value switch
-            {
-                SendPictureResponse.Failure failure => failure switch
-                {
-                    SendPictureResponse.Failure.Failed failed => (CameraPictureStatus.Failed, failed.Message),
-                    SendPictureResponse.Failure.PictureFailedToRead pictureFailedToSave => (
-                        CameraPictureStatus.PictureFailedToRead, pictureFailedToSave.Message),
-                    SendPictureResponse.Failure.PictureFailedToSend pictureFailedToSend => (
-                        CameraPictureStatus.PictureFailedToSend, pictureFailedToSend.Message),
-                    _ => throw new ArgumentOutOfRangeException(nameof(failure))
-                },
-                _ => (CameraPictureStatus.Unknown, "Unknown failure")
-            };
-        }
-
-        await piDbContext.SaveChangesAsync();
-        _changeListener.UpdatePicture(uuid);
-    }
-
-    /// <inheritdoc />
-    public async Task CancelSend()
-    {
-        if (_sendCancellationTokenSource != null)
-        {
-            await _sendCancellationTokenSource.CancelAsync();
-        }
-
-        if (SendActive)
-        {
-            await CancelCameraTasks();
-        }
+        changeListener.UpdatePicture(uuid);
     }
 }

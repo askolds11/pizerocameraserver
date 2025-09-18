@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using picamerasserver.Database;
+using picamerasserver.pizerocamera.SendPicture;
 
 namespace picamerasserver.pizerocamera.manager;
 
@@ -23,7 +25,12 @@ public interface ISendPictureSetManager
     Task CancelSendSet();
 }
 
-public partial class PiZeroCameraManager : ISendPictureSetManager
+public partial class SendPictureSet(
+    ISendPictureManager sendPictureManager,
+    ChangeListener changeListener,
+    IDbContextFactory<PiDbContext> dbContextFactory,
+    ILogger<SendPictureSet> logger
+) : ISendPictureSetManager
 {
     public bool SendSetActive { get; private set; }
     private readonly SemaphoreSlim _sendSetSemaphore = new(1, 1);
@@ -47,14 +54,14 @@ public partial class PiZeroCameraManager : ISendPictureSetManager
         _sendSetCancellationTokenSource?.Dispose();
         _sendSetCancellationTokenSource = new CancellationTokenSource();
         
-        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync(_sendSetCancellationTokenSource.Token);
+        await using var piDbContext = await dbContextFactory.CreateDbContextAsync(_sendSetCancellationTokenSource.Token);
         var pictureSet = await piDbContext.PictureSets
             .Include(x => x.PictureRequests.Where(y => y.IsActive))
             .FirstOrDefaultAsync(x => x.Uuid == uuid, _sendSetCancellationTokenSource.Token);
 
         try
         {
-            _changeListener.OnPictureChange += PictureToPictureSetChange;
+            changeListener.OnPictureChange += PictureToPictureSetChange;
             SendSetActive = true;
 
             if (pictureSet == null)
@@ -64,26 +71,26 @@ public partial class PiZeroCameraManager : ISendPictureSetManager
 
             foreach (var pictureRequest in pictureSet.PictureRequests)
             {
-                await RequestSendPictureChannels(pictureRequest.Uuid, maxConcurrentUploads);
+                await sendPictureManager.RequestSendPictureChannels(pictureRequest.Uuid, maxConcurrentUploads);
                 _sendSetCancellationTokenSource.Token.ThrowIfCancellationRequested();
             }
 
             // Update UI
-            _changeListener.UpdatePictureSet(uuid);
+            changeListener.UpdatePictureSet(uuid);
         }
         catch (OperationCanceledException)
         {
         }
         finally
         {
-            _changeListener.OnPictureChange -= PictureToPictureSetChange;
+            changeListener.OnPictureChange -= PictureToPictureSetChange;
             _sendSetCancellationTokenSource.Dispose();
             _sendSetCancellationTokenSource = null;
             // Release semaphore
             _sendSetSemaphore.Release();
             // Update UI
             SendSetActive = false;
-            _changeListener.UpdatePictureSet(uuid);
+            changeListener.UpdatePictureSet(uuid);
         }
 
         return;
@@ -93,7 +100,7 @@ public partial class PiZeroCameraManager : ISendPictureSetManager
         {
             if (pictureSet?.PictureRequests.Any(x => x.Uuid == pictureUId) == true)
             {
-                _changeListener.UpdatePictureSet(uuid);
+                changeListener.UpdatePictureSet(uuid);
             }
             return Task.CompletedTask;
         }
@@ -102,18 +109,14 @@ public partial class PiZeroCameraManager : ISendPictureSetManager
     /// <inheritdoc />
     public async Task CancelSendSet()
     {
-        if (_sendCancellationTokenSource != null)
-        {
-            await _sendCancellationTokenSource.CancelAsync();
-        }
         if (_sendSetCancellationTokenSource != null)
         {
             await _sendSetCancellationTokenSource.CancelAsync();
         }
-
-        if (SendSetActive)
+        
+        if (sendPictureManager.SendActive)
         {
-            await CancelCameraTasks();
+            await sendPictureManager.CancelSend();
         }
     }
 }

@@ -244,7 +244,7 @@ public partial class PiZeroCameraManager
             await _updateCancellationTokenSource.CancelAsync();
         }
 
-        if (SendActive)
+        if (UpdateActive)
         {
             await CancelCameraTasks();
         }

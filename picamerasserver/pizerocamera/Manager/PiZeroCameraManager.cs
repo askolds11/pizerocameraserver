@@ -15,20 +15,18 @@ public partial class PiZeroCameraManager
     private readonly ChangeListener _changeListener;
     private readonly ILogger<PiZeroCameraManager> _logger;
     private readonly IOptionsMonitor<MqttOptions> _optionsMonitor;
-    private readonly IOptionsMonitor<DirectoriesOptions> _dirOptionsMonitor;
 
     public readonly IReadOnlyDictionary<string, PiZeroCamera> PiZeroCameras;
     private readonly IDbContextFactory<PiDbContext> _dbContextFactory;
 
     public PiZeroCameraManager(IMqttClient mqttClient, ILogger<PiZeroCameraManager> logger,
         IOptionsMonitor<MqttOptions> optionsMonitor, IDbContextFactory<PiDbContext> dbContextFactory,
-        IOptionsMonitor<DirectoriesOptions> dirOptionsMonitor, ChangeListener changeListener)
+        ChangeListener changeListener)
     {
         _mqttClient = mqttClient;
         _logger = logger;
         _optionsMonitor = optionsMonitor;
         _dbContextFactory = dbContextFactory;
-        _dirOptionsMonitor = dirOptionsMonitor;
         _changeListener = changeListener;
 
         using var piDbContext = _dbContextFactory.CreateDbContext();

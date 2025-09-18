@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using picamerasserver.Database.Models;
-using picamerasserver.pizerocamera.manager;
+using picamerasserver.pizerocamera.SendPicture;
 
 namespace picamerasserver.Components.Components;
 
@@ -8,7 +8,7 @@ public partial class PictureRequestTooltip : ComponentBase
 {
     [Parameter, EditorRequired] public required CameraPictureModel CameraPicture { get; set; }
     
-    [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; init; } = null!;
+    [Inject] protected ISendPictureManager SendPictureManager { get; init; } = null!;
     
     private (string header, string? message) GetContent()
     {
@@ -37,6 +37,6 @@ public partial class PictureRequestTooltip : ComponentBase
 
     private async Task RequestSend()
     {
-        await PiZeroCameraManager.RequestSendPictureIndividual(CameraPicture.PictureRequestId, CameraPicture.CameraId);
+        await SendPictureManager.RequestSendPictureIndividual(CameraPicture.PictureRequestId, CameraPicture.CameraId);
     }
 }
