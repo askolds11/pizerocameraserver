@@ -15,5 +15,6 @@
       - .local
     volumes:
       - ./picamerasserver/uploads:/home/askolds/repos/picamerasserver/picamerasserver/uploads:rw
+      - ~/.microsoft/usersecrets:/home/app/.microsoft/usersecrets:rw
     extra_hosts:
       - "host.docker.internal:host-gateway"
