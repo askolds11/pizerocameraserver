@@ -248,7 +248,7 @@ public class UploadToServer(
     {
         var pictureSet = await piDbContext.PictureSets
             .Include(x => x.PictureRequests.Where(y => y.IsActive))
-            .ThenInclude(x => x.CameraPictures)
+            .ThenInclude(x => x.CameraPictures.Where(y => y.CameraPictureStatus == CameraPictureStatus.Success))
             .FirstOrDefaultAsync(x => x.Uuid == pictureSetUuid, cancellationToken);
 
         if (pictureSet == null)
