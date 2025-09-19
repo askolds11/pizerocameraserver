@@ -24,7 +24,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     [Inject] protected ITakePictureManager TakePictureManager { get; init; } = null!;
     [Inject] protected IGetAliveManager GetAliveManager { get; init; } = null!;
     [Inject] protected INtpManager NtpManager { get; init; } = null!;
-    [Inject] protected UploadToServer UploadToServer { get; init; } = null!;
+    [Inject] protected IUploadManager UploadToServer { get; init; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
 
     private PictureSetModel? _pictureSet;

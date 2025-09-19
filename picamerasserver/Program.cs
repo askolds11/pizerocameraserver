@@ -73,7 +73,7 @@ builder.Services.AddSingleton<ISendPictureSetManager, SendPictureSet>();
 builder.Services.AddSingleton<INtpManager, Ntp>();
 builder.Services.AddSingleton<IGetAliveManager, GetAlive>();
 builder.Services.AddSingleton<IUpdateManager, Update>();
-builder.Services.AddSingleton<UploadToServer>();
+builder.Services.AddSingleton<IUploadManager, UploadToServer>();
 
 var app = builder.Build();
 

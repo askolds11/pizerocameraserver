@@ -11,14 +11,32 @@ using FileAttributes = SMBLibrary.FileAttributes;
 
 namespace picamerasserver.pizerocamera.manager;
 
+public interface IUploadManager
+{
+    /// <summary>
+    /// Is an upload operation ongoing?
+    /// </summary>
+    bool UploadActive { get; }
+
+    /// <summary>
+    /// Upload images to SMB server.
+    /// </summary>
+    /// <param name="pictureSetUuid">Uuid of picture set to upload</param>
+    Task<Result> Upload(Guid pictureSetUuid);
+
+    /// <summary>
+    /// Cancels the ongoing upload operation
+    /// </summary>
+    Task CancelUpload();
+}
+
 public class UploadToServer(
-    PiZeroCameraManager piZeroCameraManager,
     ChangeListener changeListener,
     IOptionsMonitor<DirectoriesOptions> dirOptionsMonitor,
     IOptionsMonitor<SmbOptions> smbOptionsMonitor,
     IDbContextFactory<PiDbContext> dbContextFactory,
     ILogger<UploadToServer> logger
-)
+) : IUploadManager
 {
     public bool UploadActive { get; private set; }
     private readonly SemaphoreSlim _uploadSemaphore = new(1, 1);
