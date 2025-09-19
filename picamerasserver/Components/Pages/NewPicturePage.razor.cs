@@ -65,12 +65,13 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         {
             throw new ArgumentNullException(nameof(_pictureSet));
         }
-
-        await RefreshPictureSet();
-        _pictureSet.Name = Name;
+        
         await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
-        piDbContext.PictureSets.Update(_pictureSet);
-        await piDbContext.SaveChangesAsync();
+        await piDbContext.PictureSets.Where(x => x.Uuid == _pictureSet.Uuid)
+            .ExecuteUpdateAsync(x => x.SetProperty(
+                b => b.Name, _pictureSet.Name)
+            );
+        await RefreshPictureSet();
     }
 
     private async Task FinishPictureSet()
@@ -79,12 +80,13 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         {
             throw new ArgumentNullException(nameof(_pictureSet));
         }
-
-        await RefreshPictureSet();
-        _pictureSet.IsDone = true;
+        
         await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
-        piDbContext.PictureSets.Update(_pictureSet);
-        await piDbContext.SaveChangesAsync();
+        await piDbContext.PictureSets.Where(x => x.Uuid == _pictureSet.Uuid)
+            .ExecuteUpdateAsync(x => x.SetProperty(
+                b => b.IsDone, true)
+            );
+        await RefreshPictureSet();
     }
 
     private async Task SendPictureSet()
@@ -120,7 +122,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
             {
                 ReceivedTaken: not null, CameraPictureStatus: CameraPictureStatus.Failed
                 or CameraPictureStatus.PictureFailedToRead or CameraPictureStatus.PictureFailedToSend
-                or CameraPictureStatus.Unknown or CameraPictureStatus.Cancelled
+                or CameraPictureStatus.Unknown or CameraPictureStatus.CancelledSend
             })) ?? 0;
 
     private int AllTotalCount =>

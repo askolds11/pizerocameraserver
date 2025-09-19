@@ -153,6 +153,7 @@ public partial class CameraPage : ComponentBase, IDisposable
             CameraPictureStatus.PictureFailedToRead => Color.FromArgb(0x55, 0x00, 0x00),
             CameraPictureStatus.PictureFailedToSend => Color.FromArgb(0x55, 0x00, 0x00),
             CameraPictureStatus.Cancelled => Color.FromArgb(0xFF, 0x55, 0x00),
+            CameraPictureStatus.CancelledSend => Color.FromArgb(0xFF, 0x55, 0x00),
             null => Color.FromArgb(0x00, 0x00, 0x00),
             _ => throw new ArgumentOutOfRangeException(),
         };

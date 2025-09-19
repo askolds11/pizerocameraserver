@@ -19,8 +19,8 @@ public partial class SendPicture
     /// <param name="requireDeviceStatus">Should the cameras have status?</param>
     /// <param name="requireStatus">Should the camera's picture's status be valid?</param>
     /// <param name="requireTaken">Should the camera's picture be taken?</param>
-    /// <returns>A collection of tuples, where each tuple contains a database camera picture model and a PiZeroCamera instance meeting the criteria.</returns>
-    private IEnumerable<(CameraPictureModel dbItem, PiZeroCamera dictItem)> GetSendableCameras(
+    /// <returns>A collection of PiZeroCamera id's meeting the criteria.</returns>
+    private IEnumerable<string> GetSendableCameras(
         PictureRequestModel pictureRequest,
         bool requirePing = true,
         bool requireDeviceStatus = true,
@@ -32,7 +32,7 @@ public partial class SendPicture
         {
             CameraPictureStatus.SavedOnDevice, CameraPictureStatus.FailedToRequestSend, CameraPictureStatus.FailureSend,
             CameraPictureStatus.PictureFailedToRead, CameraPictureStatus.PictureFailedToSend,
-            CameraPictureStatus.Cancelled
+            CameraPictureStatus.CancelledSend
         };
         // Cameras to send request to
         return pictureRequest.CameraPictures
@@ -42,7 +42,8 @@ public partial class SendPicture
             )
             .Select(x => (dbItem: x, dictItem: piZeroCameraManager.PiZeroCameras[x.CameraId]))
             .Where(x => !requirePing || x.dictItem.Pingable == true)
-            .Where(x => !requireDeviceStatus || x.dictItem.Status != null);
+            .Where(x => !requireDeviceStatus || x.dictItem.Status != null)
+            .Select(x => x.dbItem.CameraId);
     }
 
     /// <summary>
@@ -53,12 +54,11 @@ public partial class SendPicture
     /// <param name="tryBlock"></param>
     private async Task RequestSendPictureTryBlock(
         Guid uuid,
-        Func<
-            (CancellationTokenSource cts,
+        Func<(CancellationTokenSource cts,
             PiDbContext dbContext,
-            List<(CameraPictureModel dbItem, PiZeroCamera dictItem)> unsentCameras,
+            List<string> unsentCameraIds,
             MqttOptions options,
-            Channel<string> channel ),
+            Channel<string> channel),
             Task> tryBlock
     )
     {
@@ -77,7 +77,7 @@ public partial class SendPicture
         _sendCancellationTokenSource?.Dispose();
         _sendCancellationTokenSource = new CancellationTokenSource();
 
-        List<(CameraPictureModel dbItem, PiZeroCamera dictItem)>? unsentCameras = null;
+        List<string>? unsentCameras = null;
         await using var piDbContext = await dbContextFactory.CreateDbContextAsync(_sendCancellationTokenSource.Token);
         try
         {
@@ -88,6 +88,7 @@ public partial class SendPicture
             // Get the request
             var pictureRequest = await piDbContext.PictureRequests
                 .Include(x => x.CameraPictures)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Uuid == uuid, _sendCancellationTokenSource.Token);
             if (pictureRequest == null)
             {
@@ -119,13 +120,12 @@ public partial class SendPicture
         {
             if (unsentCameras is { Count: > 0 })
             {
-                foreach (var (dbItem, _) in unsentCameras)
-                {
-                    dbItem.CameraPictureStatus = CameraPictureStatus.Cancelled;
-                    piDbContext.Update(dbItem);
-                }
-
-                await piDbContext.SaveChangesAsync();
+                await piDbContext.CameraPictures
+                    .Where(x => x.PictureRequestId == uuid && unsentCameras.Contains(x.CameraId))
+                    .ExecuteUpdateAsync(x => x.SetProperty(
+                            b => b.CameraPictureStatus, CameraPictureStatus.CancelledSend),
+                        CancellationToken.None
+                    );
             }
         }
         finally
@@ -151,7 +151,7 @@ public partial class SendPicture
             var (cts, piDbContext, unsentCameras, options, channel) = context;
 
             // Queue for sending requests
-            var cameraQueue = new Queue<(CameraPictureModel dbItem, PiZeroCamera dictItem)>(unsentCameras);
+            var cameraQueue = new Queue<string>(unsentCameras);
 
             // Make a message
             CameraRequest sendPictureRequest = new CameraRequest.SendPicture(
@@ -174,8 +174,7 @@ public partial class SendPicture
                     break;
                 }
             }
-
-            await piDbContext.SaveChangesAsync(cts.Token);
+            
             // Update UI
             changeListener.UpdatePicture(uuid);
 
@@ -185,7 +184,7 @@ public partial class SendPicture
                 // Pop message
                 if (channel.Reader.TryRead(out var cameraId))
                 {
-                    var camera = unsentCameras.First(x => x.dbItem.CameraId == cameraId);
+                    var camera = unsentCameras.First(x => x == cameraId);
                     unsentCameras.Remove(camera);
                 }
 
@@ -193,8 +192,6 @@ public partial class SendPicture
                 if (cameraQueue.Count > 0)
                 {
                     await SendMessage(piDbContext);
-
-                    await piDbContext.SaveChangesAsync(cts.Token);
                     // Update UI
                     changeListener.UpdatePicture(uuid);
                 }
@@ -213,16 +210,20 @@ public partial class SendPicture
             // Send a message to a camera
             async Task SendMessage(PiDbContext localPiDbContext)
             {
-                var (dbItem, piZeroCamera) = cameraQueue.Dequeue();
+                var cameraId = cameraQueue.Dequeue();
 
-                message.Topic = $"{options.CameraTopic}/{piZeroCamera.Id}";
+                message.Topic = $"{options.CameraTopic}/{cameraId}";
                 var publishResult = await mqttClient.PublishAsync(message, cts.Token);
 
                 // Update statuses
-                dbItem.CameraPictureStatus = publishResult.IsSuccess
-                    ? CameraPictureStatus.RequestedSend
-                    : CameraPictureStatus.FailedToRequestSend;
-                localPiDbContext.Update(dbItem);
+                await localPiDbContext.CameraPictures
+                    .Where(x => x.PictureRequestId == uuid && x.CameraId == cameraId)
+                    .ExecuteUpdateAsync(x => x.SetProperty(
+                            b => b.CameraPictureStatus, publishResult.IsSuccess
+                                ? CameraPictureStatus.RequestedSend
+                                : CameraPictureStatus.FailedToRequestSend),
+                        CancellationToken.None
+                    );
             }
         });
     }

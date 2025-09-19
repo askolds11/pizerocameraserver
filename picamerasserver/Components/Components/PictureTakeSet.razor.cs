@@ -105,7 +105,7 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
             context.PictureRequests
                 .Include(x => x.CameraPictures)
                 .AsNoTracking()
-                .FirstOrDefault(x => x.Uuid == uuid)
+                .FirstOrDefault(x => x.Uuid == uuid && x.IsActive == true)
         );
 
     private async Task OnPictureChanged(Guid uuid)

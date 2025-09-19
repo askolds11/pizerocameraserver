@@ -52,7 +52,7 @@ public partial class TakePicture
 
         return (pictureRequest, message);
     }
-    
+
     /// <summary>
     /// Get a list of cameras based on criteria for taking pictures
     /// </summary>
@@ -143,7 +143,7 @@ public partial class TakePicture
 
             piDbContext.AddRange(cameraPictureModels);
             // Not cancellable if the message is successfully sent.
-            await piDbContext.SaveChangesAsync(publishResult.IsSuccess ? CancellationToken.None : cancellationToken);
+            await piDbContext.SaveChangesAsync(CancellationToken.None);
 
             await piDbContext
                 .Entry(pictureRequest)
@@ -183,26 +183,18 @@ public partial class TakePicture
 
             // Update statuses
             await using var piDbContext = await dbContextFactory.CreateDbContextAsync(CancellationToken.None);
-            if (cameraPictureModels is { Count: > 0 })
+            if (pictureRequest != null && cameraPictureModels is { Count: > 0 })
             {
-                foreach (var dbItem in cameraPictureModels)
-                {
-                    dbItem.CameraPictureStatus = isCancelled
-                        ? CameraPictureStatus.Cancelled
-                        : CameraPictureStatus.FailedToRequest;
-                    piDbContext.Update(dbItem);
-                }
-
-                await piDbContext.SaveChangesAsync(CancellationToken.None);
-            }
-
-            // Set IsActive to false if saved to db
-            if (pictureRequest != null)
-            {
-                await piDbContext.PictureRequests.Where(x => x.Uuid == pictureRequest.Uuid)
+                // Update using ExecuteUpdate so that other changes are not lost
+                var updateableIds = cameraPictureModels.Select(x => x.CameraId).ToList();
+                await piDbContext.CameraPictures
+                    .Where(x => x.PictureRequestId == pictureRequest.Uuid && updateableIds.Contains(x.CameraId))
                     .ExecuteUpdateAsync(x => x.SetProperty(
-                        b => b.IsActive,
-                        false), cancellationToken: CancellationToken.None);
+                        b => b.CameraPictureStatus, isCancelled
+                            ? CameraPictureStatus.Cancelled
+                            : CameraPictureStatus.FailedToRequest),
+                        CancellationToken.None
+                    );
             }
 
             _takePictureCancellationTokenSource.Dispose();
@@ -236,7 +228,7 @@ public partial class TakePicture
 
         return pictureRequest;
     }
-    
+
     /// <summary>
     /// Handles responses for taking and saving pictures
     /// </summary>
@@ -277,24 +269,15 @@ public partial class TakePicture
             // Update statuses
             await using var piDbContext = await dbContextFactory.CreateDbContextAsync(CancellationToken.None);
             var cancelledCameraIds = takeCameras.Union(saveCameras).ToList();
-            var cancelledCameras = pictureRequest.CameraPictures
-                .Where(x => cancelledCameraIds.Contains(x.CameraId))
-                .ToList();
-            if (cancelledCameras is { Count: > 0 })
+            if (cancelledCameraIds is { Count: > 0 })
             {
-                foreach (var dbItem in cancelledCameras)
-                {
-                    dbItem.CameraPictureStatus = CameraPictureStatus.Cancelled;
-                    piDbContext.Update(dbItem);
-                }
-
-                await piDbContext.SaveChangesAsync(CancellationToken.None);
-
-                // Set IsActive to false if saved to db
-                await piDbContext.PictureRequests.Where(x => x.Uuid == pictureRequest.Uuid)
+                // Update using ExecuteUpdate so that other changes are not lost
+                await piDbContext.CameraPictures
+                    .Where(x => x.PictureRequestId == pictureRequest.Uuid && cancelledCameraIds.Contains(x.CameraId))
                     .ExecuteUpdateAsync(x => x.SetProperty(
-                        b => b.IsActive,
-                        false), cancellationToken: CancellationToken.None);
+                            b => b.CameraPictureStatus, CameraPictureStatus.Cancelled),
+                        CancellationToken.None
+                    );
             }
 
             cts.Dispose();
