@@ -2,6 +2,7 @@ using System.Drawing;
 using Microsoft.AspNetCore.Components;
 using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.manager;
+using picamerasserver.pizerocamera.Ntp;
 using picamerasserver.pizerocamera.Requests;
 
 namespace picamerasserver.Components.Pages;
@@ -10,12 +11,13 @@ public partial class NtpPage : ComponentBase, IDisposable
 {
     [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; set; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
+    [Inject] protected INtpManager NtpManager { get; init; } = null!;
 
     private async Task RequestNtpSyncStep()
     {
         try
         {
-            await PiZeroCameraManager.RequestNtpSync(new NtpRequest.Step());
+            await NtpManager.RequestNtpSync(new NtpRequest.Step());
         }
         catch (OperationCanceledException)
         {
@@ -27,7 +29,7 @@ public partial class NtpPage : ComponentBase, IDisposable
     {
         try
         {
-            await PiZeroCameraManager.RequestNtpSync(new NtpRequest.Slew());
+            await NtpManager.RequestNtpSync(new NtpRequest.Slew());
         }
         catch (OperationCanceledException)
         {

@@ -12,6 +12,7 @@ using picamerasserver.Options;
 using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.GetAlive;
 using picamerasserver.pizerocamera.manager;
+using picamerasserver.pizerocamera.Ntp;
 using picamerasserver.pizerocamera.SendPicture;
 using picamerasserver.pizerocamera.TakePicture;
 using Serilog;
@@ -68,6 +69,7 @@ builder.Services.AddSingleton<PiZeroCameraManager>();
 builder.Services.AddSingleton<ISendPictureManager, SendPicture>();
 builder.Services.AddSingleton<ITakePictureManager, TakePicture>();
 builder.Services.AddSingleton<ISendPictureSetManager, SendPictureSet>();
+builder.Services.AddSingleton<INtpManager, Ntp>();
 builder.Services.AddSingleton<IGetAliveManager, GetAlive>();
 builder.Services.AddSingleton<UploadToServer>();
 

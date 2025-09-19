@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Components;
 using picamerasserver.pizerocamera;
-using picamerasserver.pizerocamera.manager;
+using picamerasserver.pizerocamera.Ntp;
 
 namespace picamerasserver.Components.Components;
 
 public partial class NtpRequestTooltip : ComponentBase
 {
     [Parameter, EditorRequired] public required PiZeroCamera PiZeroCamera { get; set; }
-    [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; init; } = null!;
+    [Inject] protected INtpManager NtpManager { get; init; } = null!;
 
     private (string header, string? message, float? offset, float? error) GetContent()
     {
@@ -31,6 +31,6 @@ public partial class NtpRequestTooltip : ComponentBase
     
     private async Task RequestSync()
     {
-        await PiZeroCameraManager.RequestNtpSyncIndividual(PiZeroCamera.Id);
+        await NtpManager.RequestNtpSyncIndividual(PiZeroCamera.Id);
     }
 }

@@ -6,6 +6,7 @@ using MQTTnet.Protocol;
 using picamerasserver.Options;
 using picamerasserver.pizerocamera.GetAlive;
 using picamerasserver.pizerocamera.manager;
+using picamerasserver.pizerocamera.Ntp;
 using picamerasserver.pizerocamera.Requests;
 using picamerasserver.pizerocamera.Responses;
 using picamerasserver.pizerocamera.SendPicture;
@@ -20,12 +21,13 @@ public class MqttStuff
     private readonly ITakePictureManager _takePictureManager;
     private readonly ISendPictureManager _sendPictureManager;
     private readonly IGetAliveManager _getAliveManager;
+    private readonly INtpManager _ntpManager;
     private readonly IOptionsMonitor<MqttOptions> _optionsMonitor;
     private MqttOptions _currentOptions;
     private readonly ILogger<MqttStuff> _logger;
 
     public MqttStuff(IMqttClient mqttClient, PiZeroCameraManager piZeroCameraManager,
-        IOptionsMonitor<MqttOptions> optionsMonitor, ILogger<MqttStuff> logger, ITakePictureManager takePictureManager, ISendPictureManager sendPictureManager, IGetAliveManager getAliveManager)
+        IOptionsMonitor<MqttOptions> optionsMonitor, ILogger<MqttStuff> logger, ITakePictureManager takePictureManager, ISendPictureManager sendPictureManager, IGetAliveManager getAliveManager, INtpManager ntpManager)
     {
         _mqttClient = mqttClient;
         _piZeroCameraManager = piZeroCameraManager;
@@ -34,6 +36,7 @@ public class MqttStuff
         _takePictureManager = takePictureManager;
         _sendPictureManager = sendPictureManager;
         _getAliveManager = getAliveManager;
+        _ntpManager = ntpManager;
         _currentOptions = _optionsMonitor.CurrentValue;
         Task.Run(() => InitClient());
     }
@@ -103,7 +106,7 @@ public class MqttStuff
         var id = e.ApplicationMessage.Topic.Split("/").Last();
         if (topic == _currentOptions.NtpTopic)
         {
-            await _piZeroCameraManager.ResponseNtpSync(e.ApplicationMessage, id);
+            await _ntpManager.ResponseNtpSync(e.ApplicationMessage, id);
         }
         else if (topic == _currentOptions.CameraTopic)
         {

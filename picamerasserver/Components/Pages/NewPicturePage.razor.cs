@@ -7,6 +7,7 @@ using picamerasserver.Database.Models;
 using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.GetAlive;
 using picamerasserver.pizerocamera.manager;
+using picamerasserver.pizerocamera.Ntp;
 using picamerasserver.pizerocamera.Requests;
 using picamerasserver.pizerocamera.SendPicture;
 using picamerasserver.pizerocamera.TakePicture;
@@ -22,13 +23,14 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     [Inject] protected ISendPictureSetManager SendPictureSetManager { get; init; } = null!;
     [Inject] protected ITakePictureManager TakePictureManager { get; init; } = null!;
     [Inject] protected IGetAliveManager GetAliveManager { get; init; } = null!;
+    [Inject] protected INtpManager NtpManager { get; init; } = null!;
     [Inject] protected UploadToServer UploadToServer { get; init; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
 
     private PictureSetModel? _pictureSet;
     private bool SendSetActive => SendPictureSetManager.SendSetActive;
     private bool PingActive => GetAliveManager.PingActive;
-    private bool NtpActive => PiZeroCameraManager.NtpActive;
+    private bool NtpActive => NtpManager.NtpActive;
     private bool UploadActive => UploadToServer.UploadActive;
 
     private PictureRequestModel? PictureRequestStandingSpread => _pictureSet?.PictureRequests.FirstOrDefault(x =>
@@ -160,7 +162,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
 
         try
         {
-            await PiZeroCameraManager.RequestNtpSync(new NtpRequest.Step());
+            await NtpManager.RequestNtpSync(new NtpRequest.Step());
             Synced = true;
         }
         catch (OperationCanceledException)
@@ -260,7 +262,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
 
     private async Task CancelNtpSync()
     {
-        await PiZeroCameraManager.CancelNtpSync();
+        await NtpManager.CancelNtpSync();
     }
 
     private async Task CancelPing()
