@@ -25,7 +25,7 @@ public partial class GetAlive
             if (successWrapper.Success)
             {
                 // TODO: Move this code to Update class
-                var activeVersion = (await piZeroCameraManager.GetActiveVersion())?.Version;
+                var activeVersion = (await updateManager.GetActiveVersion())?.Version;
                 if (activeVersion == successWrapper.Value.Version)
                 {
                     piZeroCamera.UpdateRequest = new PiZeroCameraUpdateRequest.Success();

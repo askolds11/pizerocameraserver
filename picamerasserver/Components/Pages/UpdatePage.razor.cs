@@ -10,6 +10,7 @@ using picamerasserver.Database.Models;
 using picamerasserver.Options;
 using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.manager;
+using picamerasserver.pizerocamera.Update;
 using Color = System.Drawing.Color;
 
 namespace picamerasserver.Components.Pages;
@@ -22,6 +23,7 @@ public partial class UpdatePage(
     [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; set; } = null!;
     [Inject] protected IDbContextFactory<PiDbContext> DbContextFactory { get; init; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
+    [Inject] protected IUpdateManager UpdateManager { get; init; } = null!;
 
     [GeneratedRegex(@"\[MYAPPVERSION:([^\]]+)\]", RegexOptions.IgnoreCase)]
     private static partial Regex Version();
@@ -29,7 +31,7 @@ public partial class UpdatePage(
 
     private MudDataGrid<UpdateElement> _gridData = null!;
     
-    private bool UpdateActive => PiZeroCameraManager.UpdateActive;
+    private bool UpdateActive => UpdateManager.UpdateActive;
 
     private async Task SelectUpdate(string selectedVersion)
     {
@@ -70,12 +72,12 @@ public partial class UpdatePage(
 
     private async Task SendUpdate()
     {
-        await PiZeroCameraManager.RequestUpdateChannels(3);
+        await UpdateManager.RequestUpdateChannels(3);
     }
     
     private async Task CancelUpdate()
     {
-        await PiZeroCameraManager.CancelUpdate();
+        await UpdateManager.CancelUpdate();
     }
     
     // File upload control

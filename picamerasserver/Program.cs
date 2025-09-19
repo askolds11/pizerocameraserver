@@ -15,6 +15,7 @@ using picamerasserver.pizerocamera.manager;
 using picamerasserver.pizerocamera.Ntp;
 using picamerasserver.pizerocamera.SendPicture;
 using picamerasserver.pizerocamera.TakePicture;
+using picamerasserver.pizerocamera.Update;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -71,6 +72,7 @@ builder.Services.AddSingleton<ITakePictureManager, TakePicture>();
 builder.Services.AddSingleton<ISendPictureSetManager, SendPictureSet>();
 builder.Services.AddSingleton<INtpManager, Ntp>();
 builder.Services.AddSingleton<IGetAliveManager, GetAlive>();
+builder.Services.AddSingleton<IUpdateManager, Update>();
 builder.Services.AddSingleton<UploadToServer>();
 
 var app = builder.Build();

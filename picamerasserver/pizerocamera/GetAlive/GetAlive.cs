@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using MQTTnet;
 using picamerasserver.Options;
 using picamerasserver.pizerocamera.manager;
+using picamerasserver.pizerocamera.Update;
 
 namespace picamerasserver.pizerocamera.GetAlive;
 
@@ -40,6 +41,7 @@ public partial class GetAlive(
     PiZeroCameraManager piZeroCameraManager,
     ChangeListener changeListener,
     IMqttClient mqttClient,
+    IUpdateManager updateManager,
     IOptionsMonitor<MqttOptions> optionsMonitor,
     ILogger<GetAlive> logger
 ) : IGetAliveManager

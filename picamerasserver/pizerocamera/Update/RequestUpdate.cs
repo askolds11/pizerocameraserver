@@ -1,21 +1,11 @@
-using System.Text;
 using System.Threading.Channels;
-using Microsoft.EntityFrameworkCore;
 using MQTTnet;
 using MQTTnet.Protocol;
-using picamerasserver.Database.Models;
-using picamerasserver.pizerocamera.Responses;
 
-namespace picamerasserver.pizerocamera.manager;
+namespace picamerasserver.pizerocamera.Update;
 
-public partial class PiZeroCameraManager
+public partial class Update
 {
-    private Channel<string>? _updateChannel;
-
-    public bool UpdateActive { get; private set; }
-    private readonly SemaphoreSlim _updateSemaphore = new(1, 1);
-    private CancellationTokenSource? _updateCancellationTokenSource;
-
     /// <summary>
     /// Get a list of cameras based on criteria for updating
     /// </summary>
@@ -27,17 +17,12 @@ public partial class PiZeroCameraManager
         bool requireDeviceStatus = true
     )
     {
-        return PiZeroCameras.Values
+        return piZeroCameraManager.PiZeroCameras.Values
             .Where(x => !requirePing || x.Pingable == true)
             .Where(x => !requireDeviceStatus || x.Status != null);
     }
 
-    public async Task<UpdateModel?> GetActiveVersion()
-    {
-        await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
-        return await piDbContext.Updates.FirstOrDefaultAsync(x => x.IsCurrent);
-    }
-
+    /// <inheritdoc />
     public async Task RequestUpdateChannels(int maxConcurrentUploads)
     {
         // Another update operation is already running
@@ -64,13 +49,13 @@ public partial class PiZeroCameraManager
 
         List<PiZeroCamera>? unsentCameras = null;
         await using var piDbContext =
-            await _dbContextFactory.CreateDbContextAsync(_updateCancellationTokenSource.Token);
+            await dbContextFactory.CreateDbContextAsync(_updateCancellationTokenSource.Token);
 
         try
         {
             UpdateActive = true;
 
-            var options = _optionsMonitor.CurrentValue;
+            var options = optionsMonitor.CurrentValue;
 
             unsentCameras = GetUpdateableCameras(requirePing: true, requireDeviceStatus: true).ToList();
 
@@ -110,7 +95,7 @@ public partial class PiZeroCameraManager
             }
 
             // Update UI
-            _changeListener.UpdateUpdate();
+            changeListener.UpdateUpdate();
             await Task.Yield();
 
             // Wait for messages
@@ -128,7 +113,7 @@ public partial class PiZeroCameraManager
                 {
                     await SendMessage(_updateCancellationTokenSource);
                     // Update UI
-                    _changeListener.UpdateUpdate();
+                    changeListener.UpdateUpdate();
                     await Task.Yield();
                 }
 
@@ -149,7 +134,7 @@ public partial class PiZeroCameraManager
                 var piZeroCamera = cameraQueue.Dequeue();
 
                 message.Topic = $"{options.UpdateTopic}/{piZeroCamera.Id}";
-                var publishResult = await _mqttClient.PublishAsync(message, cts.Token);
+                var publishResult = await mqttClient.PublishAsync(message, cts.Token);
 
                 // Update statuses
                 piZeroCamera.UpdateRequest = publishResult.IsSuccess
@@ -178,75 +163,8 @@ public partial class PiZeroCameraManager
             _updateSemaphore.Release();
             // Update UI
             UpdateActive = false;
-            _changeListener.UpdateUpdate();
+            changeListener.UpdateUpdate();
             await Task.Yield();
-        }
-    }
-
-    public async Task ResponseUpdate(
-        MqttApplicationMessage message,
-        string id
-    )
-    {
-        var piZeroCamera = PiZeroCameras[id];
-
-        var text = Encoding.UTF8.GetString(message.Payload);
-        var statusResponse = Json.TryDeserialize<SuccessWrapper<UpdateResponse>>(text, _logger);
-
-        if (statusResponse.IsFailure)
-        {
-            // piZeroCamera.Status = null;
-            _logger.LogError(statusResponse.Error, "Failed to parse update response");
-
-            return;
-        }
-
-        var successWrapper = statusResponse.Value;
-
-        // Send received signal so that next cameras can be updated
-        if (successWrapper.Value is UpdateResponse.UpdateDownloaded or UpdateResponse.AlreadyUpdated)
-        {
-            _updateChannel?.Writer.TryWrite(id);
-        }
-
-        if (successWrapper.Success)
-        {
-            piZeroCamera.UpdateRequest = successWrapper.Value switch
-            {
-                UpdateResponse.DownloadingUpdate => new PiZeroCameraUpdateRequest.Downloading(),
-                UpdateResponse.UpdateDownloaded => new PiZeroCameraUpdateRequest.Downloaded(),
-                UpdateResponse.AlreadyUpdated => new PiZeroCameraUpdateRequest.Success(),
-                _ => new PiZeroCameraUpdateRequest.UnknownSuccess()
-            };
-        }
-        else
-        {
-            piZeroCamera.UpdateRequest = successWrapper.Value switch
-            {
-                UpdateResponse.Failure failure => failure switch
-                {
-                    UpdateResponse.Failure.Failed failed =>
-                        new PiZeroCameraUpdateRequest.Failure.Failed(failed.Message),
-                    _ => throw new ArgumentOutOfRangeException(nameof(failure))
-                },
-                _ => new PiZeroCameraUpdateRequest.Failure.UnknownFailure()
-            };
-        }
-
-        _changeListener.UpdateUpdate();
-        await Task.Yield();
-    }
-
-    public async Task CancelUpdate()
-    {
-        if (_updateCancellationTokenSource != null)
-        {
-            await _updateCancellationTokenSource.CancelAsync();
-        }
-
-        if (UpdateActive)
-        {
-            await CancelCameraTasks();
         }
     }
 }
