@@ -10,6 +10,7 @@ using picamerasserver.Endpoints;
 using picamerasserver.mqtt;
 using picamerasserver.Options;
 using picamerasserver.pizerocamera;
+using picamerasserver.pizerocamera.GetAlive;
 using picamerasserver.pizerocamera.manager;
 using picamerasserver.pizerocamera.SendPicture;
 using picamerasserver.pizerocamera.TakePicture;
@@ -67,6 +68,7 @@ builder.Services.AddSingleton<PiZeroCameraManager>();
 builder.Services.AddSingleton<ISendPictureManager, SendPicture>();
 builder.Services.AddSingleton<ITakePictureManager, TakePicture>();
 builder.Services.AddSingleton<ISendPictureSetManager, SendPictureSet>();
+builder.Services.AddSingleton<IGetAliveManager, GetAlive>();
 builder.Services.AddSingleton<UploadToServer>();
 
 var app = builder.Build();

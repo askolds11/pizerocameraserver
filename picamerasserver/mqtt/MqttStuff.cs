@@ -4,6 +4,7 @@ using MQTTnet;
 using MQTTnet.Formatter;
 using MQTTnet.Protocol;
 using picamerasserver.Options;
+using picamerasserver.pizerocamera.GetAlive;
 using picamerasserver.pizerocamera.manager;
 using picamerasserver.pizerocamera.Requests;
 using picamerasserver.pizerocamera.Responses;
@@ -18,12 +19,13 @@ public class MqttStuff
     private readonly PiZeroCameraManager _piZeroCameraManager;
     private readonly ITakePictureManager _takePictureManager;
     private readonly ISendPictureManager _sendPictureManager;
+    private readonly IGetAliveManager _getAliveManager;
     private readonly IOptionsMonitor<MqttOptions> _optionsMonitor;
     private MqttOptions _currentOptions;
     private readonly ILogger<MqttStuff> _logger;
 
     public MqttStuff(IMqttClient mqttClient, PiZeroCameraManager piZeroCameraManager,
-        IOptionsMonitor<MqttOptions> optionsMonitor, ILogger<MqttStuff> logger, ITakePictureManager takePictureManager, ISendPictureManager sendPictureManager)
+        IOptionsMonitor<MqttOptions> optionsMonitor, ILogger<MqttStuff> logger, ITakePictureManager takePictureManager, ISendPictureManager sendPictureManager, IGetAliveManager getAliveManager)
     {
         _mqttClient = mqttClient;
         _piZeroCameraManager = piZeroCameraManager;
@@ -31,6 +33,7 @@ public class MqttStuff
         _logger = logger;
         _takePictureManager = takePictureManager;
         _sendPictureManager = sendPictureManager;
+        _getAliveManager = getAliveManager;
         _currentOptions = _optionsMonitor.CurrentValue;
         Task.Run(() => InitClient());
     }
@@ -128,7 +131,7 @@ public class MqttStuff
         }
         else if (topic == _currentOptions.StatusTopic)
         {
-            await _piZeroCameraManager.ResponseGetStatus(e.ApplicationMessage, id);
+            await _getAliveManager.ResponseGetStatus(e.ApplicationMessage, id);
         }
         else if (topic == _currentOptions.UpdateTopic)
         {

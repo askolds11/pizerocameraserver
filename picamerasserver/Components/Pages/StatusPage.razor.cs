@@ -1,6 +1,7 @@
 using System.Drawing;
 using Microsoft.AspNetCore.Components;
 using picamerasserver.pizerocamera;
+using picamerasserver.pizerocamera.GetAlive;
 using picamerasserver.pizerocamera.manager;
 
 namespace picamerasserver.Components.Pages;
@@ -9,22 +10,23 @@ public partial class StatusPage : ComponentBase, IDisposable
 {
     [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; set; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
-    private bool PingActive => PiZeroCameraManager.PingActive;
+    [Inject] protected IGetAliveManager GetAliveManager { get; init; } = null!;
+    private bool PingActive => GetAliveManager.PingActive;
 
 
     private async Task Ping()
     {
-        await PiZeroCameraManager.Ping();
+        await GetAliveManager.Ping();
     }
 
     private async Task StopPing()
     {
-        await PiZeroCameraManager.CancelPing();
+        await GetAliveManager.CancelPing();
     }
 
     private async Task GetStatus()
     {
-        await PiZeroCameraManager.GetStatus();
+        await GetAliveManager.GetStatus();
     }
 
     private async Task OnPingGlobalChanged()

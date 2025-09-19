@@ -32,7 +32,7 @@ public partial class PiZeroCameraManager
             .Where(x => !requireDeviceStatus || x.Status != null);
     }
 
-    private async Task<UpdateModel?> GetActiveVersion()
+    public async Task<UpdateModel?> GetActiveVersion()
     {
         await using var piDbContext = await _dbContextFactory.CreateDbContextAsync();
         return await piDbContext.Updates.FirstOrDefaultAsync(x => x.IsCurrent);

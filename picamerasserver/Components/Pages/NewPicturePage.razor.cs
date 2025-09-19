@@ -5,6 +5,7 @@ using MudBlazor;
 using picamerasserver.Database;
 using picamerasserver.Database.Models;
 using picamerasserver.pizerocamera;
+using picamerasserver.pizerocamera.GetAlive;
 using picamerasserver.pizerocamera.manager;
 using picamerasserver.pizerocamera.Requests;
 using picamerasserver.pizerocamera.SendPicture;
@@ -20,12 +21,13 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     [Inject] protected NavigationManager NavigationManager { get; init; } = null!;
     [Inject] protected ISendPictureSetManager SendPictureSetManager { get; init; } = null!;
     [Inject] protected ITakePictureManager TakePictureManager { get; init; } = null!;
+    [Inject] protected IGetAliveManager GetAliveManager { get; init; } = null!;
     [Inject] protected UploadToServer UploadToServer { get; init; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
 
     private PictureSetModel? _pictureSet;
     private bool SendSetActive => SendPictureSetManager.SendSetActive;
-    private bool PingActive => PiZeroCameraManager.PingActive;
+    private bool PingActive => GetAliveManager.PingActive;
     private bool NtpActive => PiZeroCameraManager.NtpActive;
     private bool UploadActive => UploadToServer.UploadActive;
 
@@ -137,8 +139,8 @@ public partial class NewPicturePage : ComponentBase, IDisposable
 
         try
         {
-            var task1 = PiZeroCameraManager.Ping();
-            var task2 = PiZeroCameraManager.GetStatus();
+            var task1 = GetAliveManager.Ping();
+            var task2 = GetAliveManager.GetStatus();
             await Task.WhenAll(task1, task2);
             Alived = true;
         }
@@ -263,7 +265,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
 
     private async Task CancelPing()
     {
-        await PiZeroCameraManager.CancelPing();
+        await GetAliveManager.CancelPing();
     }
 
     private async Task CancelUpload()
