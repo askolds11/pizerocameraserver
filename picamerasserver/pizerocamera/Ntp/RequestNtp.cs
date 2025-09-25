@@ -65,13 +65,18 @@ public partial class Ntp
             unsyncedCameras = GetSyncableCameras().ToList();
             var cameraQueue = new Queue<PiZeroCamera>(unsyncedCameras);
 
-            async Task SendMessage()
+            // Reset previous NTP data
+            foreach (var piZeroCamera in unsyncedCameras)
             {
-                var piZeroCamera = cameraQueue.Dequeue();
-
                 piZeroCamera.LastNtpErrorMillis = null;
                 piZeroCamera.LastNtpOffsetMillis = null;
                 piZeroCamera.LastNtpSync = null;
+                piZeroCamera.NtpRequest = null;
+            }
+
+            async Task SendMessage()
+            {
+                var piZeroCamera = cameraQueue.Dequeue();
 
                 message.Topic = $"{options.NtpTopic}/{piZeroCamera.Id}";
                 var publishResult = await mqttClient.PublishAsync(message, cancellationToken);
