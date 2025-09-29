@@ -66,7 +66,7 @@ public partial class Ntp
             var cameraQueue = new Queue<PiZeroCamera>(unsyncedCameras);
 
             // Reset previous NTP data
-            foreach (var piZeroCamera in unsyncedCameras)
+            foreach (var piZeroCamera in piZeroCameraManager.PiZeroCameras.Values)
             {
                 piZeroCamera.LastNtpErrorMillis = null;
                 piZeroCamera.LastNtpOffsetMillis = null;
