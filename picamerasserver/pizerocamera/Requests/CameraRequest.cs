@@ -5,6 +5,7 @@ namespace picamerasserver.pizerocamera.Requests;
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(TakePicture), nameof(TakePicture))]
 [JsonDerivedType(typeof(SendPicture), nameof(SendPicture))]
+[JsonDerivedType(typeof(GetSyncStatus), nameof(GetSyncStatus))]
 [JsonDerivedType(typeof(StartPreview), nameof(StartPreview))]
 [JsonDerivedType(typeof(StopPreview), nameof(StopPreview))]
 [JsonDerivedType(typeof(SetControls), nameof(SetControls))]
@@ -20,6 +21,8 @@ public abstract record CameraRequest
     public sealed record SendPicture(
         Guid Uuid
     ) : CameraRequest;
+
+    public sealed record GetSyncStatus : CameraRequest;
 
     public sealed record SetControls(PiZeroCameraCameraMode CameraMode, Controls CameraControls) : CameraRequest;
 

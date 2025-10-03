@@ -5,11 +5,11 @@ using MQTTnet.Formatter;
 using MQTTnet.Protocol;
 using picamerasserver.Options;
 using picamerasserver.pizerocamera.GetAlive;
-using picamerasserver.pizerocamera.manager;
 using picamerasserver.pizerocamera.Ntp;
 using picamerasserver.pizerocamera.Requests;
 using picamerasserver.pizerocamera.Responses;
 using picamerasserver.pizerocamera.SendPicture;
+using picamerasserver.pizerocamera.Sync;
 using picamerasserver.pizerocamera.TakePicture;
 using picamerasserver.pizerocamera.Update;
 
@@ -18,21 +18,28 @@ namespace picamerasserver.mqtt;
 public class MqttStuff
 {
     private readonly IMqttClient _mqttClient;
-    private readonly PiZeroCameraManager _piZeroCameraManager;
     private readonly ITakePictureManager _takePictureManager;
     private readonly ISendPictureManager _sendPictureManager;
     private readonly IGetAliveManager _getAliveManager;
     private readonly INtpManager _ntpManager;
     private readonly IUpdateManager _updateManager;
+    private readonly ISyncManager _syncManager;
     private readonly IOptionsMonitor<MqttOptions> _optionsMonitor;
     private MqttOptions _currentOptions;
     private readonly ILogger<MqttStuff> _logger;
 
-    public MqttStuff(IMqttClient mqttClient, PiZeroCameraManager piZeroCameraManager,
-        IOptionsMonitor<MqttOptions> optionsMonitor, ILogger<MqttStuff> logger, ITakePictureManager takePictureManager, ISendPictureManager sendPictureManager, IGetAliveManager getAliveManager, INtpManager ntpManager, IUpdateManager updateManager)
+    public MqttStuff(IMqttClient mqttClient,
+        IOptionsMonitor<MqttOptions> optionsMonitor,
+        ILogger<MqttStuff> logger,
+        ITakePictureManager takePictureManager,
+        ISendPictureManager sendPictureManager,
+        IGetAliveManager getAliveManager,
+        INtpManager ntpManager,
+        IUpdateManager updateManager,
+        ISyncManager syncManager
+    )
     {
         _mqttClient = mqttClient;
-        _piZeroCameraManager = piZeroCameraManager;
         _optionsMonitor = optionsMonitor;
         _logger = logger;
         _takePictureManager = takePictureManager;
@@ -40,8 +47,9 @@ public class MqttStuff
         _getAliveManager = getAliveManager;
         _ntpManager = ntpManager;
         _updateManager = updateManager;
+        _syncManager = syncManager;
         _currentOptions = _optionsMonitor.CurrentValue;
-        Task.Run(() => InitClient());
+        Task.Run(InitClient);
     }
 
     private MqttClientOptions GetMqttClientOptions()
@@ -120,17 +128,23 @@ public class MqttStuff
                 var cameraResponseValue = cameraResponse.Value;
                 if (cameraResponseValue is CameraResponse.TakePicture takePictureResponse)
                 {
-                    await _takePictureManager.ResponseTakePicture(e.ApplicationMessage, messageReceived, takePictureResponse, id);
-                } else if (cameraResponseValue is CameraResponse.SendPicture sendPictureResponse)
-                {
-                    await _sendPictureManager.ResponseSendPicture(e.ApplicationMessage, messageReceived, sendPictureResponse, id);
+                    await _takePictureManager.ResponseTakePicture(e.ApplicationMessage, messageReceived,
+                        takePictureResponse, id);
                 }
-            } else if (cameraResponse.IsFailure)
+                else if (cameraResponseValue is CameraResponse.SendPicture sendPictureResponse)
+                {
+                    await _sendPictureManager.ResponseSendPicture(e.ApplicationMessage, messageReceived,
+                        sendPictureResponse, id);
+                }
+                else if (cameraResponseValue is CameraResponse.SyncStatus syncStatusResponse)
+                {
+                    await _syncManager.ResponseSyncStatus(e.ApplicationMessage, syncStatusResponse, id);
+                }
+            }
+            else if (cameraResponse.IsFailure)
             {
                 // TODO: Handle
             }
-            
-            
         }
         else if (topic == _currentOptions.CommandTopic)
         {

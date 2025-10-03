@@ -10,6 +10,7 @@ using picamerasserver.pizerocamera.manager;
 using picamerasserver.pizerocamera.Ntp;
 using picamerasserver.pizerocamera.Requests;
 using picamerasserver.pizerocamera.SendPicture;
+using picamerasserver.pizerocamera.Sync;
 using picamerasserver.pizerocamera.TakePicture;
 
 namespace picamerasserver.Components.Pages;
@@ -24,6 +25,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     [Inject] protected ITakePictureManager TakePictureManager { get; init; } = null!;
     [Inject] protected IGetAliveManager GetAliveManager { get; init; } = null!;
     [Inject] protected INtpManager NtpManager { get; init; } = null!;
+    [Inject] protected ISyncManager SyncManager { get; init; } = null!;
     [Inject] protected IUploadManager UploadToServer { get; init; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
 
@@ -31,6 +33,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     private bool SendSetActive => SendPictureSetManager.SendSetActive;
     private bool PingActive => GetAliveManager.PingActive;
     private bool NtpActive => NtpManager.NtpActive;
+    private bool SyncActive => SyncManager.SyncActive;
     private bool UploadActive => UploadToServer.UploadActive;
 
     private PictureRequestModel? PictureRequestStandingSpread => _pictureSet?.PictureRequests.FirstOrDefault(x =>
@@ -69,7 +72,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
         await piDbContext.PictureSets.Where(x => x.Uuid == _pictureSet.Uuid)
             .ExecuteUpdateAsync(x => x.SetProperty(
-                b => b.Name, _pictureSet.Name)
+                b => b.Name, Name)
             );
         await RefreshPictureSet();
     }
@@ -100,10 +103,14 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     }
 
     private bool Alived { get; set; } = false;
-    private bool Synced { get; set; } = false;
+    private bool NtpSynced { get; set; } = false;
+    private bool SyncedFrames { get; set; } = false;
 
-    private int SyncedCount =>
+    private int NtpSyncedCount =>
         PiZeroCameraManager.PiZeroCameras.Values.Count(x => x.NtpRequest is PiZeroCameraNtpRequest.Success);
+    
+    private int SyncedCount =>
+        PiZeroCameraManager.PiZeroCameras.Values.Count(x => x.SyncStatus is SyncStatus.Success { SyncReady: true });
 
     private int PingedCount => PiZeroCameraManager.PiZeroCameras.Values.Count(x => x.Pingable == true);
     private int StatusCount => PiZeroCameraManager.PiZeroCameras.Values.Count(x => x.Status != null);
@@ -136,10 +143,6 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     private async Task GetAlive()
     {
         Alived = false;
-        if (_pictureSet == null)
-        {
-            await CreatePictureSet();
-        }
 
         try
         {
@@ -156,20 +159,31 @@ public partial class NewPicturePage : ComponentBase, IDisposable
 
     private async Task RequestNtpSyncStep()
     {
-        Synced = true;
-        if (_pictureSet == null)
-        {
-            await CreatePictureSet();
-        }
+        NtpSynced = false;
 
         try
         {
             await NtpManager.RequestNtpSync(new NtpRequest.Step());
-            Synced = true;
+            NtpSynced = true;
         }
         catch (OperationCanceledException)
         {
-            Synced = false;
+            NtpSynced = false;
+        }
+    }
+    
+    private async Task RequestSync()
+    {
+        SyncedFrames = false;
+
+        try
+        {
+            await SyncManager.GetSyncStatus();
+            SyncedFrames = true;
+        }
+        catch (OperationCanceledException)
+        {
+            SyncedFrames = false;
         }
     }
 
@@ -180,7 +194,12 @@ public partial class NewPicturePage : ComponentBase, IDisposable
 
     private void OverrideNtp()
     {
-        Synced = true;
+        NtpSynced = true;
+    }
+    
+    private void OverrideSync()
+    {
+        SyncedFrames = true;
     }
 
     private List<float>? GetOffsets()
@@ -202,11 +221,24 @@ public partial class NewPicturePage : ComponentBase, IDisposable
 
         return errors.Count == 0 ? null : errors;
     }
+    
+    private List<long>? GetTimeTillSync()
+    {
+        var unsyncedTimes = PiZeroCameraManager.PiZeroCameras.Values
+            .Select(x => x.SyncStatus)
+            .Where(x => x is SyncStatus.Success { SyncReady: false })
+            .Select(x => (SyncStatus.Success) x!)
+            .Select(x => x.SyncTiming / 1000)
+            .ToList();
+
+        return unsyncedTimes.Count == 0 ? null : unsyncedTimes;
+    }
 
     private float? MinOffset => GetOffsets()?.Min();
     private float? MaxOffset => GetOffsets()?.Max();
     private float? MinError => GetErrors()?.Min();
     private float? MaxError => GetErrors()?.Max();
+    private float? TimeTillSync => GetTimeTillSync()?.Max();
 
     private async Task OnPingGlobalChanged()
     {
@@ -234,6 +266,15 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         await InvokeAsync(() =>
         {
             UpdateTooltipTransformNtp();
+            StateHasChanged();
+        });
+    }
+    
+    private async Task OnSyncChanged()
+    {
+        await InvokeAsync(() =>
+        {
+            UpdateTooltipTransformSync();
             StateHasChanged();
         });
     }
@@ -277,6 +318,11 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         await UploadToServer.CancelUpload();
     }
 
+    private async Task CancelSync()
+    {
+        await SyncManager.CancelSyncStatus();
+    }
+
     protected override async Task OnInitializedAsync()
     {
         if (Uuid != null)
@@ -292,6 +338,10 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         ChangeListener.OnPingChange += OnPingGlobalChanged;
         ChangeListener.OnNtpChange += OnNtpChanged;
         ChangeListener.OnPictureSetChange += OnPictureSetChanged;
+        ChangeListener.OnSyncChange += OnSyncChanged;
+        
+        UpdateTooltipTransformNtp();
+        UpdateTooltipTransformSync();
     }
 
     public void Dispose()
@@ -299,6 +349,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         ChangeListener.OnPingChange -= OnPingGlobalChanged;
         ChangeListener.OnNtpChange -= OnNtpChanged;
         ChangeListener.OnPictureSetChange -= OnPictureSetChanged;
+        ChangeListener.OnSyncChange -= OnSyncChanged;
         GC.SuppressFinalize(this);
     }
 

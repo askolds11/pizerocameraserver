@@ -1,0 +1,9 @@
+@{
+    var content = GetContent();
+}
+<MudText Typo="Typo.h6">@PiZeroCamera.Id - @content.header</MudText>
+<MudText Typo="Typo.body2">@content.message</MudText>
+@if (content.success == false)
+{
+    <MudText Typo="Typo.body2">Time @content.timer ms</MudText>   
+}

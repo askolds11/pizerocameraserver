@@ -51,6 +51,19 @@ public class PiZeroCameraStatus
     public PiZeroCameraCameraMode CameraMode { get; set; }
 }
 
+public abstract record SyncStatus
+{
+    public sealed record Requested : SyncStatus;
+    public sealed record Cancelled : SyncStatus;
+    public sealed record Success(bool SyncReady, long SyncTiming) : SyncStatus;
+
+    public abstract record Failure : SyncStatus
+    {
+        public sealed record Failed(string Message) : Failure;
+        public sealed record FailedToRequest(string Message) : Failure;
+    }
+}
+
 public class PiZeroCamera
 {
     public required string Id { get; set; }
@@ -63,6 +76,7 @@ public class PiZeroCamera
     public DateTimeOffset? LastNtpSync { get; set; }
     public float? LastNtpOffsetMillis { get; set; }
     public float? LastNtpErrorMillis { get; set; }
+    public SyncStatus? SyncStatus { get; set; }
 
     public bool? Pingable { get; set; }
 }

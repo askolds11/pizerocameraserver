@@ -25,6 +25,10 @@ public class ChangeListener
     /// Called when an update is changed.
     /// </summary>
     public event Func<Task>? OnUpdateChange;
+    /// <summary>
+    /// Called when a sync status is changed.
+    /// </summary>
+    public event Func<Task>? OnSyncChange;
     
     public void UpdatePing()
     {
@@ -39,6 +43,11 @@ public class ChangeListener
     public void UpdateUpdate()
     {
         UpdateEvent(OnUpdateChange);
+    }
+    
+    public void UpdateSync()
+    {
+        UpdateEvent(OnSyncChange);
     }
     
     public void UpdatePictureSet(Guid pictureSetUuid)
