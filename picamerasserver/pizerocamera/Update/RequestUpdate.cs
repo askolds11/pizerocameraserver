@@ -64,6 +64,11 @@ public partial class Update
                 return;
             }
 
+            foreach (var unsentCamera in unsentCameras)
+            {
+                unsentCamera.UpdateRequest = null;
+            }
+
             // Create a channel to receive events
             _updateChannel = Channel.CreateUnbounded<string>();
 
