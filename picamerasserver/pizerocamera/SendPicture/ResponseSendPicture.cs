@@ -71,9 +71,20 @@ public partial class SendPicture
                         {
                             var val = metadata.Value;
                             dbItem.SensorTimestamp = val.SensorTimestamp;
-                            dbItem.PictureTaken = val.FrameWallClock != null
-                                ? DateTimeOffset.FromUnixTimeMilliseconds(val.FrameWallClock.Value / 1000)
-                                : null;
+                            // TODO: Once all picamera2 is updated to 0.5.2, use nanoseconds
+                            try
+                            {
+                                dbItem.PictureTaken = val.FrameWallClock != null
+                                    ? DateTimeOffset.FromUnixTimeMilliseconds(val.FrameWallClock.Value / 1000)
+                                    : null;
+                            }
+                            catch (ArgumentOutOfRangeException)
+                            {
+                                dbItem.PictureTaken = val.FrameWallClock != null
+                                    ? DateTimeOffset.FromUnixTimeMilliseconds(val.FrameWallClock.Value / 1_000_000)
+                                    : null;
+                            }
+                            
                             dbItem.FocusFoM = val.FocusFoM;
                             dbItem.AnalogueGain = val.AnalogueGain;
                             dbItem.DigitalGain = val.DigitalGain;
