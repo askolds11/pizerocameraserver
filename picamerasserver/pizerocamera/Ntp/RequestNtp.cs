@@ -47,6 +47,7 @@ public partial class Ntp
         var cancellationToken = _ntpCancellationTokenSource.Token;
 
         List<PiZeroCamera>? unsyncedCameras = null;
+        var piZeroIndicatorSync = piZeroCameraManager.PiZeroIndicator is { Pingable: true, Status: not null };
         try
         {
             NtpActive = true;
@@ -74,6 +75,11 @@ public partial class Ntp
                 piZeroCamera.NtpRequest = null;
             }
 
+            piZeroCameraManager.PiZeroIndicator.LastNtpErrorMillis = null;
+            piZeroCameraManager.PiZeroIndicator.LastNtpOffsetMillis = null;
+            piZeroCameraManager.PiZeroIndicator.LastNtpSync = null;
+            piZeroCameraManager.PiZeroIndicator.NtpRequest = null;
+
             async Task SendMessage()
             {
                 var piZeroCamera = cameraQueue.Dequeue();
@@ -82,12 +88,22 @@ public partial class Ntp
                 var publishResult = await mqttClient.PublishAsync(message, cancellationToken);
 
                 piZeroCamera.NtpRequest = publishResult.IsSuccess
-                    ? new PiZeroCameraNtpRequest.Requested()
-                    : new PiZeroCameraNtpRequest.Failure.FailedToRequest(publishResult.ReasonString);
+                    ? new PiZeroNtpRequest.Requested()
+                    : new PiZeroNtpRequest.Failure.FailedToRequest(publishResult.ReasonString);
             }
 
-            // Start first transfers (maxConcurrent)
-            for (var i = 0; i < maxConcurrentSyncs; i++)
+            if (piZeroIndicatorSync)
+            {
+                message.Topic = $"{options.NtpTopic}/{PiZeroIndicator.Id}";
+                var publishResult = await mqttClient.PublishAsync(message, cancellationToken);
+
+                piZeroCameraManager.PiZeroIndicator.NtpRequest = publishResult.IsSuccess
+                    ? new PiZeroNtpRequest.Requested()
+                    : new PiZeroNtpRequest.Failure.FailedToRequest(publishResult.ReasonString);
+            }
+
+            // Start first transfers (maxConcurrent or maxConcurrent - 1 if indicator is active)
+            for (var i = 0; i < (piZeroIndicatorSync ? maxConcurrentSyncs - 1 : maxConcurrentSyncs); i++)
             {
                 await SendMessage();
                 // Stop early if there are no more cameras available
@@ -105,10 +121,14 @@ public partial class Ntp
                 // Pop message
                 if (_ntpChannel.Reader.TryRead(out var cameraId))
                 {
-                    var camera = unsyncedCameras.FirstOrDefault(x => x.Id == cameraId);
-                    if (camera != null)
+                    // If indicator, just start a new request, otherwise remove from list
+                    if (cameraId != PiZeroIndicator.Id)
                     {
-                        unsyncedCameras.Remove(camera);
+                        var camera = unsyncedCameras.FirstOrDefault(x => x.Id == cameraId);
+                        if (camera != null)
+                        {
+                            unsyncedCameras.Remove(camera);
+                        }
                     }
                 }
 
@@ -135,12 +155,20 @@ public partial class Ntp
             {
                 foreach (var piZeroCamera in unsyncedCameras)
                 {
-                    piZeroCamera.NtpRequest =
-                        new PiZeroCameraNtpRequest.Cancelled();
+                    piZeroCamera.NtpRequest = new PiZeroNtpRequest.Cancelled();
                     piZeroCamera.LastNtpErrorMillis = null;
                     piZeroCamera.LastNtpOffsetMillis = null;
                     piZeroCamera.LastNtpSync = null;
                 }
+            }
+
+            if (piZeroIndicatorSync &&
+                piZeroCameraManager.PiZeroIndicator.NtpRequest is null or PiZeroNtpRequest.Requested)
+            {
+                piZeroCameraManager.PiZeroIndicator.NtpRequest = new PiZeroNtpRequest.Cancelled();
+                piZeroCameraManager.PiZeroIndicator.LastNtpErrorMillis = null;
+                piZeroCameraManager.PiZeroIndicator.LastNtpOffsetMillis = null;
+                piZeroCameraManager.PiZeroIndicator.LastNtpSync = null;
             }
 
             throw;
@@ -154,11 +182,20 @@ public partial class Ntp
                 foreach (var piZeroCamera in unsyncedCameras)
                 {
                     piZeroCamera.NtpRequest =
-                        new PiZeroCameraNtpRequest.Failure.FailedToRequest(e.ToString());
+                        new PiZeroNtpRequest.Failure.FailedToRequest(e.ToString());
                     piZeroCamera.LastNtpErrorMillis = null;
                     piZeroCamera.LastNtpOffsetMillis = null;
                     piZeroCamera.LastNtpSync = null;
                 }
+            }
+
+            if (piZeroIndicatorSync &&
+                piZeroCameraManager.PiZeroIndicator.NtpRequest is null or PiZeroNtpRequest.Requested)
+            {
+                piZeroCameraManager.PiZeroIndicator.NtpRequest = new PiZeroNtpRequest.Cancelled();
+                piZeroCameraManager.PiZeroIndicator.LastNtpErrorMillis = null;
+                piZeroCameraManager.PiZeroIndicator.LastNtpOffsetMillis = null;
+                piZeroCameraManager.PiZeroIndicator.LastNtpSync = null;
             }
 
             return Result.Failure(e.ToString());
@@ -182,6 +219,22 @@ public partial class Ntp
 
     /// <inheritdoc />
     public async Task RequestNtpSyncIndividual(string cameraId)
+    {
+        if (cameraId == PiZeroIndicator.Id)
+        {
+            await RequestNtpSyncIndividualIndicator();
+        }
+        else
+        {
+            await RequestNtpSyncIndividualCamera(cameraId);
+        }
+    }
+
+    /// <summary>
+    /// Individual camera sync
+    /// </summary>
+    /// <param name="cameraId">Camera's id</param>
+    private async Task RequestNtpSyncIndividualCamera(string cameraId)
     {
         var options = optionsMonitor.CurrentValue;
 
@@ -208,8 +261,44 @@ public partial class Ntp
         piZeroCamera.LastNtpSync = null;
 
         piZeroCamera.NtpRequest = publishResult.IsSuccess
-            ? new PiZeroCameraNtpRequest.Requested()
-            : new PiZeroCameraNtpRequest.Failure.FailedToRequest(publishResult.ReasonString);
+            ? new PiZeroNtpRequest.Requested()
+            : new PiZeroNtpRequest.Failure.FailedToRequest(publishResult.ReasonString);
+
+        changeListener.UpdateNtp();
+    }
+
+    /// <summary>
+    /// Indicator sync
+    /// </summary>
+    private async Task RequestNtpSyncIndividualIndicator()
+    {
+        var options = optionsMonitor.CurrentValue;
+
+        var piZeroIndicator = piZeroCameraManager.PiZeroIndicator;
+
+        if (piZeroIndicator.Pingable != true || piZeroIndicator.Status == null)
+        {
+            return;
+        }
+
+        NtpRequest ntpRequest = new NtpRequest.Step();
+
+        var message = new MqttApplicationMessageBuilder()
+            .WithContentType("application/json")
+            .WithTopic($"{options.NtpTopic}/{PiZeroIndicator.Id}")
+            .WithPayload(Json.Serialize(ntpRequest))
+            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
+            .Build();
+
+        var publishResult = await mqttClient.PublishAsync(message);
+
+        piZeroIndicator.LastNtpErrorMillis = null;
+        piZeroIndicator.LastNtpOffsetMillis = null;
+        piZeroIndicator.LastNtpSync = null;
+
+        piZeroIndicator.NtpRequest = publishResult.IsSuccess
+            ? new PiZeroNtpRequest.Requested()
+            : new PiZeroNtpRequest.Failure.FailedToRequest(publishResult.ReasonString);
 
         changeListener.UpdateNtp();
     }

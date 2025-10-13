@@ -1,5 +1,7 @@
 @page "/status"
 @using picamerasserver.Components.Components
+@using picamerasserver.pizerocamera
+@using SysColor = System.Drawing.Color;
 
 <PageTitle>Status - PiCam</PageTitle>
 <DefaultPage>
@@ -11,6 +13,8 @@
                 </TitleContent>
                 <ChildContent>
                     <StatusTable ColorTransform="@ColorTransform" TooltipTransform="@TooltipTransform"></StatusTable>
+                    <IndicatorStatus TooltipTransform="null"
+                                     ColorTransform="@ColorTransformIndicator" />
                     <MudStack Row="true" Spacing="4" Class="pa-4">
                         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                    OnClick="@Ping" Disabled="PingActive">
@@ -30,6 +34,8 @@
                 <ChildContent>
                     <StatusTable ColorTransform="@ColorTransformStatus"
                                  TooltipTransform="@TooltipTransform"></StatusTable>
+                    <IndicatorStatus TooltipTransform="null"
+                                     ColorTransform="@ColorTransformIndicatorStatus" />
                     <MudStack Row="true" Spacing="4" Class="pa-4">
                         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                    OnClick="@GetStatus" Disabled="PingActive">
@@ -45,5 +51,49 @@
 @code {
 
     private Func<string, RenderFragment?> TooltipTransform => _ => null;
+    private RenderFragment? IndicatorTooltipTransform = null;
+
+
+    private void UpdateTooltip()
+    {
+        var piZeroIndicator = PiZeroCameraManager.PiZeroIndicator;
+        if (piZeroIndicator.NtpRequest == null)
+        {
+            IndicatorTooltipTransform = null;
+        }
+        else
+        {
+            IndicatorTooltipTransform = @<NtpRequestTooltip2 NtpRequest="piZeroIndicator.NtpRequest"
+                                                             LastNtpErrorMillis="piZeroIndicator.LastNtpErrorMillis"
+                                                             LastNtpOffsetMillis="piZeroIndicator.LastNtpOffsetMillis"
+                                                             DeviceId="@PiZeroIndicator.Id" />;
+        }
+    }
+
+    private SysColor ColorTransformNtp(string id)
+    {
+        var ntpRequest = id == PiZeroIndicator.Id
+            ? PiZeroCameraManager.PiZeroIndicator.NtpRequest
+            : PiZeroCameraManager.PiZeroCameras[id].NtpRequest;
+
+        var lastNtpErrorMillis = id == PiZeroIndicator.Id
+            ? PiZeroCameraManager.PiZeroIndicator.LastNtpErrorMillis
+            : PiZeroCameraManager.PiZeroCameras[id].LastNtpErrorMillis;
+        
+        return ntpRequest switch
+        {
+            null => SysColor.FromArgb(0x00, 0x00, 0x00),
+            PiZeroNtpRequest.Cancelled _ => SysColor.FromArgb(0xFF, 0x55, 0x00),
+            PiZeroNtpRequest.Failure.Failed _ => SysColor.FromArgb(0xff, 0x00, 0x00),
+            PiZeroNtpRequest.Failure.FailedToParseJson _ => SysColor.FromArgb(0xff, 0x00, 0x00),
+            PiZeroNtpRequest.Failure.FailedToParseRegex _ => SysColor.FromArgb(0xff, 0x00, 0x00),
+            PiZeroNtpRequest.Failure.FailedToRequest _ => SysColor.FromArgb(0xff, 0x00, 0x00),
+            PiZeroNtpRequest.Requested _ => SysColor.FromArgb(0x55, 0x55, 0x00),
+            PiZeroNtpRequest.Success _ => lastNtpErrorMillis < 10
+                ? SysColor.FromArgb(0x00, 0xFF, 0x00)
+                : SysColor.FromArgb(0xFF, 0xFF, 0x00),
+            _ => throw new ArgumentOutOfRangeException()
+        };
+    }
 
 }

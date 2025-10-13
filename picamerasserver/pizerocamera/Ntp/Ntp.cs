@@ -32,7 +32,7 @@ public interface INtpManager
     /// Handle an Ntp response
     /// </summary>
     /// <param name="message">MQTT message</param>
-    /// <param name="id">Camera's id</param>
+    /// <param name="id">Camera's or Indicator's id</param>
     Task ResponseNtpSync(MqttApplicationMessage message, string id);
 
     /// <summary>

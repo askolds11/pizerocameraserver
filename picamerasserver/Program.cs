@@ -76,6 +76,7 @@ builder.Services.AddSingleton<IGetAliveManager, GetAlive>();
 builder.Services.AddSingleton<IUpdateManager, Update>();
 builder.Services.AddSingleton<IUploadManager, UploadToServer>();
 builder.Services.AddSingleton<ISyncManager, Sync>();
+builder.Services.AddSingleton<Sound>();
 
 var app = builder.Build();
 
@@ -104,7 +105,7 @@ app.UseRequestLocalization(options =>
         .AddSupportedUICultures(supportedCultures)
         .DefaultRequestCulture = new RequestCulture(
         culture: "lv-LV",
-        uiCulture: "en");
+        uiCulture: "lv");
 });
 
 // Force to instantly create

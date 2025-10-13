@@ -1,0 +1,13 @@
+<MudTd Class="px-0 py-2" Width="100" Style="@($"background:{GetCellColor()}")">
+    <StatusTooltip>
+        <ChildContent>
+            <MudText Typo="Typo.body1">Indicator</MudText>
+        </ChildContent>
+        <TooltipContent>
+            @if (TooltipTransform != null)
+            {
+                @TooltipTransform
+            }
+        </TooltipContent>
+    </StatusTooltip>
+</MudTd>

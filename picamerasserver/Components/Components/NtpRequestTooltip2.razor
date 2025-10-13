@@ -1,0 +1,15 @@
+@{
+    var content = GetContent();
+}
+<MudText Typo="Typo.h6">@DeviceId - @content.header</MudText>
+<MudText Typo="Typo.body2">@content.message</MudText>
+@if (content.offset != null)
+{
+    <MudText Typo="Typo.body2">Offset @content.offset ms</MudText>
+}
+@if (content.error != null)
+{
+    <MudText Typo="Typo.body2">Error @content.error ms</MudText>
+}
+<MudIconButton OnClick="@RequestSync" Icon="@Icons.Material.Rounded.Sync" aria-label="resync" Size="Size.Medium"
+               Class="pa-4 ma-0"/>

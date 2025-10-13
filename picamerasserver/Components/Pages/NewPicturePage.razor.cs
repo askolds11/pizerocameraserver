@@ -28,6 +28,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     [Inject] protected ISyncManager SyncManager { get; init; } = null!;
     [Inject] protected IUploadManager UploadToServer { get; init; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
+    [Inject] protected Sound Sound { get; init; } = null!;
 
     private PictureSetModel? _pictureSet;
     private bool SendSetActive => SendPictureSetManager.SendSetActive;
@@ -107,7 +108,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     private bool SyncedFrames { get; set; } = false;
 
     private int NtpSyncedCount =>
-        PiZeroCameraManager.PiZeroCameras.Values.Count(x => x.NtpRequest is PiZeroCameraNtpRequest.Success);
+        PiZeroCameraManager.PiZeroCameras.Values.Count(x => x.NtpRequest is PiZeroNtpRequest.Success);
     
     private int SyncedCount =>
         PiZeroCameraManager.PiZeroCameras.Values.Count(x => x.SyncStatus is SyncStatus.Success { SyncReady: true });
@@ -139,6 +140,8 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     private int AllUploadedCount =>
         _pictureSet?.PictureRequests
             .Sum(x => x.CameraPictures.Count(y => y.Synced)) ?? 0;
+    private bool IndicatorAlive => PiZeroCameraManager.PiZeroIndicator.Pingable == true && PiZeroCameraManager.PiZeroIndicator.Status != null;
+    private bool IndicatorNtped => PiZeroCameraManager.PiZeroIndicator.NtpRequest is PiZeroNtpRequest.Success;
 
     private async Task GetAlive()
     {
@@ -208,6 +211,10 @@ public partial class NewPicturePage : ComponentBase, IDisposable
             .Where(x => x.LastNtpOffsetMillis != null)
             .Select(x => Math.Abs((float)x.LastNtpOffsetMillis!))
             .ToList();
+        if (PiZeroCameraManager.PiZeroIndicator.LastNtpOffsetMillis != null)
+        {
+            offsets.Add((float) PiZeroCameraManager.PiZeroIndicator.LastNtpOffsetMillis);
+        }
 
         return offsets.Count == 0 ? null : offsets;
     }
@@ -218,6 +225,10 @@ public partial class NewPicturePage : ComponentBase, IDisposable
             .Where(x => x.LastNtpErrorMillis != null)
             .Select(x => Math.Abs((float)x.LastNtpErrorMillis!))
             .ToList();
+        if (PiZeroCameraManager.PiZeroIndicator.LastNtpErrorMillis != null)
+        {
+            errors.Add((float) PiZeroCameraManager.PiZeroIndicator.LastNtpErrorMillis);
+        }
 
         return errors.Count == 0 ? null : errors;
     }
@@ -240,6 +251,11 @@ public partial class NewPicturePage : ComponentBase, IDisposable
     private float? MaxError => GetErrors()?.Max();
     private float? TimeTillSync => GetTimeTillSync()?.Max();
 
+    private async Task TestSignal()
+    {
+        await Sound.SendSignal();
+    }
+    
     private async Task OnPingGlobalChanged()
     {
         await InvokeAsync(StateHasChanged);

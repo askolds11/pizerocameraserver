@@ -6,7 +6,7 @@ namespace picamerasserver.pizerocamera.GetAlive;
 
 public partial class GetAlive
 {
-    private async Task PingSingle(string id, TimeSpan timespan, CancellationToken cancellationToken)
+    private async Task PingSingleCamera(string id, TimeSpan timespan, CancellationToken cancellationToken)
     {
         var piZeroCamera = piZeroCameraManager.PiZeroCameras[id];
 
@@ -33,6 +33,39 @@ public partial class GetAlive
         {
             piZeroCamera.Pingable = false;
             logger.LogError(ex, "Failed to ping PiZeroCamera {Id}", id);
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        changeListener.UpdatePing();
+    }
+    
+    private async Task PingSingleIndicator(TimeSpan timespan, CancellationToken cancellationToken)
+    {
+        var piZeroIndicator = piZeroCameraManager.PiZeroIndicator;
+
+        using var ping = new Ping();
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // BUG: .local at end does not work?
+            var result = await ping.SendPingAsync(
+                $"pizero{PiZeroIndicator.Id}",
+                timespan,
+                null,
+                null,
+                cancellationToken
+            );
+            piZeroIndicator.Pingable = result.Status == IPStatus.Success;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            piZeroIndicator.Pingable = false;
+            logger.LogError(ex, "Failed to ping PiZeroIndicator");
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -71,6 +104,7 @@ public partial class GetAlive
             {
                 piZeroCamera.Pingable = null;
             }
+            piZeroCameraManager.PiZeroIndicator.Pingable = null;
 
             changeListener.UpdatePing();
 
@@ -80,8 +114,9 @@ public partial class GetAlive
                 ? TimeSpan.FromMinutes(10)
                 : TimeSpan.FromMilliseconds((int)timeoutMillis);
 
+            await PingSingleIndicator(timespan, cancellationToken);
             var tasks = piZeroCameraManager.PiZeroCameras.Keys
-                .Select(id => PingSingle(id, timespan, cancellationToken));
+                .Select(id => PingSingleCamera(id, timespan, cancellationToken));
             await Task.WhenAll(tasks);
         }
         finally
@@ -104,6 +139,7 @@ public partial class GetAlive
         {
             piZeroCamera.Status = null;
         }
+        piZeroCameraManager.PiZeroIndicator.Status = null;
 
         changeListener.UpdatePing();
 

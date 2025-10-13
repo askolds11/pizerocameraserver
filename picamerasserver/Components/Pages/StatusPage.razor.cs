@@ -63,4 +63,23 @@ public partial class StatusPage : ComponentBase, IDisposable
             _ => Color.FromArgb(0x00, 0xFF, 0x00),
         };
     }
+    
+    private Color ColorTransformIndicator()
+    {
+        return PiZeroCameraManager.PiZeroIndicator.Pingable switch
+        {
+            true => Color.FromArgb(0x00, 0xFF, 0x00),
+            false => Color.FromArgb(0xFF, 0x00, 0x00),
+            null => Color.FromArgb(0x00, 0x00, 0x00)
+        };
+    }
+
+    private Color ColorTransformIndicatorStatus()
+    {
+        return PiZeroCameraManager.PiZeroIndicator.Status switch
+        {
+            null => Color.FromArgb(0xFF, 0x00, 0x00),
+            _ => Color.FromArgb(0x00, 0xFF, 0x00),
+        };
+    }
 }

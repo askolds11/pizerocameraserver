@@ -8,14 +8,14 @@ public enum PiZeroCameraCameraMode
     Video
 }
 
-public abstract record PiZeroCameraNtpRequest
+public abstract record PiZeroNtpRequest
 {
-    public sealed record Requested : PiZeroCameraNtpRequest;
+    public sealed record Requested : PiZeroNtpRequest;
 
-    public sealed record Success(string Message) : PiZeroCameraNtpRequest;
-    public sealed record Cancelled : PiZeroCameraNtpRequest;
+    public sealed record Success(string Message) : PiZeroNtpRequest;
+    public sealed record Cancelled : PiZeroNtpRequest;
 
-    public abstract record Failure : PiZeroCameraNtpRequest
+    public abstract record Failure : PiZeroNtpRequest
     {
         public sealed record FailedToRequest(string Message) : Failure;
         public sealed record FailedToParseRegex(string Message) : Failure;
@@ -71,7 +71,7 @@ public class PiZeroCamera
 
     // Pending requests
     public PiZeroCameraCameraMode? PendingCameraMode { get; set; }
-    public PiZeroCameraNtpRequest? NtpRequest { get; set; }
+    public PiZeroNtpRequest? NtpRequest { get; set; }
     public PiZeroCameraUpdateRequest? UpdateRequest { get; set; }
     public DateTimeOffset? LastNtpSync { get; set; }
     public float? LastNtpOffsetMillis { get; set; }

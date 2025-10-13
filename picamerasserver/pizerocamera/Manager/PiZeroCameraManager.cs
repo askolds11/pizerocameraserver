@@ -17,6 +17,7 @@ public partial class PiZeroCameraManager
     private readonly IOptionsMonitor<MqttOptions> _optionsMonitor;
 
     public readonly IReadOnlyDictionary<string, PiZeroCamera> PiZeroCameras;
+    public readonly PiZeroIndicator PiZeroIndicator;
     private readonly IDbContextFactory<PiDbContext> _dbContextFactory;
 
     public PiZeroCameraManager(IMqttClient mqttClient, ILogger<PiZeroCameraManager> logger,
@@ -50,6 +51,7 @@ public partial class PiZeroCameraManager
         piDbContext.SaveChanges();
 
         PiZeroCameras = piZeroCameras;
+        PiZeroIndicator = new PiZeroIndicator();
     }
 
     /// <summary>
@@ -108,6 +110,22 @@ public partial class PiZeroCameraManager
             var thisPublishResult = await _mqttClient.PublishAsync(message);
             publishResult = publishResult && thisPublishResult.IsSuccess;
         }
+
+        return publishResult;
+    }
+
+    public async Task<bool> ShutdownIndicator()
+    {
+        var options = _optionsMonitor.CurrentValue;
+
+        var message = new MqttApplicationMessageBuilder()
+            .WithContentType("application/json")
+            .WithTopic($"{options.CommandTopic}/{PiZeroIndicator.Id}")
+            .WithPayload("sudo shutdown -h now")
+            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
+            .Build();
+
+        var publishResult = (await _mqttClient.PublishAsync(message)).IsSuccess;
 
         return publishResult;
     }

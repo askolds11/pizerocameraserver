@@ -12,4 +12,5 @@ public class MqttOptions
     public required string StatusTopic { get; init; }
     public required string UpdateTopic { get; init; }
     public required string ErrorTopic { get; init; }
+    public required string IndicatorTopic { get; init; }
 }
