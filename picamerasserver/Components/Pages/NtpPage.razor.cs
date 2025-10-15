@@ -89,13 +89,13 @@ public partial class NtpPage : ComponentBase, IDisposable
         return piZeroCamera.NtpRequest switch
         {
             null => Color.FromArgb(0x00, 0x00, 0x00),
-            PiZeroNtpRequest.Failure.Failed _ => Color.FromArgb(0xff, 0x00, 0x00),
-            PiZeroNtpRequest.Failure.FailedToParseJson _ => Color.FromArgb(0xff, 0x00, 0x00),
-            PiZeroNtpRequest.Failure.FailedToParseRegex _ => Color.FromArgb(0xff, 0x00, 0x00),
-            PiZeroNtpRequest.Failure.FailedToRequest _ => Color.FromArgb(0xff, 0x00, 0x00),
-            PiZeroNtpRequest.Requested _ => Color.FromArgb(0x55, 0x55, 0x00),
-            PiZeroNtpRequest.Success _ => Color.FromArgb(0x00, 0xFF, 0x00),
-            _ => throw new ArgumentOutOfRangeException()
+            PiZeroNtpRequest.Failure.Failed => Color.FromArgb(0xff, 0x00, 0x00),
+            PiZeroNtpRequest.Failure.FailedToParseJson => Color.FromArgb(0xff, 0x00, 0x00),
+            PiZeroNtpRequest.Failure.FailedToParseRegex => Color.FromArgb(0xff, 0x00, 0x00),
+            PiZeroNtpRequest.Failure.FailedToRequest => Color.FromArgb(0xff, 0x00, 0x00),
+            PiZeroNtpRequest.Requested => Color.FromArgb(0x55, 0x55, 0x00),
+            PiZeroNtpRequest.Success => Color.FromArgb(0x00, 0xFF, 0x00),
+            _ => throw new ArgumentOutOfRangeException(nameof(piZeroCamera.NtpRequest))
         };
     }
 }

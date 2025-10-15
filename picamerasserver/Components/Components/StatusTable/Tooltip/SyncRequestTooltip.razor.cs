@@ -12,13 +12,13 @@ public partial class SyncRequestTooltip : ComponentBase
         return PiZeroCamera.SyncStatus switch
         {
             null => ("Nothing", null, null, null),
-            SyncStatus.Cancelled _ => ("Cancelled", null, null, null),
+            SyncStatus.Cancelled => ("Cancelled", null, null, null),
             SyncStatus.Failure.Failed failed => ("Failed", failed.Message, null, null),
             SyncStatus.Failure.FailedToRequest failedToRequest => ("Failed request", failedToRequest.Message, null,
                 null),
-            SyncStatus.Requested _ => ("Requested", null, null, null),
+            SyncStatus.Requested => ("Requested", null, null, null),
             SyncStatus.Success success => ("Success", null, success.SyncReady, success.SyncTiming / 1000),
-            _ => throw new ArgumentOutOfRangeException()
+            _ => throw new ArgumentOutOfRangeException(nameof(PiZeroCamera.SyncStatus))
         };
     }
 }

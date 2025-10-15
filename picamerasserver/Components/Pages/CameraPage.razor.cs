@@ -181,17 +181,17 @@ public partial class CameraPage : ComponentBase, IDisposable
 
 public class PictureElement(PictureRequestModel pictureRequestModel)
 {
-    public readonly Guid Uuid = pictureRequestModel.Uuid;
+    public Guid Uuid => pictureRequestModel.Uuid;
 
-    public readonly DateTime RequestTime = TimeZoneInfo.ConvertTime(pictureRequestModel.RequestTime.LocalDateTime,
+    public DateTime RequestTime => TimeZoneInfo.ConvertTime(pictureRequestModel.RequestTime.LocalDateTime,
         TimeZoneInfo.FindSystemTimeZoneById("Europe/Riga"));
 
-    public readonly int TakenCount = pictureRequestModel.CameraPictures.Count(x => x.ReceivedSaved != null);
-    public readonly int SentCount = pictureRequestModel.CameraPictures.Count(x => x.ReceivedSent != null);
-    public readonly int TotalCount = pictureRequestModel.CameraPictures.Count(x => x.CameraPictureStatus != null);
+    public int TakenCount => pictureRequestModel.CameraPictures.Count(x => x.ReceivedSaved != null);
+    public int SentCount => pictureRequestModel.CameraPictures.Count(x => x.ReceivedSent != null);
+    public int TotalCount => pictureRequestModel.CameraPictures.Count(x => x.CameraPictureStatus != null);
 
-    public readonly bool CanSend = pictureRequestModel.CameraPictures.Where(x => x.CameraPictureStatus != null)
+    public bool CanSend => pictureRequestModel.CameraPictures.Where(x => x.CameraPictureStatus != null)
         .All(x => x.CameraPictureStatus == CameraPictureStatus.Taken);
 
-    public readonly List<CameraPictureModel> CameraPictures = pictureRequestModel.CameraPictures;
+    public List<CameraPictureModel> CameraPictures => pictureRequestModel.CameraPictures;
 }

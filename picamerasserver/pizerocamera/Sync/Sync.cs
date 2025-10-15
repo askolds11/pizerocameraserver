@@ -41,7 +41,7 @@ public partial class Sync(
     IMqttClient mqttClient,
     IOptionsMonitor<MqttOptions> optionsMonitor,
     ILogger<Sync> logger
-) : ISyncManager
+) : ISyncManager, IDisposable
 {
     private Channel<string>? _syncChannel;
 
@@ -63,5 +63,12 @@ public partial class Sync(
         {
             await piZeroCameraManager.CancelCameraTasks();
         }
+    }
+
+    public void Dispose()
+    {
+        _syncSemaphore.Dispose();
+        _syncCancellationTokenSource?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

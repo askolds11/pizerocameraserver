@@ -28,7 +28,7 @@
                     <MudText>
                         Alive @AliveCount / @TotalCount
                     </MudText>
-                    @if (PictureSet != null && AliveCount == @TotalCount)
+                    @if (PictureSet != null && AliveCount == TotalCount)
                     {
                         <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
                                  Size="Size.Large"/>
@@ -101,7 +101,7 @@
         return PiZeroCameraManager.PiZeroCameras[id].Status switch
         {
             null => SysColor.FromArgb(0xFF, 0x00, 0x00),
-            _ => SysColor.FromArgb(0x00, 0xFF, 0x00),
+            _ => SysColor.FromArgb(0x00, 0xFF, 0x00)
         };
     }
 

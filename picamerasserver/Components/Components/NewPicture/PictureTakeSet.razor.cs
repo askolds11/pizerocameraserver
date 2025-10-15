@@ -84,7 +84,7 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
 
     private int FailedSendCount =>
         _pictureRequestModel?.CameraPictures.Count(x =>
-            (x.ReceivedSent == null) &&
+            x.ReceivedSent == null &&
             x.CameraPictureStatus
                 is not CameraPictureStatus.Success
                 and not CameraPictureStatus.RequestedSend

@@ -58,7 +58,7 @@ public partial class TakePicture(
     IOptionsMonitor<MqttOptions> optionsMonitor,
     IDbContextFactory<PiDbContext> dbContextFactory,
     ILogger<TakePicture> logger
-) : ITakePictureManager
+) : ITakePictureManager, IDisposable
 {
     private readonly ConcurrentDictionary<Guid, Channel<string>> _takePictureChannels = new();
     private readonly ConcurrentDictionary<Guid, Channel<string>> _savePictureChannels = new();
@@ -81,5 +81,12 @@ public partial class TakePicture(
         {
             await _takePictureCancellationTokenSource.CancelAsync();
         }
+    }
+
+    public void Dispose()
+    {
+        _takePictureSemaphore.Dispose();
+        _takePictureCancellationTokenSource?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

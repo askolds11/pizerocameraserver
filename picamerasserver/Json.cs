@@ -5,7 +5,7 @@ namespace picamerasserver;
 
 public static class Json
 {
-    private static readonly JsonSerializerOptions DefaultOptions = new JsonSerializerOptions
+    private static readonly JsonSerializerOptions DefaultOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = false,
@@ -19,7 +19,7 @@ public static class Json
         {
             return Deserialize<T>(json);
         }
-        catch (Exception ex) when (ex is ArgumentNullException || ex is JsonException || ex is NotSupportedException)
+        catch (Exception ex) when (ex is ArgumentNullException or JsonException or NotSupportedException)
         {
             logger.LogError(ex, "Failed to deserialize JSON string {S}", json);
             return Result.Failure<T, Exception>(ex);
@@ -32,7 +32,7 @@ public static class Json
         {
             return JsonSerializer.Deserialize<T>(json, options)!;
         }
-        catch (Exception ex) when (ex is ArgumentNullException || ex is JsonException || ex is NotSupportedException)
+        catch (Exception ex) when (ex is ArgumentNullException or JsonException or NotSupportedException)
         {
             logger.LogError(ex, "Failed to deserialize JSON string {S}", json);
             return Result.Failure<T, Exception>(ex);
@@ -45,5 +45,5 @@ public static class Json
     public static T Deserialize<T>(string json) =>
         JsonSerializer.Deserialize<T>(json, DefaultOptions)!;
 
-    public static JsonSerializerOptions GetDefaultOptions() => new JsonSerializerOptions(DefaultOptions);
+    public static JsonSerializerOptions GetDefaultOptions() => new(DefaultOptions);
 }

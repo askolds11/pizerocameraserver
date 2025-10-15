@@ -32,7 +32,7 @@ public partial class PictureRequestTooltip : ComponentBase
             CameraPictureStatus.Cancelled => ("Cancelled", null),
             CameraPictureStatus.CancelledSend => ("Cancelled send", null),
             null => ("Nothing", CameraPicture.StatusMessage),
-            _ => throw new ArgumentOutOfRangeException(),
+            _ => throw new ArgumentOutOfRangeException(nameof(CameraPicture.CameraPictureStatus))
         };
     }
 

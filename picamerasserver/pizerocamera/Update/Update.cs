@@ -48,7 +48,7 @@ public partial class Update(
     IOptionsMonitor<MqttOptions> optionsMonitor,
     IDbContextFactory<PiDbContext> dbContextFactory,
     ILogger<Update> logger
-) : IUpdateManager
+) : IUpdateManager, IDisposable
 {
     private Channel<string>? _updateChannel;
 
@@ -77,5 +77,12 @@ public partial class Update(
         {
             await piZeroCameraManager.CancelCameraTasks();
         }
+    }
+
+    public void Dispose()
+    {
+        _updateSemaphore.Dispose();
+        _updateCancellationTokenSource?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

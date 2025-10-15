@@ -60,7 +60,7 @@ public partial class SendPicture(
     IOptionsMonitor<DirectoriesOptions> dirOptionsMonitor,
     IDbContextFactory<PiDbContext> dbContextFactory,
     ILogger<SendPicture> logger
-) : ISendPictureManager
+) : ISendPictureManager, IDisposable
 {
     private readonly ConcurrentDictionary<Guid, Channel<string>> _sendPictureChannels = new();
 
@@ -82,5 +82,12 @@ public partial class SendPicture(
         {
             await piZeroCameraManager.CancelCameraTasks();
         }
+    }
+
+    public void Dispose()
+    {
+        _sendSemaphore.Dispose();
+        _sendCancellationTokenSource?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

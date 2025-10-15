@@ -85,7 +85,7 @@ public partial class ActionsTab : ComponentBase, IDisposable
         }
         else
         {
-            Snackbar.Add($"Upload completed!", Severity.Success);
+            Snackbar.Add("Upload completed!", Severity.Success);
         }
     }
 

@@ -47,7 +47,7 @@ public partial class Ntp(
     IMqttClient mqttClient,
     IOptionsMonitor<MqttOptions> optionsMonitor,
     ILogger<Ntp> logger
-) : INtpManager
+) : INtpManager, IDisposable
 {
     private Channel<string>? _ntpChannel;
 
@@ -69,5 +69,12 @@ public partial class Ntp(
         {
             await piZeroCameraManager.CancelCameraTasks();
         }
+    }
+
+    public void Dispose()
+    {
+        _ntpSemaphore.Dispose();
+        _ntpCancellationTokenSource?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

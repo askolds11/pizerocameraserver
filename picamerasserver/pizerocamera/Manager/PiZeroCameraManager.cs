@@ -12,25 +12,24 @@ namespace picamerasserver.pizerocamera.manager;
 public partial class PiZeroCameraManager
 {
     private readonly IMqttClient _mqttClient;
-    private readonly ChangeListener _changeListener;
     private readonly ILogger<PiZeroCameraManager> _logger;
     private readonly IOptionsMonitor<MqttOptions> _optionsMonitor;
 
-    public readonly IReadOnlyDictionary<string, PiZeroCamera> PiZeroCameras;
-    public readonly PiZeroIndicator PiZeroIndicator;
-    private readonly IDbContextFactory<PiDbContext> _dbContextFactory;
+    public IReadOnlyDictionary<string, PiZeroCamera> PiZeroCameras { get; }
+    public PiZeroIndicator PiZeroIndicator { get; }
 
-    public PiZeroCameraManager(IMqttClient mqttClient, ILogger<PiZeroCameraManager> logger,
-        IOptionsMonitor<MqttOptions> optionsMonitor, IDbContextFactory<PiDbContext> dbContextFactory,
-        ChangeListener changeListener)
+    public PiZeroCameraManager(
+        IMqttClient mqttClient,
+        ILogger<PiZeroCameraManager> logger,
+        IOptionsMonitor<MqttOptions> optionsMonitor,
+        IDbContextFactory<PiDbContext> dbContextFactory
+    )
     {
         _mqttClient = mqttClient;
         _logger = logger;
         _optionsMonitor = optionsMonitor;
-        _dbContextFactory = dbContextFactory;
-        _changeListener = changeListener;
 
-        using var piDbContext = _dbContextFactory.CreateDbContext();
+        using var piDbContext = dbContextFactory.CreateDbContext();
 
         // Add all cameras
         var piZeroCameras = new ConcurrentDictionary<string, PiZeroCamera>();

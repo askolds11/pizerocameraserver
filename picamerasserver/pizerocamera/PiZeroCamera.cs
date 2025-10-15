@@ -66,7 +66,7 @@ public abstract record SyncStatus
 
 public class PiZeroCamera
 {
-    public required string Id { get; set; }
+    public required string Id { get; init; }
     public PiZeroCameraStatus? Status { get; set; }
 
     // Pending requests

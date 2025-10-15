@@ -36,7 +36,7 @@ public class UploadToServer(
     IOptionsMonitor<SmbOptions> smbOptionsMonitor,
     IDbContextFactory<PiDbContext> dbContextFactory,
     ILogger<UploadToServer> logger
-) : IUploadManager
+) : IUploadManager, IDisposable
 {
     public bool UploadActive { get; private set; }
     private readonly SemaphoreSlim _uploadSemaphore = new(1, 1);
@@ -132,7 +132,7 @@ public class UploadToServer(
                     PictureRequestType.Sitting => "sez",
                     PictureRequestType.Mask => "maska",
                     PictureRequestType.Other => "other",
-                    _ => throw new ArgumentOutOfRangeException()
+                    _ => throw new ArgumentOutOfRangeException(nameof(pictureRequest.PictureRequestType))
                 };
                 dir += $"_{pictureRequest.Uuid}";
 
@@ -513,5 +513,12 @@ public class UploadToServer(
         {
             await _uploadCancellationTokenSource.CancelAsync();
         }
+    }
+
+    public void Dispose()
+    {
+        _uploadSemaphore.Dispose();
+        _uploadCancellationTokenSource?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

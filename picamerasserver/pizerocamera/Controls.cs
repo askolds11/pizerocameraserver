@@ -54,11 +54,11 @@ public class Controls
     public long? ExposureTime { get; set; } = 20000;
     public ExposureTimeModeEnum? ExposureTimeMode { get; set; } = ExposureTimeModeEnum.Auto;
     public float? ExposureValue { get; set; } = 0.0f;
-    public FrameDurationLimits? FrameDurationLimits { get; set; } = new FrameDurationLimits(33333, 120000);
+    public FrameDurationLimits? FrameDurationLimits { get; set; } = new(33333, 120000);
     public HdrModeEnum? HdrMode { get; set; } = HdrModeEnum.Off;
     public NoiseReductionModeEnum? NoiseReductionMode { get; set; } = NoiseReductionModeEnum.Off;
     public float? Saturation { get; set; } = 1.0f;
-    public ScalerCrop? ScalerCrop { get; set; } = new ScalerCrop(0, 0, 0, 0);
+    public ScalerCrop? ScalerCrop { get; set; } = new(0, 0, 0, 0);
     public float? Sharpness { get; set; } = 1.0f;
     public SyncModeEnum? SyncMode { get; set; } = SyncModeEnum.Off;
     public long? SyncFrames { get; set; } = 100;

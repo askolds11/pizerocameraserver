@@ -60,7 +60,7 @@ public partial class StatusPage : ComponentBase, IDisposable
         return PiZeroCameraManager.PiZeroCameras[id].Status switch
         {
             null => Color.FromArgb(0xFF, 0x00, 0x00),
-            _ => Color.FromArgb(0x00, 0xFF, 0x00),
+            _ => Color.FromArgb(0x00, 0xFF, 0x00)
         };
     }
     
@@ -79,7 +79,7 @@ public partial class StatusPage : ComponentBase, IDisposable
         return PiZeroCameraManager.PiZeroIndicator.Status switch
         {
             null => Color.FromArgb(0xFF, 0x00, 0x00),
-            _ => Color.FromArgb(0x00, 0xFF, 0x00),
+            _ => Color.FromArgb(0x00, 0xFF, 0x00)
         };
     }
 }

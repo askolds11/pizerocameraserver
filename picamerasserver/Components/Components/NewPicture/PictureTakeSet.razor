@@ -40,7 +40,7 @@
                         <MudText>
                             Taken @TakenCount / @RequestCount
                         </MudText>
-                        @if (TakenCount != 0 && TakenCount == @RequestCount)
+                        @if (TakenCount != 0 && TakenCount == RequestCount)
                         {
                             <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
                                      Size="Size.Large"/>
@@ -55,7 +55,7 @@
                         <MudText>
                             Saved @SavedCount / @RequestCount
                         </MudText>
-                        @if (SavedCount != 0 && SavedCount == @RequestCount)
+                        @if (SavedCount != 0 && SavedCount == RequestCount)
                         {
                             <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
                                      Size="Size.Large"/>
@@ -83,7 +83,7 @@
                     </MudStack>
                     <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Large"
                                EndIcon="@Icons.Material.Outlined.Refresh" OnClick="@TryAgain"
-                               Disabled="Disabled || (_pictureRequestModel == null || _canTryAgain)">
+                               Disabled="Disabled || _pictureRequestModel == null || _canTryAgain">
                         Try again
                     </MudButton>
                 }
@@ -93,7 +93,7 @@
                         <MudText>
                             Pictures @SavedCount / @RequestCount
                         </MudText>
-                        @if (SavedCount != 0 && SavedCount == @RequestCount)
+                        @if (SavedCount != 0 && SavedCount == RequestCount)
                         {
                             <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
                                      Size="Size.Large"/>
@@ -108,7 +108,7 @@
                         <MudText>
                             Sent @SentCount / @TakenCount
                         </MudText>
-                        @if (SentCount != 0 && SentCount == @TakenCount)
+                        @if (SentCount != 0 && SentCount == TakenCount)
                         {
                             <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
                                      Size="Size.Large"/>
@@ -198,7 +198,7 @@
             CameraPictureStatus.Cancelled => SysColor.FromArgb(0xFF, 0x55, 0x00),
             CameraPictureStatus.CancelledSend => SysColor.FromArgb(0xFF, 0x55, 0x00),
             null => SysColor.FromArgb(0x00, 0x00, 0x00),
-            _ => throw new ArgumentOutOfRangeException(),
+            _ => throw new ArgumentOutOfRangeException(nameof(cameraPicture.CameraPictureStatus))
         };
     }
 

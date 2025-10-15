@@ -29,7 +29,7 @@ public class SendPictureSet(
     ChangeListener changeListener,
     IDbContextFactory<PiDbContext> dbContextFactory,
     ILogger<SendPictureSet> logger
-) : ISendPictureSetManager
+) : ISendPictureSetManager, IDisposable
 {
     /// <inheritdoc />
     public bool SendSetActive { get; private set; }
@@ -120,5 +120,12 @@ public class SendPictureSet(
             tasks.Add(sendPictureManager.CancelSend());
         }
         await Task.WhenAll(tasks);
+    }
+
+    public void Dispose()
+    {
+        _sendSetSemaphore.Dispose();
+        _sendSetCancellationTokenSource?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

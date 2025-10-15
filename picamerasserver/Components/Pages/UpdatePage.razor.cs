@@ -122,15 +122,7 @@ public partial class UpdatePage(
         var ascii = Encoding.ASCII.GetString(data);
         var match = Version().Match(ascii);
 
-        if (match.Success)
-        {
-            _version = match.Groups[1].Value;
-            // CanSave = true;
-        }
-        else
-        {
-            _version = null;
-        }
+        _version = match.Success ? match.Groups[1].Value : null;
     }
 
     /// <summary>
@@ -213,11 +205,11 @@ public partial class UpdatePage(
             PiZeroCameraUpdateRequest.UnknownSuccess => Color.FromArgb(0xA0, 0xA0, 0x00),
             PiZeroCameraUpdateRequest.Cancelled => Color.FromArgb(0xFF, 0x55, 0x00),
             PiZeroCameraUpdateRequest.Failure.FailedToRequest => Color.FromArgb(0xFF, 0x00, 0x00),
-            PiZeroCameraUpdateRequest.Failure.UnknownFailure _ => Color.FromArgb(0xFF, 0x00, 0xAA),
-            PiZeroCameraUpdateRequest.Failure.VersionMismatch _ => Color.FromArgb(0xFF, 0xAA, 0x00),
+            PiZeroCameraUpdateRequest.Failure.UnknownFailure => Color.FromArgb(0xFF, 0x00, 0xAA),
+            PiZeroCameraUpdateRequest.Failure.VersionMismatch => Color.FromArgb(0xFF, 0xAA, 0x00),
             PiZeroCameraUpdateRequest.Failure.Failed => Color.FromArgb(0x55, 0x00, 0x00),
             null => Color.FromArgb(0x00, 0x00, 0x00),
-            _ => throw new ArgumentOutOfRangeException(),
+            _ => throw new ArgumentOutOfRangeException(nameof(cameraPicture.UpdateRequest))
         };
     }
 
@@ -244,15 +236,15 @@ public partial class UpdatePage(
 
 public class UpdateElement(UpdateModel updateModel)
 {
-    public readonly string Version = updateModel.Version;
+    public string Version => updateModel.Version;
 
-    public readonly DateTime UploadedTime = TimeZoneInfo.ConvertTime(updateModel.UploadedTime.LocalDateTime,
+    public DateTime UploadedTime => TimeZoneInfo.ConvertTime(updateModel.UploadedTime.LocalDateTime,
         TimeZoneInfo.FindSystemTimeZoneById("Europe/Riga"));
 
-    public readonly DateTime? UpdatedTime = updateModel.UpdatedTime == null
+    public DateTime? UpdatedTime => updateModel.UpdatedTime == null
         ? null
         : TimeZoneInfo.ConvertTime(updateModel.UpdatedTime.Value.LocalDateTime,
             TimeZoneInfo.FindSystemTimeZoneById("Europe/Riga"));
 
-    public bool IsCurrent = updateModel.IsCurrent;
+    public bool IsCurrent => updateModel.IsCurrent;
 }

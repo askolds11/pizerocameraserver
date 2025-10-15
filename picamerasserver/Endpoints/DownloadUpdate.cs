@@ -28,7 +28,7 @@ public static class DownloadUpdateEndpoint
             }
 
             var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read);
-            var contentType = "application/octet-stream";
+            const string contentType = "application/octet-stream";
             return Results.File(fileStream, contentType, fileDownloadName: "pizerocamera");
         });
     }

@@ -44,7 +44,7 @@ public partial class GetAlive(
     IUpdateManager updateManager,
     IOptionsMonitor<MqttOptions> optionsMonitor,
     ILogger<GetAlive> logger
-) : IGetAliveManager
+) : IGetAliveManager, IDisposable
 {
     /// <inheritdoc />
     public bool PingActive { get; private set; }
@@ -58,5 +58,12 @@ public partial class GetAlive(
         {
             await _pingCancellationTokenSource.CancelAsync();
         }
+    }
+
+    public void Dispose()
+    {
+        _pingSemaphore.Dispose();
+        _pingCancellationTokenSource?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

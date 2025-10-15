@@ -14,7 +14,7 @@ public partial class NtpRequestTooltip : ComponentBase
         return PiZeroCamera.NtpRequest switch
         {
             null => ("Nothing", null, null, null),
-            PiZeroNtpRequest.Cancelled _ => ("Cancelled", null, null, null),
+            PiZeroNtpRequest.Cancelled => ("Cancelled", null, null, null),
             PiZeroNtpRequest.Failure.Failed failed => ("Failed on device", failed.Message, null, null),
             PiZeroNtpRequest.Failure.FailedToParseJson failedToParseJson => ("Failed json",
                 failedToParseJson.Message, null, null),
