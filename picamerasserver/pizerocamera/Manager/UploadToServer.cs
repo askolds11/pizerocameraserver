@@ -99,7 +99,11 @@ public class UploadToServer(
             if (!pictureSetExists)
             {
                 _uploadCancellationTokenSource.Token.ThrowIfCancellationRequested();
-                CreateDirectory(fileStore, PathCombineWithBackslashes(smbOptions.FileDirectory, pictureSet.Name));
+                var createResult = CreateDirectory(fileStore, PathCombineWithBackslashes(smbOptions.FileDirectory, pictureSet.Name));
+                if (createResult.IsFailure)
+                {
+                    return Result.Failure(createResult.Error);
+                }
             }
 
             _uploadCancellationTokenSource.Token.ThrowIfCancellationRequested();
@@ -204,6 +208,14 @@ public class UploadToServer(
                     changeListener.UpdatePictureSet(pictureSetUuid);
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            return Result.Failure("Upload cancelled");
+        }
+        catch (Exception)
+        {
+            return Result.Failure("Upload failed");
         }
         finally
         {
@@ -387,7 +399,7 @@ public class UploadToServer(
     /// </summary>
     /// <param name="fileStore">SMB FileStore</param>
     /// <param name="directoryPath">Directory to create</param>
-    private void CreateDirectory(ISMBFileStore fileStore, string directoryPath)
+    private Result CreateDirectory(ISMBFileStore fileStore, string directoryPath)
     {
         var status = fileStore.CreateFile(
             out var dirHandle,
@@ -409,7 +421,10 @@ public class UploadToServer(
         if (status != NTStatus.STATUS_SUCCESS)
         {
             logger.LogError("Failed to create directory: {DirectoryPath}", directoryPath);
+            return Result.Failure($"Failed to create directory {directoryPath}");
         }
+        
+        return Result.Success();
     }
 
     /// <summary>
