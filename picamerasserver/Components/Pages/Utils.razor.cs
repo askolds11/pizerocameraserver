@@ -14,9 +14,22 @@ public partial class Utils : ComponentBase
     [Inject]
     protected IOptionsMonitor<ServerOptions> ServerOptionsMonitor { get; set; } = null!;
     
-    private async Task ShutdownCameras()
+    private async Task ShutdownIndicator()
     {
-        var result = await PiZeroCameraManager.ShutdownCameras();
+        var result = await PiZeroCameraManager.ShutdownIndicator();
+        if (result)
+        {
+            Snackbar.Add("Shutdown message sent!", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Shutdown message failed to send!", Severity.Error);
+        }
+    }
+    
+    private async Task ShutdownPis()
+    {
+        var result = await PiZeroCameraManager.ShutdownPis();
         if (result)
         {
             Snackbar.Add("Shutdown message sent!", Severity.Success);

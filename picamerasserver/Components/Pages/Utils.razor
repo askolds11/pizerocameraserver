@@ -13,8 +13,8 @@
                 <ChildContent>
                     <MudStack Spacing="4" Class="pa-4" AlignItems="AlignItems.Start">
                         <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                   OnClick="@ShutdownCameras">
-                            Shutdown Cameras
+                                   OnClick="@ShutdownPis">
+                            Shutdown Pis
                         </MudButton>
                         <MudStack Spacing="4" Class="pa-4" AlignItems="AlignItems.Start" Row="true">
                             <MudButton Variant="Variant.Filled" Color="Color.Primary"
@@ -34,6 +34,10 @@
                                 Shutdown M-P
                             </MudButton>
                         </MudStack>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="@ShutdownIndicator">
+                            Shutdown Indicator
+                        </MudButton>
                         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                    OnClick="@Shutdown">
                             Shutdown Server

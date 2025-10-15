@@ -70,7 +70,7 @@ public partial class PiZeroCameraManager
     /// <summary>
     /// Sends shutdown to all Pi Zeros
     /// </summary>
-    public async Task<bool> ShutdownCameras()
+    public async Task<bool> ShutdownPis()
     {
         var options = _optionsMonitor.CurrentValue;
 
