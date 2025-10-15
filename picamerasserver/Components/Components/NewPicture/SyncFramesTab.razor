@@ -1,0 +1,91 @@
+@using System.Globalization
+@using picamerasserver.Components.Components.StatusTable
+@using picamerasserver.Components.Components.StatusTable.Tooltip
+@using picamerasserver.pizerocamera
+@using Color = System.Drawing.Color;
+
+<MudExpansionPanel Gutters="false" Dense="true" HideIcon="true" HeaderClass="pa-0"
+                   Disabled="PictureSet == null || !Alived || !NtpSynced || AliveCount == 0">
+    <TitleContent>
+        <MudStack Style="width: 100%">
+            <MudStack Row="true" Spacing="4" Class="pa-4 d-inline-flex"
+                      AlignItems="AlignItems.Center">
+                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary"
+                           Size="Size.Large"
+                           EndIcon="@Icons.Material.Outlined.Alarm" OnClick="@RequestSync"
+                           Disabled="PictureSet == null || PictureSet.IsDone || !NtpSynced || AliveCount == 0 || SyncActive">
+                    Sync frames
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error"
+                           Size="Size.Large"
+                           OnClick="@OverrideSync"
+                           Disabled="PictureSet == null || PictureSet.IsDone || SyncedFrames || SyncActive">
+                    Override
+                </MudButton>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudText>
+                        Synced @SyncedCount / @AliveCount
+                    </MudText>
+                    @if (PictureSet != null && SyncedFrames && SyncedCount > 0 && SyncedCount == AliveCount)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                                 Size="Size.Large"/>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                                 Size="Size.Large"/>
+                    }
+                </MudStack>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudText>
+                        <MudText Typo="Typo.h6">Time</MudText>
+                        @(TimeTillSync == null ? "OK" : string.Format(CultureInfo.CurrentCulture, "{0:N2}", TimeTillSync)) ms
+                    </MudText>
+                </MudStack>
+            </MudStack>
+        </MudStack>
+    </TitleContent>
+    <ChildContent>
+        <StatusTable
+            Elevation="5"
+            ColorTransform="@ColorTransformSync"
+            TooltipTransform="@_tooltipTransformSync">
+        </StatusTable>
+    </ChildContent>
+</MudExpansionPanel>
+
+@code {
+    private Func<string, RenderFragment?> _tooltipTransformSync = _ => null;
+
+
+    private void UpdateTooltipTransformSync()
+    {
+        _tooltipTransformSync = cameraId =>
+        {
+            var item = PiZeroCameraManager.PiZeroCameras[cameraId];
+
+            return @<SyncRequestTooltip PiZeroCamera="item"/>;
+        };
+    }
+
+
+    private Color ColorTransformSync(string id)
+    {
+        var piZeroCamera = PiZeroCameraManager.PiZeroCameras[id];
+
+        return piZeroCamera.SyncStatus switch
+        {
+            null => Color.FromArgb(0x00, 0x00, 0x00),
+            SyncStatus.Cancelled _ => Color.FromArgb(0xFF, 0x55, 0x00),
+            SyncStatus.Failure.Failed _ => Color.FromArgb(0xff, 0x00, 0x00),
+            SyncStatus.Failure.FailedToRequest _ => Color.FromArgb(0xff, 0x00, 0x00),
+            SyncStatus.Requested _ => Color.FromArgb(0x55, 0x55, 0x00),
+            SyncStatus.Success success => success.SyncReady
+                ? Color.FromArgb(0x00, 0xFF, 0x00)
+                : Color.FromArgb(0xFF, 0xFF, 0x00),
+            _ => throw new ArgumentOutOfRangeException()
+        };
+    }
+
+}

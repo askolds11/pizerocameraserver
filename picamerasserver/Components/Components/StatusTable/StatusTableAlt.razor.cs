@@ -1,7 +1,7 @@
 using System.Drawing;
 using Microsoft.AspNetCore.Components;
 
-namespace picamerasserver.Components.Components;
+namespace picamerasserver.Components.Components.StatusTable;
 
 public partial class StatusTableAlt : ComponentBase
 {

@@ -1,0 +1,116 @@
+@using System.Globalization
+@using picamerasserver.Components.Components.StatusTable
+@using picamerasserver.Components.Components.StatusTable.Tooltip
+@using picamerasserver.pizerocamera
+@using Color = System.Drawing.Color
+
+<MudExpansionPanel Gutters="false" Dense="true" HideIcon="true" HeaderClass="pa-0"
+                   Disabled="PictureSet == null || !Alived || AliveCount == 0">
+    <TitleContent>
+        <MudStack Style="width: 100%">
+            <MudStack Row="true" Spacing="4" Class="pa-4 d-inline-flex"
+                      AlignItems="AlignItems.Center">
+                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary"
+                           Size="Size.Large"
+                           EndIcon="@Icons.Material.Outlined.Alarm" OnClick="@RequestNtpSyncStep"
+                           Disabled="PictureSet == null || PictureSet.IsDone || !Alived || AliveCount == 0 || AnyActive">
+                    NTP Sync
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error"
+                           Size="Size.Large"
+                           OnClick="@OverrideNtp"
+                           Disabled="PictureSet == null || PictureSet.IsDone || NtpSynced || AnyActive">
+                    Override
+                </MudButton>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudText>
+                        Synced @NtpSyncedCount / @AliveCount
+                    </MudText>
+                    @if (PictureSet != null && NtpSynced && AliveCount > 0 && NtpSyncedCount == AliveCount)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                                 Size="Size.Large"/>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                                 Size="Size.Large"/>
+                    }
+                </MudStack>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudText>
+                        Indicator
+                    </MudText>
+                    @if (PictureSet != null && IndicatorNtped)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                                 Size="Size.Large"/>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                                 Size="Size.Large"/>
+                    }
+                </MudStack>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudText>
+                        <MudText Typo="Typo.h6">Offset</MudText>
+                        Min @(MinOffset == null ? "-------" : string.Format(CultureInfo.CurrentCulture, "{0:N2}", MinOffset)) ms
+                        <br/>
+                        Max @(MaxOffset == null ? "-------" : string.Format(CultureInfo.CurrentCulture, "{0:N2}", MaxOffset)) ms
+                    </MudText>
+                </MudStack>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudText>
+                        <MudText Typo="Typo.h6">Error</MudText>
+                        Min @(MinError == null ? "-------" : string.Format(CultureInfo.CurrentCulture, "{0:N2}", MinError)) ms
+                        <br/>
+                        Max @(MaxError == null ? "-------" : string.Format(CultureInfo.CurrentCulture, "{0:N2}", MaxError)) ms
+                    </MudText>
+                </MudStack>
+            </MudStack>
+        </MudStack>
+        @* </MudPaper> *@
+    </TitleContent>
+    <ChildContent>
+        <StatusTable
+            Elevation="5"
+            ColorTransform="@ColorTransformNtp"
+            TooltipTransform="@_tooltipTransformNtp">
+        </StatusTable>
+    </ChildContent>
+</MudExpansionPanel>
+
+@code {
+    private Func<string, RenderFragment?> _tooltipTransformNtp = _ => null;
+
+    private void UpdateTooltipTransformNtp()
+    {
+        _tooltipTransformNtp = cameraId =>
+        {
+            var item = PiZeroCameraManager.PiZeroCameras[cameraId];
+
+            return @<NtpRequestTooltip PiZeroCamera="item"/>;
+        };
+    }
+
+    private Color ColorTransformNtp(string id)
+    {
+        var piZeroCamera = PiZeroCameraManager.PiZeroCameras[id];
+        return piZeroCamera.NtpRequest switch
+        {
+            null => Color.FromArgb(0x00, 0x00, 0x00),
+            PiZeroNtpRequest.Cancelled _ => Color.FromArgb(0xFF, 0x55, 0x00),
+            PiZeroNtpRequest.Failure.Failed _ => Color.FromArgb(0xff, 0x00, 0x00),
+            PiZeroNtpRequest.Failure.FailedToParseJson _ => Color.FromArgb(0xff, 0x00, 0x00),
+            PiZeroNtpRequest.Failure.FailedToParseRegex _ => Color.FromArgb(0xff, 0x00, 0x00),
+            PiZeroNtpRequest.Failure.FailedToRequest _ => Color.FromArgb(0xff, 0x00, 0x00),
+            PiZeroNtpRequest.Requested _ => Color.FromArgb(0x55, 0x55, 0x00),
+            PiZeroNtpRequest.Success _ => piZeroCamera.LastNtpErrorMillis < 10
+                ? Color.FromArgb(0x00, 0xFF, 0x00)
+                : Color.FromArgb(0xFF, 0xFF, 0x00),
+            _ => throw new ArgumentOutOfRangeException()
+        };
+    }
+
+}

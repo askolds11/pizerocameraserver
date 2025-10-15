@@ -5,6 +5,7 @@ using MQTTnet;
 using MudBlazor;
 using MudBlazor.Services;
 using picamerasserver.Components;
+using picamerasserver.Components.Components.NewPicture;
 using picamerasserver.Database;
 using picamerasserver.Endpoints;
 using picamerasserver.mqtt;
@@ -77,6 +78,8 @@ builder.Services.AddSingleton<IUpdateManager, Update>();
 builder.Services.AddSingleton<IUploadManager, UploadToServer>();
 builder.Services.AddSingleton<ISyncManager, Sync>();
 builder.Services.AddSingleton<Sound>();
+
+builder.Services.AddScoped<SharedState>();
 
 var app = builder.Build();
 

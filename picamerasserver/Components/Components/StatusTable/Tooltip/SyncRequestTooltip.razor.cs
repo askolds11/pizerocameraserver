@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using picamerasserver.pizerocamera;
 
-namespace picamerasserver.Components.Components;
+namespace picamerasserver.Components.Components.StatusTable.Tooltip;
 
 public partial class SyncRequestTooltip : ComponentBase
 {

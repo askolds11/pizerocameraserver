@@ -1,0 +1,72 @@
+@inject ISnackbar Snackbar
+
+<MudExpansionPanel Expanded>
+    <TitleContent>
+        <MudText Typo="Typo.h5">Actions</MudText>
+    </TitleContent>
+    <ChildContent>
+        <MudStack>
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Large"
+                           EndIcon="@Icons.Material.Outlined.FireTruck" OnClick="@FinishPictureSet"
+                           Disabled="PictureSet == null || PictureSet.IsDone">
+                    Finish
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                           EndIcon="@Icons.Material.Outlined.Send" OnClick="@SendPictureSet"
+                           Disabled="PictureSet is not { IsDone: true } || SendSetActive || AllSentCount == AllTotalCount">
+                    Send
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                           EndIcon="@Icons.Material.Outlined.Download"
+                           Href="@($"downloadpictureset/{PictureSet?.Uuid}")" Target="_blank"
+                           Disabled="PictureSet is not { IsDone: true } || AnyActive || AllTotalCount == 0 || AllSentCount != AllTotalCount">
+                    Download
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                           EndIcon="@Icons.Material.Outlined.Upload" OnClick="@UploadSmb"
+                           Disabled="PictureSet is not { IsDone: true } || AnyActive || AllSentCount == 0 || AllUploadedCount == AllTotalCount">
+                    Upload
+                </MudButton>
+                @if (PictureSet is { IsDone: true })
+                {
+                    <MudText>
+                        Sent @AllSentCount / @AllTotalCount
+                    </MudText>
+                    @if (AllSentCount > 0 && AllSentCount == AllTotalCount)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
+                                 Size="Size.Large"/>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error"
+                                 Size="Size.Large"/>
+                    }
+
+                    <MudText>
+                        Failed to send @AllSentFailedCount
+                    </MudText>
+                    @if (AllSentFailedCount == 0)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
+                                 Size="Size.Large"/>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error"
+                                 Size="Size.Large"/>
+                    }
+
+                    <MudText>
+                        Uploaded @AllUploadedCount / @AllSentCount
+                    </MudText>
+                }
+            </MudStack>
+        </MudStack>
+    </ChildContent>
+</MudExpansionPanel>
+
+@code {
+
+}

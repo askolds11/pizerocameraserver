@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Components;
 using picamerasserver.Database.Models;
 using picamerasserver.pizerocamera.SendPicture;
 
-namespace picamerasserver.Components.Components;
+namespace picamerasserver.Components.Components.StatusTable.Tooltip;
 
 public partial class PictureRequestTooltip : ComponentBase
 {

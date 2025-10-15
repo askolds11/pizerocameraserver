@@ -1,0 +1,103 @@
+@using picamerasserver.Components.Components.StatusTable
+@using Color = System.Drawing.Color
+
+<MudExpansionPanel Gutters="false" Dense="true" HideIcon="true" HeaderClass="pa-0"
+                   Disabled="PictureSet == null || PictureSet.IsDone">
+    <TitleContent>
+        <MudStack Style="width: 100%">
+            <MudStack Row="true" Spacing="4" Class="pa-4 d-inline-flex"
+                      AlignItems="AlignItems.Center">
+                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary"
+                           Size="Size.Large"
+                           EndIcon="@Icons.Material.Outlined.Blind" OnClick="@GetAlive"
+                           Disabled="PictureSet == null || PictureSet.IsDone || AnyActive">
+                    Get alive
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error"
+                           Size="Size.Large"
+                           OnClick="@OverrideGetAlive"
+                           Disabled="PictureSet == null || PictureSet.IsDone || Alived || AnyActive || AliveCount == 0">
+                    Override
+                </MudButton>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudText>
+                        Alive @AliveCount / @TotalCount
+                    </MudText>
+                    @if (PictureSet != null && AliveCount == @TotalCount)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                                 Size="Size.Large"/>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                                 Size="Size.Large"/>
+                    }
+                </MudStack>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudText>
+                        Indicator
+                    </MudText>
+                    @if (PictureSet != null && IndicatorAlive)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                                 Size="Size.Large"/>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                                 Size="Size.Large"/>
+                    }
+                </MudStack>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudText>
+                        Ping @PingedCount / @TotalCount
+                    </MudText>
+                </MudStack>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudText>
+                        Status @StatusCount / @TotalCount
+                    </MudText>
+                </MudStack>
+            </MudStack>
+        </MudStack>
+        @* </MudPaper> *@
+    </TitleContent>
+    <ChildContent>
+        <MudText Typo="Typo.h6" Class="px-4">Ping</MudText>
+        <StatusTable
+            Elevation="5"
+            ColorTransform="@ColorTransformPing"
+            TooltipTransform="@_tooltipTransformStatus">
+        </StatusTable>
+        <MudText Typo="Typo.h6" Class="px-4">Status</MudText>
+        <StatusTable
+            Elevation="5"
+            ColorTransform="@ColorTransformStatus"
+            TooltipTransform="@_tooltipTransformStatus">
+        </StatusTable>
+    </ChildContent>
+</MudExpansionPanel>
+
+@code {
+    private readonly Func<string, RenderFragment?> _tooltipTransformStatus = _ => null;
+    
+    private Color ColorTransformPing(string cameraId)
+    {
+        return PiZeroCameraManager.PiZeroCameras[cameraId].Pingable switch
+        {
+            true => Color.FromArgb(0x00, 0xFF, 0x00),
+            false => Color.FromArgb(0xFF, 0x00, 0x00),
+            null => Color.FromArgb(0x00, 0x00, 0x00)
+        };
+    }
+    
+    private Color ColorTransformStatus(string id)
+    {
+        return PiZeroCameraManager.PiZeroCameras[id].Status switch
+        {
+            null => Color.FromArgb(0xFF, 0x00, 0x00),
+            _ => Color.FromArgb(0x00, 0xFF, 0x00),
+        };
+    }
+}

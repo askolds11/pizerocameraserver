@@ -1,41 +1,29 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
-using MudBlazor;
+using picamerasserver.Components.Components.NewPicture;
 using picamerasserver.Database;
 using picamerasserver.Database.Models;
 using picamerasserver.pizerocamera;
-using picamerasserver.pizerocamera.GetAlive;
-using picamerasserver.pizerocamera.manager;
-using picamerasserver.pizerocamera.Ntp;
-using picamerasserver.pizerocamera.Requests;
-using picamerasserver.pizerocamera.SendPicture;
-using picamerasserver.pizerocamera.Sync;
-using picamerasserver.pizerocamera.TakePicture;
 
 namespace picamerasserver.Components.Pages;
 
 public partial class NewPicturePage : ComponentBase, IDisposable
 {
     [Parameter] public Guid? Uuid { get; set; }
-    [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; init; } = null!;
     [Inject] protected IDbContextFactory<PiDbContext> DbContextFactory { get; init; } = null!;
     [Inject] protected NavigationManager NavigationManager { get; init; } = null!;
-    [Inject] protected ISendPictureSetManager SendPictureSetManager { get; init; } = null!;
-    [Inject] protected ITakePictureManager TakePictureManager { get; init; } = null!;
-    [Inject] protected IGetAliveManager GetAliveManager { get; init; } = null!;
-    [Inject] protected INtpManager NtpManager { get; init; } = null!;
-    [Inject] protected ISyncManager SyncManager { get; init; } = null!;
-    [Inject] protected IUploadManager UploadToServer { get; init; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
-    [Inject] protected Sound Sound { get; init; } = null!;
+    [Inject] protected IServiceScopeFactory ScopeFactory { get; init; } = null!;
+
+    private IServiceScope _scope = null!;
+    private SharedState _sharedState = null!;
+
 
     private PictureSetModel? _pictureSet;
-    private bool SendSetActive => SendPictureSetManager.SendSetActive;
-    private bool PingActive => GetAliveManager.PingActive;
-    private bool NtpActive => NtpManager.NtpActive;
-    private bool SyncActive => SyncManager.SyncActive;
-    private bool UploadActive => UploadToServer.UploadActive;
+    
+    private bool AnyActive => _sharedState.AnyActive;
+
 
     private PictureRequestModel? PictureRequestStandingSpread => _pictureSet?.PictureRequests.FirstOrDefault(x =>
         x is { PictureRequestType: PictureRequestType.StandingSpread, IsActive: true });
@@ -57,6 +45,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
             Name = Name,
             Created = DateTimeOffset.UtcNow
         };
+        _sharedState.PictureSet = _pictureSet;
         await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
         piDbContext.PictureSets.Add(_pictureSet);
         await piDbContext.SaveChangesAsync();
@@ -69,7 +58,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         {
             throw new ArgumentNullException(nameof(_pictureSet));
         }
-        
+
         await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
         await piDbContext.PictureSets.Where(x => x.Uuid == _pictureSet.Uuid)
             .ExecuteUpdateAsync(x => x.SetProperty(
@@ -78,188 +67,11 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         await RefreshPictureSet();
     }
 
-    private async Task FinishPictureSet()
-    {
-        if (_pictureSet == null)
-        {
-            throw new ArgumentNullException(nameof(_pictureSet));
-        }
-        
-        await using var piDbContext = await DbContextFactory.CreateDbContextAsync();
-        await piDbContext.PictureSets.Where(x => x.Uuid == _pictureSet.Uuid)
-            .ExecuteUpdateAsync(x => x.SetProperty(
-                b => b.IsDone, true)
-            );
-        await RefreshPictureSet();
-    }
+    private bool Alived => _sharedState.Alived;
+    private bool NtpSynced => _sharedState.NtpSynced;
+    private bool SyncedFrames => _sharedState.SyncedFrames;
 
-    private async Task SendPictureSet()
-    {
-        if (_pictureSet == null)
-        {
-            throw new ArgumentNullException(nameof(_pictureSet));
-        }
-
-        await SendPictureSetManager.RequestSendPictureSet(_pictureSet.Uuid);
-    }
-
-    private bool Alived { get; set; } = false;
-    private bool NtpSynced { get; set; } = false;
-    private bool SyncedFrames { get; set; } = false;
-
-    private int NtpSyncedCount =>
-        PiZeroCameraManager.PiZeroCameras.Values.Count(x => x.NtpRequest is PiZeroNtpRequest.Success);
-    
-    private int SyncedCount =>
-        PiZeroCameraManager.PiZeroCameras.Values.Count(x => x.SyncStatus is SyncStatus.Success { SyncReady: true });
-
-    private int PingedCount => PiZeroCameraManager.PiZeroCameras.Values.Count(x => x.Pingable == true);
-    private int StatusCount => PiZeroCameraManager.PiZeroCameras.Values.Count(x => x.Status != null);
-
-    private int AliveCount =>
-        PiZeroCameraManager.PiZeroCameras.Values.Count(x => x is { Pingable: true, Status: not null });
-
-    private int TotalCount => PiZeroCameraManager.PiZeroCameras.Count;
-
-    private int AllSentCount => _pictureSet?.PictureRequests
-        .Sum(x => x.CameraPictures.Count(y => y.ReceivedSent != null)) ?? 0;
-
-    private int AllSentFailedCount => _pictureSet?.PictureRequests
-        .Sum(x => x.CameraPictures.Count(y =>
-            y is
-            {
-                ReceivedTaken: not null, CameraPictureStatus: CameraPictureStatus.Failed
-                or CameraPictureStatus.PictureFailedToRead or CameraPictureStatus.PictureFailedToSend
-                or CameraPictureStatus.Unknown or CameraPictureStatus.CancelledSend
-            })) ?? 0;
-
-    private int AllTotalCount =>
-        _pictureSet?.PictureRequests
-            .Sum(x => x.CameraPictures.Count(y => y.ReceivedTaken != null)) ?? 0;
-
-    private int AllUploadedCount =>
-        _pictureSet?.PictureRequests
-            .Sum(x => x.CameraPictures.Count(y => y.Synced)) ?? 0;
-    private bool IndicatorAlive => PiZeroCameraManager.PiZeroIndicator.Pingable == true && PiZeroCameraManager.PiZeroIndicator.Status != null;
-    private bool IndicatorNtped => PiZeroCameraManager.PiZeroIndicator.NtpRequest is PiZeroNtpRequest.Success;
-
-    private async Task GetAlive()
-    {
-        Alived = false;
-
-        try
-        {
-            var task1 = GetAliveManager.Ping();
-            var task2 = GetAliveManager.GetStatus();
-            await Task.WhenAll(task1, task2);
-            Alived = true;
-        }
-        catch (OperationCanceledException)
-        {
-            Alived = false;
-        }
-    }
-
-    private async Task RequestNtpSyncStep()
-    {
-        NtpSynced = false;
-
-        try
-        {
-            await NtpManager.RequestNtpSync(new NtpRequest.Step());
-            NtpSynced = true;
-        }
-        catch (OperationCanceledException)
-        {
-            NtpSynced = false;
-        }
-    }
-    
-    private async Task RequestSync()
-    {
-        SyncedFrames = false;
-
-        try
-        {
-            await SyncManager.GetSyncStatus();
-            SyncedFrames = true;
-        }
-        catch (OperationCanceledException)
-        {
-            SyncedFrames = false;
-        }
-    }
-
-    private void OverrideGetAlive()
-    {
-        Alived = true;
-    }
-
-    private void OverrideNtp()
-    {
-        NtpSynced = true;
-    }
-    
-    private void OverrideSync()
-    {
-        SyncedFrames = true;
-    }
-
-    private List<float>? GetOffsets()
-    {
-        var offsets = PiZeroCameraManager.PiZeroCameras.Values
-            .Where(x => x.LastNtpOffsetMillis != null)
-            .Select(x => Math.Abs((float)x.LastNtpOffsetMillis!))
-            .ToList();
-        if (PiZeroCameraManager.PiZeroIndicator.LastNtpOffsetMillis != null)
-        {
-            offsets.Add((float) PiZeroCameraManager.PiZeroIndicator.LastNtpOffsetMillis);
-        }
-
-        return offsets.Count == 0 ? null : offsets;
-    }
-
-    private List<float>? GetErrors()
-    {
-        var errors = PiZeroCameraManager.PiZeroCameras.Values
-            .Where(x => x.LastNtpErrorMillis != null)
-            .Select(x => Math.Abs((float)x.LastNtpErrorMillis!))
-            .ToList();
-        if (PiZeroCameraManager.PiZeroIndicator.LastNtpErrorMillis != null)
-        {
-            errors.Add((float) PiZeroCameraManager.PiZeroIndicator.LastNtpErrorMillis);
-        }
-
-        return errors.Count == 0 ? null : errors;
-    }
-    
-    private List<long>? GetTimeTillSync()
-    {
-        var unsyncedTimes = PiZeroCameraManager.PiZeroCameras.Values
-            .Select(x => x.SyncStatus)
-            .Where(x => x is SyncStatus.Success { SyncReady: false })
-            .Select(x => (SyncStatus.Success) x!)
-            .Select(x => x.SyncTiming / 1000)
-            .ToList();
-
-        return unsyncedTimes.Count == 0 ? null : unsyncedTimes;
-    }
-
-    private float? MinOffset => GetOffsets()?.Min();
-    private float? MaxOffset => GetOffsets()?.Max();
-    private float? MinError => GetErrors()?.Min();
-    private float? MaxError => GetErrors()?.Max();
-    private float? TimeTillSync => GetTimeTillSync()?.Max();
-
-    private async Task TestSignal()
-    {
-        await Sound.SendSignal();
-    }
-    
-    private async Task OnPingGlobalChanged()
-    {
-        await InvokeAsync(StateHasChanged);
-    }
+    private int AliveCount => _sharedState.AliveCount;
 
     /// <summary>
     /// Refreshes list
@@ -277,23 +89,6 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         });
     }
 
-    private async Task OnNtpChanged()
-    {
-        await InvokeAsync(() =>
-        {
-            UpdateTooltipTransformNtp();
-            StateHasChanged();
-        });
-    }
-    
-    private async Task OnSyncChanged()
-    {
-        await InvokeAsync(() =>
-        {
-            UpdateTooltipTransformSync();
-            StateHasChanged();
-        });
-    }
 
     private async Task RefreshPictureSet()
     {
@@ -307,36 +102,7 @@ public partial class NewPicturePage : ComponentBase, IDisposable
             .Include(x => x.PictureRequests.Where(y => y.IsActive == true))
             .ThenInclude(x => x.CameraPictures)
             .FirstOrDefaultAsync(x => x.Uuid == Uuid);
-    }
-
-    private async Task CancelTakePic()
-    {
-        await TakePictureManager.CancelTakePicture();
-    }
-
-    private async Task CancelSend()
-    {
-        await SendPictureSetManager.CancelSendSet();
-    }
-
-    private async Task CancelNtpSync()
-    {
-        await NtpManager.CancelNtpSync();
-    }
-
-    private async Task CancelPing()
-    {
-        await GetAliveManager.CancelPing();
-    }
-
-    private async Task CancelUpload()
-    {
-        await UploadToServer.CancelUpload();
-    }
-
-    private async Task CancelSync()
-    {
-        await SyncManager.CancelSyncStatus();
+        _sharedState.PictureSet = _pictureSet;
     }
 
     protected override async Task OnInitializedAsync()
@@ -349,42 +115,27 @@ public partial class NewPicturePage : ComponentBase, IDisposable
         Name = _pictureSet?.Name ?? "";
     }
 
+    private async Task OnChange()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
     protected override void OnInitialized()
     {
-        ChangeListener.OnPingChange += OnPingGlobalChanged;
-        ChangeListener.OnNtpChange += OnNtpChanged;
+        _scope = ScopeFactory.CreateScope();
+        _sharedState = _scope.ServiceProvider.GetRequiredService<SharedState>();
+
         ChangeListener.OnPictureSetChange += OnPictureSetChanged;
-        ChangeListener.OnSyncChange += OnSyncChanged;
-        
-        UpdateTooltipTransformNtp();
-        UpdateTooltipTransformSync();
+        _sharedState.OnChange += OnChange;
     }
 
     public void Dispose()
     {
-        ChangeListener.OnPingChange -= OnPingGlobalChanged;
-        ChangeListener.OnNtpChange -= OnNtpChanged;
         ChangeListener.OnPictureSetChange -= OnPictureSetChanged;
-        ChangeListener.OnSyncChange -= OnSyncChanged;
+        _sharedState.OnChange -= OnChange;
+
+        _scope.Dispose();
+
         GC.SuppressFinalize(this);
-    }
-
-    private async Task UploadSmb()
-    {
-        if (Uuid == null)
-        {
-            throw new ArgumentNullException(nameof(Uuid));
-        }
-
-        var result = await UploadToServer.Upload((Guid)Uuid);
-
-        if (result.IsFailure)
-        {
-            Snackbar.Add($"Upload failed: {result.Error}!", Severity.Error);
-        }
-        else
-        {
-            Snackbar.Add($"Upload completed!", Severity.Success);
-        }
     }
 }

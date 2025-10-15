@@ -6,7 +6,7 @@ using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.manager;
 using picamerasserver.pizerocamera.TakePicture;
 
-namespace picamerasserver.Components.Components;
+namespace picamerasserver.Components.Components.NewPicture;
 
 public partial class PictureTakeSet : ComponentBase, IDisposable
 {

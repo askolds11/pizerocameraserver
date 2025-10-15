@@ -1,0 +1,17 @@
+<MudExpansionPanel Gutters="false" Dense="true" HideIcon="true" HeaderClass="pa-0"
+                   Disabled="PictureSet == null || !Alived || !NtpSynced || AliveCount == 0">
+    <TitleContent>
+        @* <MudPaper Elevation="10" Class="d-inline-flex"> *@
+        <MudStack Style="width: 100%">
+            <MudStack Row="true" Spacing="4" Class="pa-4 d-inline-flex"
+                      AlignItems="AlignItems.Center">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           Size="Size.Large"
+                           EndIcon="@Icons.Material.Outlined.Alarm" OnClick="@TestSignal"
+                           Disabled="PictureSet == null || PictureSet.IsDone || !Alived || AnyActive || !IndicatorAlive">
+                    Test sound
+                </MudButton>
+            </MudStack>
+        </MudStack>
+    </TitleContent>
+</MudExpansionPanel>
