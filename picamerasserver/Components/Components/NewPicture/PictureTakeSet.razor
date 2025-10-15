@@ -1,7 +1,7 @@
 ﻿@using picamerasserver.Components.Components.StatusTable
 @using picamerasserver.Components.Components.StatusTable.Tooltip
 @using picamerasserver.Database.Models
-@using Color = System.Drawing.Color
+@using SysColor = System.Drawing.Color
 <MudExpansionPanel Gutters="false" Dense="true" HideIcon="true" HeaderClass="pa-0"
                    Disabled="_pictureRequestModel == null && Disabled">
     <TitleContent>
@@ -9,12 +9,12 @@
         <MudStack Style="width: 100%">
             @if (!Finished)
             {
-                <MudProgressLinear Color="MudBlazor.Color.Tertiary" Value="@ProgressTaken"/>
-                <MudProgressLinear Color="MudBlazor.Color.Primary" Value="@ProgressSaved"/>
+                <MudProgressLinear Color="Color.Tertiary" Value="@ProgressTaken"/>
+                <MudProgressLinear Color="Color.Primary" Value="@ProgressSaved"/>
             }
             else
             {
-                <MudProgressLinear Color="MudBlazor.Color.Tertiary" Value="@ProgressSent"/>
+                <MudProgressLinear Color="Color.Tertiary" Value="@ProgressSent"/>
             }
 
             <MudStack Row="true" Spacing="4" Class="pa-4 d-inline-flex" AlignItems="AlignItems.Center">
@@ -29,7 +29,7 @@
                         _ => throw new ArgumentOutOfRangeException()
                     })
                 </MudText>
-                <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Tertiary" Size="Size.Large"
+                <MudButton Variant="Variant.Filled" Color="Color.Tertiary" Size="Size.Large"
                            EndIcon="@Icons.Material.Outlined.PhotoCamera" OnClick="@TakePicture"
                            Disabled="Disabled || TakePicActive || (_pictureRequestModel != null && !_canTryAgain)">
                     Take picture
@@ -42,12 +42,12 @@
                         </MudText>
                         @if (TakenCount != 0 && TakenCount == @RequestCount)
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
                                      Size="Size.Large"/>
                         }
                         else
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error"
                                      Size="Size.Large"/>
                         }
                     </MudStack>
@@ -57,12 +57,12 @@
                         </MudText>
                         @if (SavedCount != 0 && SavedCount == @RequestCount)
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
                                      Size="Size.Large"/>
                         }
                         else
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error"
                                      Size="Size.Large"/>
                         }
                     </MudStack>
@@ -72,16 +72,16 @@
                         </MudText>
                         @if (FailedCount == 0)
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
                                      Size="Size.Large"/>
                         }
                         else
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error"
                                      Size="Size.Large"/>
                         }
                     </MudStack>
-                    <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Error" Size="Size.Large"
+                    <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Large"
                                EndIcon="@Icons.Material.Outlined.Refresh" OnClick="@TryAgain"
                                Disabled="Disabled || (_pictureRequestModel == null || _canTryAgain)">
                         Try again
@@ -95,12 +95,12 @@
                         </MudText>
                         @if (SavedCount != 0 && SavedCount == @RequestCount)
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
                                      Size="Size.Large"/>
                         }
                         else
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error"
                                      Size="Size.Large"/>
                         }
                     </MudStack>
@@ -110,12 +110,12 @@
                         </MudText>
                         @if (SentCount != 0 && SentCount == @TakenCount)
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
                                      Size="Size.Large"/>
                         }
                         else
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error"
                                      Size="Size.Large"/>
                         }
                     </MudStack>
@@ -125,12 +125,12 @@
                         </MudText>
                         @if (FailedSendCount == 0)
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="MudBlazor.Color.Success"
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
                                      Size="Size.Large"/>
                         }
                         else
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="MudBlazor.Color.Error"
+                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error"
                                      Size="Size.Large"/>
                         }
                     </MudStack>
@@ -140,6 +140,14 @@
         @* </MudPaper> *@
     </TitleContent>
     <ChildContent>
+        @if (!Finished)
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Large"
+                       EndIcon="@Icons.Material.Outlined.Cancel" OnClick="@CancelTakePicture"
+                       Disabled="!TakePicActive">
+                Cancel
+            </MudButton>
+        }
         <StatusTable
             ColorTransform="@ColorTransform"
             TooltipTransform="@_tooltipTransform">
@@ -162,34 +170,34 @@
         };
     }
 
-    private Color ColorTransform(string cameraId)
+    private SysColor ColorTransform(string cameraId)
     {
         var cameraPicture = _pictureRequestModel?.CameraPictures.FirstOrDefault(x => x.CameraId == cameraId);
         if (cameraPicture == null)
         {
-            return Color.FromArgb(0x00, 0x00, 0x00);
+            return SysColor.FromArgb(0x00, 0x00, 0x00);
         }
 
         return cameraPicture.CameraPictureStatus switch
         {
-            CameraPictureStatus.Requested => Color.FromArgb(0x55, 0x55, 0x00),
-            CameraPictureStatus.FailedToRequest => Color.FromArgb(0xFF, 0x00, 0x00),
-            CameraPictureStatus.Taken => Color.FromArgb(0x00, 0x55, 0x55),
-            CameraPictureStatus.SavedOnDevice => Color.FromArgb(0x00, 0x55, 0x00),
-            CameraPictureStatus.Failed => Color.FromArgb(0x55, 0x00, 0x00),
-            CameraPictureStatus.PictureFailedToSave => Color.FromArgb(0x55, 0x00, 0x00),
-            CameraPictureStatus.PictureFailedToSchedule => Color.FromArgb(0x55, 0x00, 0x00),
-            CameraPictureStatus.PictureFailedToTake => Color.FromArgb(0x55, 0x00, 0x00),
-            CameraPictureStatus.RequestedSend => Color.FromArgb(0x55, 0x55, 0x00),
-            CameraPictureStatus.FailedToRequestSend => Color.FromArgb(0x55, 0x00, 0x00),
-            CameraPictureStatus.FailureSend => Color.FromArgb(0x99, 0x00, 0x00),
-            CameraPictureStatus.Success => Color.FromArgb(0x00, 0xFF, 0x00),
-            CameraPictureStatus.Unknown => Color.FromArgb(0x00, 0x00, 0xFF),
-            CameraPictureStatus.PictureFailedToRead => Color.FromArgb(0x55, 0x00, 0x00),
-            CameraPictureStatus.PictureFailedToSend => Color.FromArgb(0x55, 0x00, 0x00),
-            CameraPictureStatus.Cancelled => Color.FromArgb(0xFF, 0x55, 0x00),
-            CameraPictureStatus.CancelledSend => Color.FromArgb(0xFF, 0x55, 0x00),
-            null => Color.FromArgb(0x00, 0x00, 0x00),
+            CameraPictureStatus.Requested => SysColor.FromArgb(0x55, 0x55, 0x00),
+            CameraPictureStatus.FailedToRequest => SysColor.FromArgb(0xFF, 0x00, 0x00),
+            CameraPictureStatus.Taken => SysColor.FromArgb(0x00, 0x55, 0x55),
+            CameraPictureStatus.SavedOnDevice => SysColor.FromArgb(0x00, 0x55, 0x00),
+            CameraPictureStatus.Failed => SysColor.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.PictureFailedToSave => SysColor.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.PictureFailedToSchedule => SysColor.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.PictureFailedToTake => SysColor.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.RequestedSend => SysColor.FromArgb(0x55, 0x55, 0x00),
+            CameraPictureStatus.FailedToRequestSend => SysColor.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.FailureSend => SysColor.FromArgb(0x99, 0x00, 0x00),
+            CameraPictureStatus.Success => SysColor.FromArgb(0x00, 0xFF, 0x00),
+            CameraPictureStatus.Unknown => SysColor.FromArgb(0x00, 0x00, 0xFF),
+            CameraPictureStatus.PictureFailedToRead => SysColor.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.PictureFailedToSend => SysColor.FromArgb(0x55, 0x00, 0x00),
+            CameraPictureStatus.Cancelled => SysColor.FromArgb(0xFF, 0x55, 0x00),
+            CameraPictureStatus.CancelledSend => SysColor.FromArgb(0xFF, 0x55, 0x00),
+            null => SysColor.FromArgb(0x00, 0x00, 0x00),
             _ => throw new ArgumentOutOfRangeException(),
         };
     }

@@ -52,6 +52,11 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
         _canTryAgain = false;
     }
 
+    private async Task CancelTakePicture()
+    {
+        await TakePictureManager.CancelTakePicture();
+    }
+
     private void TryAgain()
     {
         _canTryAgain = true;

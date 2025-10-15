@@ -84,6 +84,11 @@ public partial class NtpSyncTab : ComponentBase, IDisposable
         }
     }
 
+    private async Task CancelNtp()
+    {
+        await NtpManager.CancelNtpSync();
+    }
+
     private void OverrideNtp()
     {
         NtpSynced = true;

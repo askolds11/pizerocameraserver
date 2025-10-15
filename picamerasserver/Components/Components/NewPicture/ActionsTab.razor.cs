@@ -89,6 +89,16 @@ public partial class ActionsTab : ComponentBase, IDisposable
         }
     }
 
+    private async Task CancelSendSet()
+    {
+        await SendPictureSetManager.CancelSendSet();
+    }
+
+    private async Task CancelUpload()
+    {
+        await UploadToServer.CancelUpload();
+    }
+
     private async Task OnChange()
     {
         await InvokeAsync(StateHasChanged);

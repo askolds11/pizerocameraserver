@@ -50,6 +50,11 @@ public partial class GetAliveTab : ComponentBase, IDisposable
         }
     }
 
+    private async Task CancelGetAlive()
+    {
+        await GetAliveManager.CancelPing();
+    }
+
     private void OverrideGetAlive()
     {
         Alived = true;

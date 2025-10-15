@@ -17,6 +17,7 @@ public partial class SyncFramesTab : ComponentBase, IDisposable
     private PictureSetModel? PictureSet => SharedState.PictureSet;
 
     private bool SyncActive => SharedState.SyncActive;
+    private bool AnyActive => SharedState.AnyActive;
 
     private bool Alived => SharedState.Alived;
     private bool NtpSynced => SharedState.NtpSynced;
@@ -59,6 +60,11 @@ public partial class SyncFramesTab : ComponentBase, IDisposable
         {
             SyncedFrames = false;
         }
+    }
+
+    private async Task CancelSync()
+    {
+        await SyncManager.CancelSyncStatus();
     }
 
     private void OverrideSync()
