@@ -32,7 +32,7 @@ public interface ITakePictureManager
     /// <returns>The resulting request model with cameras</returns>
     Task<Result<PictureRequestModel>> RequestTakePictureAll(
         PictureRequestType pictureRequestType = PictureRequestType.Other,
-        Guid? pictureSetUId = null, int futureMillis = 1000);
+        Guid? pictureSetUId = null, int futureMillis = 1500);
 
     /// <summary>
     /// Handle a TakePicture response

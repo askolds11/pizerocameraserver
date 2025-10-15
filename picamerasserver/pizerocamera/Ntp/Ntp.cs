@@ -21,7 +21,7 @@ public interface INtpManager
     /// <param name="ntpRequest">Type of NTP sync method to use</param>
     /// <param name="maxConcurrentSyncs">Maximum concurrent NTP syncs at once</param>
     /// <returns>Result whether the sync was successful</returns>
-    Task<Result> RequestNtpSync(NtpRequest ntpRequest, int maxConcurrentSyncs = 1);
+    Task<Result> RequestNtpSync(NtpRequest ntpRequest, int maxConcurrentSyncs = 3);
 
     /// <summary>
     /// Request a single Pi to sync its time.

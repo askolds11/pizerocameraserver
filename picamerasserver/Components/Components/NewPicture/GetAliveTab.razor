@@ -74,12 +74,16 @@
             ColorTransform="@ColorTransformPing"
             TooltipTransform="@_tooltipTransformStatus">
         </StatusTable>
+        <IndicatorStatus TooltipTransform="null"
+                         ColorTransform="@ColorTransformIndicator"/>
         <MudText Typo="Typo.h6" Class="px-4">Status</MudText>
         <StatusTable
             Elevation="5"
             ColorTransform="@ColorTransformStatus"
             TooltipTransform="@_tooltipTransformStatus">
         </StatusTable>
+        <IndicatorStatus TooltipTransform="null"
+                         ColorTransform="@ColorTransformIndicatorStatus"/>
     </ChildContent>
 </MudExpansionPanel>
 
@@ -99,6 +103,25 @@
     private SysColor ColorTransformStatus(string id)
     {
         return PiZeroCameraManager.PiZeroCameras[id].Status switch
+        {
+            null => SysColor.FromArgb(0xFF, 0x00, 0x00),
+            _ => SysColor.FromArgb(0x00, 0xFF, 0x00)
+        };
+    }
+
+    private SysColor ColorTransformIndicator()
+    {
+        return PiZeroCameraManager.PiZeroIndicator.Pingable switch
+        {
+            true => SysColor.FromArgb(0x00, 0xFF, 0x00),
+            false => SysColor.FromArgb(0xFF, 0x00, 0x00),
+            null => SysColor.FromArgb(0x00, 0x00, 0x00)
+        };
+    }
+
+    private SysColor ColorTransformIndicatorStatus()
+    {
+        return PiZeroCameraManager.PiZeroIndicator.Status switch
         {
             null => SysColor.FromArgb(0xFF, 0x00, 0x00),
             _ => SysColor.FromArgb(0x00, 0xFF, 0x00)

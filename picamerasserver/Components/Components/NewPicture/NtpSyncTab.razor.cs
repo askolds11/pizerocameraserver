@@ -99,6 +99,7 @@ public partial class NtpSyncTab : ComponentBase, IDisposable
         await InvokeAsync(() =>
         {
             UpdateTooltipTransformNtp();
+            UpdateIndicatorTooltip();
             StateHasChanged();
         });
     }
@@ -114,6 +115,7 @@ public partial class NtpSyncTab : ComponentBase, IDisposable
         ChangeListener.OnNtpChange += OnNtpChanged;
 
         UpdateTooltipTransformNtp();
+        UpdateIndicatorTooltip();
     }
 
     public void Dispose()

@@ -1,4 +1,3 @@
-using System.Drawing;
 using Microsoft.AspNetCore.Components;
 using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.manager;
@@ -81,21 +80,5 @@ public partial class NtpPage : ComponentBase, IDisposable
     {
         ChangeListener.OnNtpChange -= OnGlobalChanged;
         GC.SuppressFinalize(this);
-    }
-    
-    private Color ColorTransform(string id)
-    {
-        var piZeroCamera = PiZeroCameraManager.PiZeroCameras[id];
-        return piZeroCamera.NtpRequest switch
-        {
-            null => Color.FromArgb(0x00, 0x00, 0x00),
-            PiZeroNtpRequest.Failure.Failed => Color.FromArgb(0xff, 0x00, 0x00),
-            PiZeroNtpRequest.Failure.FailedToParseJson => Color.FromArgb(0xff, 0x00, 0x00),
-            PiZeroNtpRequest.Failure.FailedToParseRegex => Color.FromArgb(0xff, 0x00, 0x00),
-            PiZeroNtpRequest.Failure.FailedToRequest => Color.FromArgb(0xff, 0x00, 0x00),
-            PiZeroNtpRequest.Requested => Color.FromArgb(0x55, 0x55, 0x00),
-            PiZeroNtpRequest.Success => Color.FromArgb(0x00, 0xFF, 0x00),
-            _ => throw new ArgumentOutOfRangeException(nameof(piZeroCamera.NtpRequest))
-        };
     }
 }
