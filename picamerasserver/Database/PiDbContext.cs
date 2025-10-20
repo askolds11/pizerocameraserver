@@ -16,4 +16,5 @@ public class PiDbContext(DbContextOptions<PiDbContext> options) : DbContext(opti
     public DbSet<CameraModel> Cameras { get; init; }
     public DbSet<CameraPictureModel> CameraPictures { get; init; }
     public DbSet<UpdateModel> Updates { get; init; }
+    public DbSet<SettingModel> Settings { get; init; }
 }

@@ -10,6 +10,7 @@ using picamerasserver.Options;
 using picamerasserver.pizerocamera.manager;
 using picamerasserver.pizerocamera.Responses;
 using picamerasserver.pizerocamera.syncreceiver;
+using picamerasserver.Settings;
 
 namespace picamerasserver.pizerocamera.TakePicture;
 
@@ -29,11 +30,10 @@ public interface ITakePictureManager
     /// </summary>
     /// <param name="pictureRequestType">Type of picture</param>
     /// <param name="pictureSetUId">UUID of the picture set, if exists</param>
-    /// <param name="futureMillis">How far in the future to take the photo</param>
     /// <returns>The resulting request model with cameras</returns>
     Task<Result<PictureRequestModel>> RequestTakePictureAll(
         PictureRequestType pictureRequestType = PictureRequestType.Other,
-        Guid? pictureSetUId = null, int futureMillis = 1500);
+        Guid? pictureSetUId = null);
 
     /// <summary>
     /// Handle a TakePicture response
@@ -59,7 +59,8 @@ public partial class TakePicture(
     IOptionsMonitor<MqttOptions> optionsMonitor,
     IDbContextFactory<PiDbContext> dbContextFactory,
     ILogger<TakePicture> logger,
-    SyncPayloadService syncPayloadService
+    SyncPayloadService syncPayloadService,
+    SettingsService settingsService
 ) : ITakePictureManager, IDisposable
 {
     private readonly ConcurrentDictionary<Guid, Channel<string>> _takePictureChannels = new();

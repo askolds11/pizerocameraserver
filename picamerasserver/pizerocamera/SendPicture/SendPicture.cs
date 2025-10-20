@@ -7,6 +7,7 @@ using picamerasserver.Database;
 using picamerasserver.Options;
 using picamerasserver.pizerocamera.manager;
 using picamerasserver.pizerocamera.Responses;
+using picamerasserver.Settings;
 
 namespace picamerasserver.pizerocamera.SendPicture;
 
@@ -22,11 +23,9 @@ public interface ISendPictureManager
 
     /// <summary>
     /// Makes requests to send pictures from cameras to server. <br />
-    /// Makes requests to <paramref name="maxConcurrentUploads"/> cameras at once.
     /// </summary>
     /// <param name="uuid">Uuid of PictureRequest</param>
-    /// <param name="maxConcurrentUploads">How many uploads to do at once</param>
-    Task RequestSendPictureChannels(Guid uuid, int maxConcurrentUploads = 3);
+    Task RequestSendPictureChannels(Guid uuid);
 
     /// <summary>
     /// Request to send picture for individual camera
@@ -59,7 +58,8 @@ public partial class SendPicture(
     IOptionsMonitor<MqttOptions> optionsMonitor,
     IOptionsMonitor<DirectoriesOptions> dirOptionsMonitor,
     IDbContextFactory<PiDbContext> dbContextFactory,
-    ILogger<SendPicture> logger
+    ILogger<SendPicture> logger,
+    SettingsService settingsService
 ) : ISendPictureManager, IDisposable
 {
     private readonly ConcurrentDictionary<Guid, Channel<string>> _sendPictureChannels = new();

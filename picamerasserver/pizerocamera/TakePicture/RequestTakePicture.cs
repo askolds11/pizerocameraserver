@@ -5,6 +5,7 @@ using MQTTnet;
 using MQTTnet.Protocol;
 using picamerasserver.Database.Models;
 using picamerasserver.pizerocamera.Requests;
+using picamerasserver.Settings;
 
 namespace picamerasserver.pizerocamera.TakePicture;
 
@@ -14,16 +15,15 @@ public partial class TakePicture
     /// Creates request model and MQTT message for take picture request
     /// </summary>
     /// <remarks>Message is not set!</remarks>
-    /// <param name="futureMillis">How far in the future to take the photo</param>
     /// <param name="pictureRequestType">Type for picture</param>
     /// <param name="pictureSetUId">UUID for a picture set</param>
     /// <returns>PictureRequest model and MQTT message</returns>
-    private (PictureRequestModel pictureRequest, MqttApplicationMessage message) CreateRequestModels(
-        int futureMillis,
+    private async Task<(PictureRequestModel pictureRequest, MqttApplicationMessage message)> CreateRequestModels(
         PictureRequestType pictureRequestType,
         Guid? pictureSetUId
     )
     {
+        var futureMillis = (await settingsService.GetAsync<Setting.RequestPictureDelay>()).Value.Value;
         var latestSync = syncPayloadService.GetLatest();
         
         var uuid = Guid.CreateVersion7();
@@ -103,7 +103,7 @@ public partial class TakePicture
 
     /// <inheritdoc />
     public async Task<Result<PictureRequestModel>> RequestTakePictureAll(PictureRequestType pictureRequestType,
-        Guid? pictureSetUId, int futureMillis)
+        Guid? pictureSetUId)
     {
         // Another take picture operation is already running
         if (!await _takePictureSemaphore.WaitAsync(TimeSpan.Zero))
@@ -132,7 +132,7 @@ public partial class TakePicture
             await using var piDbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
             var options = optionsMonitor.CurrentValue;
 
-            (pictureRequest, var message) = CreateRequestModels(futureMillis, pictureRequestType, pictureSetUId);
+            (pictureRequest, var message) = await CreateRequestModels(pictureRequestType, pictureSetUId);
 
             // must save request to db before requests
             piDbContext.PictureRequests.Add(pictureRequest);

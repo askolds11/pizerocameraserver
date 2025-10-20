@@ -3,6 +3,7 @@ using CSharpFunctionalExtensions;
 using MQTTnet;
 using MQTTnet.Protocol;
 using picamerasserver.pizerocamera.Requests;
+using picamerasserver.Settings;
 
 namespace picamerasserver.pizerocamera.Ntp;
 
@@ -27,7 +28,7 @@ public partial class Ntp
     }
 
     /// <inheritdoc />
-    public async Task<Result> RequestNtpSync(NtpRequest ntpRequest, int maxConcurrentSyncs)
+    public async Task<Result> RequestNtpSync(NtpRequest ntpRequest)
     {
         // Another ntp operation is already running
         if (!await _ntpSemaphore.WaitAsync(TimeSpan.Zero))
@@ -52,6 +53,8 @@ public partial class Ntp
         {
             NtpActive = true;
             _ntpChannel = Channel.CreateUnbounded<string>();
+
+            var maxConcurrentSyncs = (await settingsService.GetAsync<Setting.MaxConcurrentNtp>()).Value.Value;
 
             var options = optionsMonitor.CurrentValue;
 

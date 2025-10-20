@@ -5,6 +5,7 @@ using MQTTnet;
 using picamerasserver.Options;
 using picamerasserver.pizerocamera.manager;
 using picamerasserver.pizerocamera.Requests;
+using picamerasserver.Settings;
 
 namespace picamerasserver.pizerocamera.Ntp;
 
@@ -19,9 +20,8 @@ public interface INtpManager
     /// Makes requests to all Pis to sync time.
     /// </summary>
     /// <param name="ntpRequest">Type of NTP sync method to use</param>
-    /// <param name="maxConcurrentSyncs">Maximum concurrent NTP syncs at once</param>
     /// <returns>Result whether the sync was successful</returns>
-    Task<Result> RequestNtpSync(NtpRequest ntpRequest, int maxConcurrentSyncs = 3);
+    Task<Result> RequestNtpSync(NtpRequest ntpRequest);
 
     /// <summary>
     /// Request a single Pi to sync its time.
@@ -46,7 +46,8 @@ public partial class Ntp(
     ChangeListener changeListener,
     IMqttClient mqttClient,
     IOptionsMonitor<MqttOptions> optionsMonitor,
-    ILogger<Ntp> logger
+    ILogger<Ntp> logger,
+    SettingsService settingsService
 ) : INtpManager, IDisposable
 {
     private Channel<string>? _ntpChannel;

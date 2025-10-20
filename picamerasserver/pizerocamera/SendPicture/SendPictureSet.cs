@@ -12,11 +12,9 @@ public interface ISendPictureSetManager
 
     /// <summary>
     /// Makes requests to send picture set's pictures from cameras to server. <br />
-    /// Makes requests to <paramref name="maxConcurrentUploads"/> cameras at once.
     /// </summary>
     /// <param name="uuid">Uuid of PictureSet</param>
-    /// <param name="maxConcurrentUploads">How many uploads to do at once</param>
-    Task RequestSendPictureSet(Guid uuid, int maxConcurrentUploads = 3);
+    Task RequestSendPictureSet(Guid uuid);
 
     /// <summary>
     /// Cancels the ongoing send picture set operation
@@ -37,7 +35,7 @@ public class SendPictureSet(
     private CancellationTokenSource? _sendSetCancellationTokenSource;
     
     /// <inheritdoc />
-    public async Task RequestSendPictureSet(Guid uuid, int maxConcurrentUploads)
+    public async Task RequestSendPictureSet(Guid uuid)
     {
         // Another send set operation is already running
         if (!await _sendSetSemaphore.WaitAsync(TimeSpan.Zero))
@@ -71,7 +69,7 @@ public class SendPictureSet(
 
             foreach (var pictureRequest in pictureSet.PictureRequests)
             {
-                await sendPictureManager.RequestSendPictureChannels(pictureRequest.Uuid, maxConcurrentUploads);
+                await sendPictureManager.RequestSendPictureChannels(pictureRequest.Uuid);
                 _sendSetCancellationTokenSource.Token.ThrowIfCancellationRequested();
             }
 

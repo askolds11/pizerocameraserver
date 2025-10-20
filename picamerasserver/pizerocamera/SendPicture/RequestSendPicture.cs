@@ -6,6 +6,7 @@ using picamerasserver.Database;
 using picamerasserver.Database.Models;
 using picamerasserver.Options;
 using picamerasserver.pizerocamera.Requests;
+using picamerasserver.Settings;
 
 namespace picamerasserver.pizerocamera.SendPicture;
 
@@ -58,7 +59,8 @@ public partial class SendPicture
             PiDbContext dbContext,
             List<string> unsentCameraIds,
             MqttOptions options,
-            Channel<string> channel),
+            Channel<string> channel,
+            int maxConcurrentUploads),
             Task> tryBlock
     )
     {
@@ -83,6 +85,7 @@ public partial class SendPicture
         {
             SendActive = true;
 
+            var maxConcurrentUploads = (await settingsService.GetAsync<Setting.MaxConcurrentSend>()).Value.Value;
             var options = optionsMonitor.CurrentValue;
 
             // Get the request
@@ -114,7 +117,7 @@ public partial class SendPicture
             }
 
             // Execute the custom logic provided by `tryBlock`
-            await tryBlock((_sendCancellationTokenSource, piDbContext, unsentCameras, options, channel));
+            await tryBlock((_sendCancellationTokenSource, piDbContext, unsentCameras, options, channel, maxConcurrentUploads));
         }
         catch (OperationCanceledException)
         {
@@ -144,11 +147,11 @@ public partial class SendPicture
     }
 
     /// <inheritdoc />
-    public async Task RequestSendPictureChannels(Guid uuid, int maxConcurrentUploads)
+    public async Task RequestSendPictureChannels(Guid uuid)
     {
         await RequestSendPictureTryBlock(uuid, async context =>
         {
-            var (cts, piDbContext, unsentCameras, options, channel) = context;
+            var (cts, piDbContext, unsentCameras, options, channel, maxConcurrentUploads) = context;
 
             // Queue for sending requests
             var cameraQueue = new Queue<string>(unsentCameras);

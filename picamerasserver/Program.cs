@@ -19,6 +19,7 @@ using picamerasserver.pizerocamera.Sync;
 using picamerasserver.pizerocamera.syncreceiver;
 using picamerasserver.pizerocamera.TakePicture;
 using picamerasserver.pizerocamera.Update;
+using picamerasserver.Settings;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -79,6 +80,7 @@ builder.Services.AddSingleton<IUpdateManager, Update>();
 builder.Services.AddSingleton<IUploadManager, UploadToServer>();
 builder.Services.AddSingleton<ISyncManager, Sync>();
 builder.Services.AddSingleton<Sound>();
+builder.Services.AddSingleton<SettingsService>();
 
 builder.Services.AddScoped<SharedState>();
 
