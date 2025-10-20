@@ -9,6 +9,7 @@ using picamerasserver.Database.Models;
 using picamerasserver.Options;
 using picamerasserver.pizerocamera.manager;
 using picamerasserver.pizerocamera.Responses;
+using picamerasserver.pizerocamera.syncreceiver;
 
 namespace picamerasserver.pizerocamera.TakePicture;
 
@@ -57,7 +58,8 @@ public partial class TakePicture(
     IMqttClient mqttClient,
     IOptionsMonitor<MqttOptions> optionsMonitor,
     IDbContextFactory<PiDbContext> dbContextFactory,
-    ILogger<TakePicture> logger
+    ILogger<TakePicture> logger,
+    SyncPayloadService syncPayloadService
 ) : ITakePictureManager, IDisposable
 {
     private readonly ConcurrentDictionary<Guid, Channel<string>> _takePictureChannels = new();

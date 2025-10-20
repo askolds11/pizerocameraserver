@@ -18,15 +18,46 @@ public partial class TakePicture
     /// <param name="pictureRequestType">Type for picture</param>
     /// <param name="pictureSetUId">UUID for a picture set</param>
     /// <returns>PictureRequest model and MQTT message</returns>
-    private static (PictureRequestModel pictureRequest, MqttApplicationMessage message) CreateRequestModels(
+    private (PictureRequestModel pictureRequest, MqttApplicationMessage message) CreateRequestModels(
         int futureMillis,
         PictureRequestType pictureRequestType,
         Guid? pictureSetUId
     )
     {
+        var latestSync = syncPayloadService.GetLatest();
+        
         var uuid = Guid.CreateVersion7();
         var currentTime = DateTimeOffset.UtcNow;
-        var pictureTime = currentTime.AddMilliseconds(futureMillis);
+
+        DateTimeOffset pictureTime;
+        if (latestSync != null)
+        {
+            // If the packets are synced, make the picture time a bit after a frame's start
+            // Sync info
+            var frameTimestampMicros = latestSync.Value.WallClockFrameTimestamp;
+            var frameDurationMicros = latestSync.Value.FrameDuration;
+            
+            // Planned time
+            var futureTimeMicros = (ulong) currentTime.AddMilliseconds(futureMillis).ToUnixTimeMilliseconds() * 1_000;
+            
+            // Get the difference between planned time and current frame start time
+            var diff = futureTimeMicros > frameTimestampMicros ? futureTimeMicros - frameTimestampMicros : (ulong) futureMillis * 1_000;
+            
+            // Number of frames such that their total time is at least as long as the difference
+            var n = (long)Math.Ceiling(diff / (double)frameDurationMicros);
+            
+            // Get the closest frame start time to the planned time
+            var closestMicros = frameTimestampMicros + (ulong)(n * frameDurationMicros);
+
+            // Create the DateTimeOffset. Add extra time to be a bit after the frame start time.
+            var epochTime = new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero);
+            pictureTime = epochTime.AddTicks((long) closestMicros * 10 + 5_000 * 10);
+        }
+        else
+        {
+            // If no sync info, just add the time
+            pictureTime = currentTime.AddMilliseconds(futureMillis);
+        }
 
         var pictureRequest = new PictureRequestModel
         {

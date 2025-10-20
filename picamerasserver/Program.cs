@@ -16,6 +16,7 @@ using picamerasserver.pizerocamera.manager;
 using picamerasserver.pizerocamera.Ntp;
 using picamerasserver.pizerocamera.SendPicture;
 using picamerasserver.pizerocamera.Sync;
+using picamerasserver.pizerocamera.syncreceiver;
 using picamerasserver.pizerocamera.TakePicture;
 using picamerasserver.pizerocamera.Update;
 using Serilog;
@@ -80,6 +81,9 @@ builder.Services.AddSingleton<ISyncManager, Sync>();
 builder.Services.AddSingleton<Sound>();
 
 builder.Services.AddScoped<SharedState>();
+
+builder.Services.AddHostedService<UdpListenerService>();
+builder.Services.AddSingleton<SyncPayloadService>();
 
 var app = builder.Build();
 
