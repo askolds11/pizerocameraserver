@@ -8,7 +8,7 @@ public partial class SoundTab : ComponentBase
 {
     [Parameter, EditorRequired] public required SharedState SharedState { get; set; }
 
-    [Inject] protected Sound Sound { get; init; } = null!;
+    [Inject] protected SoundManager SoundManager { get; init; } = null!;
 
     private PictureSetModel? PictureSet => SharedState.PictureSet;
     
@@ -23,6 +23,6 @@ public partial class SoundTab : ComponentBase
 
     private async Task TestSignal()
     {
-        await Sound.SendSignal();
+        await SoundManager.SendSignal();
     }
 }

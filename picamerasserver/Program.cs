@@ -79,7 +79,7 @@ builder.Services.AddSingleton<IGetAliveManager, GetAlive>();
 builder.Services.AddSingleton<IUpdateManager, Update>();
 builder.Services.AddSingleton<IUploadManager, UploadToServer>();
 builder.Services.AddSingleton<ISyncManager, Sync>();
-builder.Services.AddSingleton<Sound>();
+builder.Services.AddSingleton<SoundManager>();
 builder.Services.AddSingleton<SettingsService>();
 builder.Services.AddSingleton<NotificationService>();
 

@@ -1,0 +1,18 @@
+@page "/sound"
+@using picamerasserver.Components.Components
+
+<PageTitle>Sound - PiCam</PageTitle>
+<DefaultPage>
+    <MudPaper Elevation="5">
+        <MudText Typo="Typo.h5" Class="pa-5">Sound</MudText>
+        <MudStack Row="true" Spacing="4" Class="pa-4 d-inline-flex"
+                  AlignItems="AlignItems.Center">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       Size="Size.Large"
+                       EndIcon="@Icons.Material.Outlined.Alarm" OnClick="@TestSignal"
+                       Disabled="!IndicatorAlive">
+                Test sound
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+</DefaultPage>

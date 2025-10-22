@@ -5,7 +5,7 @@ using picamerasserver.Options;
 
 namespace picamerasserver.PiZero;
 
-public class Sound(IMqttClient mqttClient, IOptionsMonitor<MqttOptions> mqttOptionsMonitor)
+public class SoundManager(IMqttClient mqttClient, IOptionsMonitor<MqttOptions> mqttOptionsMonitor)
 {
     public async Task SendSignal()
     {
