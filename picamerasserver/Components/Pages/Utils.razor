@@ -4,51 +4,39 @@
 
 <PageTitle>Utils - PiCam</PageTitle>
 <DefaultPage>
-    <MudStack Style="width: 100%">
-        <MudExpansionPanels Elevation="5" MultiExpansion>
-            <MudExpansionPanel Expanded Gutters="false" Dense="true">
-                <TitleContent>
-                    <MudText Typo="Typo.h5">Utils</MudText>
-                </TitleContent>
-                <ChildContent>
-                    <MudStack Spacing="4" Class="pa-4" AlignItems="AlignItems.Start">
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                   OnClick="@ShutdownPis">
-                            Shutdown Pis
-                        </MudButton>
-                        <MudStack Spacing="4" Class="pa-4" AlignItems="AlignItems.Start" Row="true">
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                       OnClick="@ShutdownCamerasQuadrantA">
-                                Shutdown A-D
-                            </MudButton>
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                       OnClick="@ShutdownCamerasQuadrantE">
-                                Shutdown E-H
-                            </MudButton>
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                       OnClick="@ShutdownCamerasQuadrantI">
-                                Shutdown I-L
-                            </MudButton>
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                       OnClick="@ShutdownCamerasQuadrantM">
-                                Shutdown M-P
-                            </MudButton>
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                       OnClick="@ShutdownIndicator">
-                                Shutdown Indicator
-                            </MudButton>
-                        </MudStack>
-                        <MudButton Variant="Variant.Filled" Color="Color.Error"
-                                   OnClick="@Shutdown">
-                            Shutdown Server
-                        </MudButton>
-                    </MudStack>
-                </ChildContent>
-            </MudExpansionPanel>
-        </MudExpansionPanels>
-    </MudStack>
+    <MudPaper Elevation="5">
+        <MudText Typo="Typo.h5" Class="pa-5">Utils</MudText>
+        <MudStack Spacing="4" Class="pa-4" AlignItems="AlignItems.Start">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       OnClick="@ShutdownPis">
+                Shutdown Pis
+            </MudButton>
+            <MudStack Spacing="4" Class="pa-4" AlignItems="AlignItems.Start" Row="true">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           OnClick="@ShutdownCamerasQuadrantA">
+                    Shutdown A-D
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           OnClick="@ShutdownCamerasQuadrantE">
+                    Shutdown E-H
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           OnClick="@ShutdownCamerasQuadrantI">
+                    Shutdown I-L
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           OnClick="@ShutdownCamerasQuadrantM">
+                    Shutdown M-P
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           OnClick="@ShutdownIndicator">
+                    Shutdown Indicator
+                </MudButton>
+            </MudStack>
+            <MudButton Variant="Variant.Filled" Color="Color.Error"
+                       OnClick="@Shutdown">
+                Shutdown Server
+            </MudButton>
+        </MudStack>
+    </MudPaper>
 </DefaultPage>
-
-@code {
-    
-}

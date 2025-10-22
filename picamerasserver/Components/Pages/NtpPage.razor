@@ -7,43 +7,35 @@
 
 <PageTitle>Ntp - PiCam</PageTitle>
 <DefaultPage>
-    <MudStack Style="width: 100%">
-        <MudExpansionPanels Elevation="5" MultiExpansion>
-            <MudExpansionPanel Expanded Gutters="false" Dense="true">
-                <TitleContent>
-                    <MudText Typo="Typo.h5">NTP Sync</MudText>
-                </TitleContent>
-                <ChildContent>
-                    <StatusTable ColorTransform="@ColorTransformNtp" TooltipTransform="@_tooltipTransform"></StatusTable>
-                    <IndicatorStatus TooltipTransform="null"
-                                     ColorTransform="@ColorTransformIndicator"/>
-                    <MudStack Row="true" Spacing="4" Class="pa-4" AlignItems="AlignItems.Center">
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                   OnClick="@RequestNtpSyncStep"
-                                   Disabled="NtpActive">
-                            Big (step)
-                        </MudButton>
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                   OnClick="@RequestNtpSyncSlew"
-                                   Disabled="NtpActive">
-                            Small (slew)
-                        </MudButton>
-                        <MudButton Variant="Variant.Filled" Color="Color.Error"
-                                   OnClick="@CancelNtp"
-                                   Disabled="!NtpActive">
-                            Cancel
-                        </MudButton>
-                    </MudStack>
-                    <MudStack Spacing="4" Class="pa-4" AlignItems="AlignItems.Start">
-                        <MudText Typo="Typo.h6">Offset</MudText>
-                        <MudText Typo="Typo.body2">Min @MinOffset ms/Max @MaxOffset ms</MudText>
-                        <MudText Typo="Typo.h6">Error</MudText>
-                        <MudText Typo="Typo.body2"> Min @MinError ms/Max @MaxError ms</MudText>
-                    </MudStack>
-                </ChildContent>
-            </MudExpansionPanel>
-        </MudExpansionPanels>
-    </MudStack>
+    <MudPaper Elevation="5">
+        <MudText Typo="Typo.h5" Class="pa-5">NTP Sync</MudText>
+        <StatusTable ColorTransform="@ColorTransformNtp" TooltipTransform="@_tooltipTransform"></StatusTable>
+        <IndicatorStatus TooltipTransform="null"
+                         ColorTransform="@ColorTransformIndicator"/>
+        <MudStack Row="true" Spacing="4" Class="pa-4" AlignItems="AlignItems.Center">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       OnClick="@RequestNtpSyncStep"
+                       Disabled="NtpActive">
+                Big (step)
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       OnClick="@RequestNtpSyncSlew"
+                       Disabled="NtpActive">
+                Small (slew)
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Error"
+                       OnClick="@CancelNtp"
+                       Disabled="!NtpActive">
+                Cancel
+            </MudButton>
+        </MudStack>
+        <MudStack Spacing="4" Class="pa-4" AlignItems="AlignItems.Start">
+            <MudText Typo="Typo.h6">Offset</MudText>
+            <MudText Typo="Typo.body2">Min @MinOffset ms/Max @MaxOffset ms</MudText>
+            <MudText Typo="Typo.h6">Error</MudText>
+            <MudText Typo="Typo.body2"> Min @MinError ms/Max @MaxError ms</MudText>
+        </MudStack>
+    </MudPaper>
 </DefaultPage>
 
 @code {
@@ -60,7 +52,7 @@
     }
 
     private SysColor ColorTransformIndicator() => ColorTransformNtp(PiZeroIndicator.Id);
-    
+
     private SysColor ColorTransformNtp(string id)
     {
         var ntpRequest = id == PiZeroIndicator.Id
@@ -86,4 +78,5 @@
             _ => throw new ArgumentOutOfRangeException(nameof(ntpRequest))
         };
     }
+
 }

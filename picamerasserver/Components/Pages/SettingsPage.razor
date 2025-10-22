@@ -4,69 +4,72 @@
 
 <PageTitle>Settings - PiCam</PageTitle>
 <DefaultPage>
-    <MudStack Class="px-4 pt-4 pb-4 mt-4 mb-20">
-        <div class="d-flex flex-grow-1 align-center gap-4">
-            <MudInputLabel
-                Class="flex-none"
-                Style="width: 10rem; text-align: end;">
-                Max concurrent ntp
-            </MudInputLabel>
-            <div class="flex-auto" style="max-width:10rem ">
-                <MudNumericField
-                    FullWidth="true"
-                    @bind-Value="_maxConcurrentNtp"
-                    TextUpdateSuppression="false"
-                    Immediate="true"/>
+    <MudPaper Elevation="5">
+        <MudText Typo="Typo.h5" Class="pa-5">Settings</MudText>
+        <MudStack Class="px-4 pb-4 mb-20">
+            <div class="d-flex flex-grow-1 align-center gap-4">
+                <MudInputLabel
+                    Class="flex-none"
+                    Style="width: 10rem; text-align: end;">
+                    Max concurrent ntp
+                </MudInputLabel>
+                <div class="flex-auto" style="max-width:10rem ">
+                    <MudNumericField
+                        FullWidth="true"
+                        @bind-Value="_maxConcurrentNtp"
+                        TextUpdateSuppression="false"
+                        Immediate="true"/>
+                </div>
+                <MudButton
+                    Class="flex-none"
+                    OnClick="@SaveMaxConcurrentNtp"
+                    Variant="Variant.Filled"
+                    Color="Color.Primary">
+                    Save
+                </MudButton>
             </div>
-            <MudButton
-                Class="flex-none"
-                OnClick="@SaveMaxConcurrentNtp"
-                Variant="Variant.Filled"
-                Color="Color.Primary">
-                Save
-            </MudButton>
-        </div>
-        <div class="d-flex flex-grow-1 align-center gap-4">
-            <MudInputLabel
-                Class="flex-none"
-                Style="width: 10rem; text-align: end;">
-                Max concurrent send
-            </MudInputLabel>
-            <div class="flex-auto" style="max-width:10rem ">
-                <MudNumericField
-                    FullWidth="true"
-                    @bind-Value="_maxConcurrentSend"
-                    TextUpdateSuppression="false"
-                    Immediate="true"/>
+            <div class="d-flex flex-grow-1 align-center gap-4">
+                <MudInputLabel
+                    Class="flex-none"
+                    Style="width: 10rem; text-align: end;">
+                    Max concurrent send
+                </MudInputLabel>
+                <div class="flex-auto" style="max-width:10rem ">
+                    <MudNumericField
+                        FullWidth="true"
+                        @bind-Value="_maxConcurrentSend"
+                        TextUpdateSuppression="false"
+                        Immediate="true"/>
+                </div>
+                <MudButton
+                    Class="flex-none"
+                    OnClick="@SaveMaxConcurrentSend"
+                    Variant="Variant.Filled"
+                    Color="Color.Primary">
+                    Save
+                </MudButton>
             </div>
-            <MudButton
-                Class="flex-none"
-                OnClick="@SaveMaxConcurrentSend"
-                Variant="Variant.Filled"
-                Color="Color.Primary">
-                Save
-            </MudButton>
-        </div>
-        <div class="d-flex flex-grow-1 align-center gap-4">
-            <MudInputLabel
-                Class="flex-none"
-                Style="width: 10rem; text-align: end;">
-                Request picture delay
-            </MudInputLabel>
-            <div class="flex-auto" style="max-width:10rem ">
-                <MudNumericField
-                    FullWidth="true"
-                    @bind-Value="_requestPictureDelay"
-                    TextUpdateSuppression="false"
-                    Immediate="true"/>
+            <div class="d-flex flex-grow-1 align-center gap-4">
+                <MudInputLabel
+                    Class="flex-none"
+                    Style="width: 10rem; text-align: end;">
+                    Request picture delay
+                </MudInputLabel>
+                <div class="flex-auto" style="max-width:10rem ">
+                    <MudNumericField
+                        FullWidth="true"
+                        @bind-Value="_requestPictureDelay"
+                        TextUpdateSuppression="false"
+                        Immediate="true"/>
+                </div>
+                <MudButton
+                    Class="flex-none"
+                    OnClick="@SaveRequestPictureDelay"
+                    Variant="Variant.Filled"
+                    Color="Color.Primary">
+                    Save
+                </MudButton>
             </div>
-            <MudButton
-                Class="flex-none"
-                OnClick="@SaveRequestPictureDelay"
-                Variant="Variant.Filled"
-                Color="Color.Primary">
-                Save
-            </MudButton>
-        </div>
-    </MudStack>
+        </MudStack>
+    </MudPaper>
 </DefaultPage>
