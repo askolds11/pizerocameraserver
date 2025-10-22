@@ -1,0 +1,107 @@
+@page "/sync"
+@using System.Globalization
+@using picamerasserver.Components.Components
+@using picamerasserver.Components.Components.StatusTable
+@using picamerasserver.Components.Components.StatusTable.Tooltip
+@using picamerasserver.PiZero
+@using SysColor = System.Drawing.Color;
+
+<PageTitle>Sync - PiCam</PageTitle>
+<DefaultPage>
+    <MudPaper Elevation="5">
+        <MudText Typo="Typo.h5" Class="pa-5">Sync</MudText>
+        <StatusTable
+            Elevation="5"
+            ColorTransform="@ColorTransformSync"
+            TooltipTransform="@_tooltipTransformSync">
+        </StatusTable>
+        <MudStack Row="true" Spacing="4" Class="pa-4 d-inline-flex"
+                  AlignItems="AlignItems.Center">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       Size="Size.Large"
+                       EndIcon="@Icons.Material.Outlined.Alarm" OnClick="@RequestSync"
+                       Disabled="AliveCount == 0">
+                Sync frames
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Large"
+                       EndIcon="@Icons.Material.Outlined.Cancel" OnClick="@CancelSync"
+                       Disabled="!SyncActive">
+                Cancel
+            </MudButton>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudText>
+                    Synced @SyncedCount / @AliveCount
+                </MudText>
+                @if (SyncedCount > 0 && SyncedCount == AliveCount)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
+                             Size="Size.Large"/>
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error"
+                             Size="Size.Large"/>
+                }
+            </MudStack>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudText>
+                    <MudText Typo="Typo.h6">Time</MudText>
+                    @(TimeTillSync == null ? "OK" : string.Format(CultureInfo.CurrentCulture, "{0:N2}", TimeTillSync) + " ms")
+                </MudText>
+            </MudStack>
+        </MudStack>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="pa-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       Size="Size.Large"
+                       EndIcon="@Icons.Material.Outlined.Refresh" OnClick="@RefreshSync"
+                       Disabled="AliveCount == 0">
+                Refresh sync
+            </MudButton>
+            @if (SyncPayload != null)
+            {
+                <MudText>
+                    <MudText Typo="Typo.h6">FrameDuration</MudText>
+                    <MudText>@SyncPayload.Value.FrameDuration</MudText>
+                    <MudText Typo="Typo.h6">WallClockFrameTimestamp</MudText>
+                    <MudText>@SyncPayload.Value.WallClockFrameTimestamp</MudText>
+                </MudText>
+            }
+        </MudStack>
+    </MudPaper>
+</DefaultPage>
+
+@code {
+
+    private Func<string, RenderFragment?> _tooltipTransformSync = _ => null;
+
+
+    private void UpdateTooltipTransformSync()
+    {
+        _tooltipTransformSync = cameraId =>
+        {
+            var item = PiZeroManager.PiZeroCameras[cameraId];
+
+            return @<SyncRequestTooltip PiZeroCamera="item"/>;
+        };
+    }
+
+
+    private SysColor ColorTransformSync(string id)
+    {
+        var piZeroCamera = PiZeroManager.PiZeroCameras[id];
+
+        return piZeroCamera.SyncStatus switch
+        {
+            null => SysColor.FromArgb(0x00, 0x00, 0x00),
+            SyncStatus.Cancelled => SysColor.FromArgb(0xFF, 0x55, 0x00),
+            SyncStatus.Failure.Failed => SysColor.FromArgb(0xff, 0x00, 0x00),
+            SyncStatus.Failure.FailedToRequest => SysColor.FromArgb(0xff, 0x00, 0x00),
+            SyncStatus.Requested => SysColor.FromArgb(0x55, 0x55, 0x00),
+            SyncStatus.Success success => success.SyncReady
+                ? SysColor.FromArgb(0x00, 0xFF, 0x00)
+                : SysColor.FromArgb(0xFF, 0xFF, 0x00),
+            _ => throw new ArgumentOutOfRangeException(nameof(piZeroCamera.SyncStatus))
+        };
+    }
+
+}
