@@ -16,6 +16,10 @@
                                      ColorTransform="@ColorTransformIndicator"/>
                     <MudStack Row="true" Spacing="4" Class="pa-4">
                         <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="@GetAlive" Disabled="PingActive">
+                            Get alive
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                    OnClick="@Ping" Disabled="PingActive">
                             Ping
                         </MudButton>

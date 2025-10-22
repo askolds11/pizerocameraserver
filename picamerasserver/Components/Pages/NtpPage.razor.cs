@@ -12,6 +12,8 @@ public partial class NtpPage : ComponentBase, IDisposable
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
     [Inject] protected INtpManager NtpManager { get; init; } = null!;
 
+    private bool NtpActive => NtpManager.NtpActive;
+
     private async Task RequestNtpSyncStep()
     {
         try
@@ -35,6 +37,11 @@ public partial class NtpPage : ComponentBase, IDisposable
             
         }
         
+    }
+    
+    private async Task CancelNtp()
+    {
+        await NtpManager.CancelNtpSync();
     }
     
     private List<float>? GetOffsets()

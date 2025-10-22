@@ -23,6 +23,7 @@ public partial class CameraPage : ComponentBase, IDisposable
     private PictureElement? _selectedPicture;
     private string? _previewStreamUrl;
 
+    private bool TakePictureActive => TakePictureManager.TakePictureActive;
     private bool SendActive => SendPictureManager.SendActive;
 
     /// <summary>
@@ -68,10 +69,18 @@ public partial class CameraPage : ComponentBase, IDisposable
 
     private async Task TakePicture()
     {
-        // TODO: Error handling
-        var pictureRequestModel = (await TakePictureManager.RequestTakePictureAll()).Value;
-        _selectedPicture = new PictureElement(pictureRequestModel);
-        await _gridData.ReloadServerData();
+        _selectedPicture = null;
+        var pictureRequestResult = await TakePictureManager.RequestTakePictureAll();
+        if (pictureRequestResult.IsFailure)
+        {
+            Snackbar.Add($"Failed to take picture: {pictureRequestResult.Error}", Severity.Error);
+        }
+        else
+        {
+            var pictureRequestModel = pictureRequestResult.Value;
+            _selectedPicture = new PictureElement(pictureRequestModel);
+            await _gridData.ReloadServerData();
+        }
     }
 
     private async Task SendPicture()
@@ -84,6 +93,11 @@ public partial class CameraPage : ComponentBase, IDisposable
         await SendPictureManager.RequestSendPictureChannels(_selectedPicture.Uuid);
     }
 
+    private async Task CancelTakePic()
+    {
+        await TakePictureManager.CancelTakePicture();
+    }
+    
     private async Task CancelSend()
     {
         await SendPictureManager.CancelSend();
@@ -186,9 +200,12 @@ public class PictureElement(PictureRequestModel pictureRequestModel)
     public DateTime RequestTime => TimeZoneInfo.ConvertTime(pictureRequestModel.RequestTime.LocalDateTime,
         TimeZoneInfo.FindSystemTimeZoneById("Europe/Riga"));
 
-    public int TakenCount => pictureRequestModel.CameraPictures.Count(x => x.ReceivedSaved != null);
+    public int TakenCount => pictureRequestModel.CameraPictures.Count(x => x.ReceivedTaken != null);
+    public int SavedCount => pictureRequestModel.CameraPictures.Count(x => x.ReceivedSaved != null);
     public int SentCount => pictureRequestModel.CameraPictures.Count(x => x.ReceivedSent != null);
     public int TotalCount => pictureRequestModel.CameraPictures.Count(x => x.CameraPictureStatus != null);
+    public int RequestCount => pictureRequestModel.CameraPictures.Count();
+    
 
     public bool CanSend => pictureRequestModel.CameraPictures.Where(x => x.CameraPictureStatus != null)
         .All(x => x.CameraPictureStatus == CameraPictureStatus.Taken);

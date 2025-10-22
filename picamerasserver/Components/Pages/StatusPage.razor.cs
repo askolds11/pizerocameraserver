@@ -28,6 +28,13 @@ public partial class StatusPage : ComponentBase, IDisposable
     {
         await GetAliveManager.GetStatus();
     }
+    
+    private async Task GetAlive()
+    {
+        var task1 = GetAliveManager.Ping();
+        var task2 = GetAliveManager.GetStatus();
+        await Task.WhenAll(task1, task2);
+    }
 
     private async Task OnPingGlobalChanged()
     {

@@ -3,6 +3,7 @@
 @using picamerasserver.Components.Components.StatusTable
 @using picamerasserver.Components.Components.StatusTable.Tooltip
 @inject IDialogService Dialog
+@inject ISnackbar Snackbar
 
 <PageTitle>Cameras - PiCam</PageTitle>
 <DefaultPage>
@@ -13,31 +14,70 @@
                     <MudText Typo="Typo.h5">Take picture</MudText>
                 </TitleContent>
                 <ChildContent>
+                    <MudStack Row="true" Spacing="4" Class="pa-4">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="@TakePicture">
+                            New picture
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="@CancelTakePic" Disabled="!TakePictureActive">
+                            Cancel take pic
+                        </MudButton>
+                    </MudStack>
                     <StatusTable
                         ColorTransform="@ColorTransform"
                         TooltipTransform="@_tooltipTransform">
                     </StatusTable>
                     <MudStack Row="true" Spacing="4" Class="pa-4" AlignItems="AlignItems.Center">
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                   OnClick="@TakePicture">
-                            Take pic
-                        </MudButton>
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                   OnClick="@SendPicture" Disabled="SendActive">
-                            Send pic
-                        </MudButton>
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                   OnClick="@CancelSend" Disabled="!SendActive">
-                            Cancel send
-                        </MudButton>
                         @if (_selectedPicture != null)
                         {
                             <MudText>
-                                @_selectedPicture?.TakenCount / @_selectedPicture?.TotalCount
+                                Taken @_selectedPicture!.TakenCount / @_selectedPicture!.RequestCount
                             </MudText>
+                            @if (_selectedPicture!.TakenCount != 0 && _selectedPicture!.TakenCount == _selectedPicture!.RequestCount)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
+                                         Size="Size.Large"/>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error"
+                                         Size="Size.Large"/>
+                            }
                             <MudText>
-                                @_selectedPicture?.SentCount / @_selectedPicture?.TakenCount
+                                Saved @_selectedPicture!.SavedCount / @_selectedPicture!.TakenCount
                             </MudText>
+                            @if (_selectedPicture!.SavedCount != 0 && _selectedPicture!.SavedCount == _selectedPicture!.TakenCount)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
+                                         Size="Size.Large"/>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error"
+                                         Size="Size.Large"/>
+                            }
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       OnClick="@SendPicture" Disabled="TakePictureActive || SendActive || _selectedPicture!.SavedCount == 0">
+                                Send pic
+                            </MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       OnClick="@CancelSend" Disabled="!SendActive">
+                                Cancel send
+                            </MudButton>
+                            <MudText>
+                                Sent @_selectedPicture!.SentCount / @_selectedPicture!.SavedCount
+                            </MudText>
+                            @if (_selectedPicture!.SentCount != 0 && _selectedPicture!.SentCount == _selectedPicture!.SavedCount)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success"
+                                         Size="Size.Large"/>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error"
+                                         Size="Size.Large"/>
+                            }
                         }
                     </MudStack>
                 </ChildContent>
