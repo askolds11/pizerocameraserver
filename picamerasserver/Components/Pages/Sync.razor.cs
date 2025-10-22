@@ -65,10 +65,16 @@ public partial class Sync : ComponentBase, IDisposable
             StateHasChanged();
         });
     }
+    
+    private async Task OnChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
 
     protected override void OnInitialized()
     {
         ChangeListener.OnSyncChange += OnSyncChanged;
+        ChangeListener.OnPingChange += OnChanged;
 
         SyncPayload = SyncPayloadService.GetLatest();
 
@@ -78,6 +84,7 @@ public partial class Sync : ComponentBase, IDisposable
     public void Dispose()
     {
         ChangeListener.OnSyncChange -= OnSyncChanged;
+        ChangeListener.OnPingChange -= OnChanged;
         GC.SuppressFinalize(this);
     }
 }
