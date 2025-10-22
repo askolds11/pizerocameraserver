@@ -38,9 +38,9 @@
                         </MudStack>
                     </ChildContent>
                 </MudExpansionPanel>
+                <GetAliveTab SharedState="_sharedState"/>
                 @if (_pictureSet is not { IsDone: true })
                 {
-                    <GetAliveTab SharedState="_sharedState"/>
                     <NtpSyncTab SharedState="_sharedState"/>
                     <SyncFramesTab SharedState="_sharedState"/>
                     <SoundTab SharedState="_sharedState"/>

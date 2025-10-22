@@ -2,7 +2,7 @@
 @using SysColor = System.Drawing.Color
 
 <MudExpansionPanel Gutters="false" Dense="true" HideIcon="true" HeaderClass="pa-0"
-                   Disabled="PictureSet == null || PictureSet.IsDone">
+                   Disabled="PictureSet == null">
     <TitleContent>
         <MudStack Style="width: 100%">
             <MudStack Row="true" Spacing="4" Class="pa-4 d-inline-flex"
@@ -10,7 +10,7 @@
                 <MudButton Variant="Variant.Filled" Color="Color.Primary"
                            Size="Size.Large"
                            EndIcon="@Icons.Material.Outlined.Blind" OnClick="@GetAlive"
-                           Disabled="PictureSet == null || PictureSet.IsDone || AnyActive">
+                           Disabled="PictureSet == null || AnyActive">
                     Get alive
                 </MudButton>
                 <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Large"
@@ -21,7 +21,7 @@
                 <MudButton Variant="Variant.Filled" Color="Color.Error"
                            Size="Size.Large"
                            OnClick="@OverrideGetAlive"
-                           Disabled="PictureSet == null || PictureSet.IsDone || Alived || AnyActive || AliveCount == 0">
+                           Disabled="PictureSet == null || Alived || AnyActive || AliveCount == 0">
                     Override
                 </MudButton>
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">

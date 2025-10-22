@@ -24,7 +24,8 @@ public partial class ActionsTab : ComponentBase, IDisposable
     private bool SendSetActive => SharedState.SendSetActive;
     private bool UploadActive => SharedState.UploadActive;
     private bool AnyActive => SharedState.AnyActive;
-
+    
+    private int AliveCount => SharedState.AliveCount;
     private int AllSentCount => PictureSet?.PictureRequests
         .Sum(x => x.CameraPictures.Count(y => y.ReceivedSent != null)) ?? 0;
 
