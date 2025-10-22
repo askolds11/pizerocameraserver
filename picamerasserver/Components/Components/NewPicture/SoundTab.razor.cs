@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using picamerasserver.Database.Models;
-using picamerasserver.pizerocamera;
+using picamerasserver.PiZero;
 
 namespace picamerasserver.Components.Components.NewPicture;
 

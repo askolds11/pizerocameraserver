@@ -8,9 +8,9 @@ using MudBlazor;
 using picamerasserver.Database;
 using picamerasserver.Database.Models;
 using picamerasserver.Options;
-using picamerasserver.pizerocamera;
-using picamerasserver.pizerocamera.manager;
-using picamerasserver.pizerocamera.Update;
+using picamerasserver.PiZero;
+using picamerasserver.PiZero.Manager;
+using picamerasserver.PiZero.Update;
 using Color = System.Drawing.Color;
 
 namespace picamerasserver.Components.Pages;
@@ -20,7 +20,7 @@ public partial class UpdatePage(
     IOptionsMonitor<DirectoriesOptions> dirOptionsMonitor
 ) : ComponentBase, IDisposable
 {
-    [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; set; } = null!;
+    [Inject] protected PiZeroManager PiZeroManager { get; set; } = null!;
     [Inject] protected IDbContextFactory<PiDbContext> DbContextFactory { get; init; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
     [Inject] protected IUpdateManager UpdateManager { get; init; } = null!;
@@ -190,7 +190,7 @@ public partial class UpdatePage(
 
     private Color ColorTransform(string cameraId)
     {
-        PiZeroCameraManager.PiZeroCameras.TryGetValue(cameraId, out var cameraPicture);
+        PiZeroManager.PiZeroCameras.TryGetValue(cameraId, out var cameraPicture);
         if (cameraPicture == null)
         {
             return Color.FromArgb(0x00, 0x00, 0x00);

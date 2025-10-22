@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using MudBlazor;
 using picamerasserver.Database;
 using picamerasserver.Database.Models;
-using picamerasserver.pizerocamera;
-using picamerasserver.pizerocamera.manager;
-using picamerasserver.pizerocamera.SendPicture;
+using picamerasserver.PiZero;
+using picamerasserver.PiZero.Manager;
+using picamerasserver.PiZero.SendPicture;
 
 namespace picamerasserver.Components.Components.NewPicture;
 

@@ -1,7 +1,7 @@
 @using System.Globalization
 @using picamerasserver.Components.Components.StatusTable
 @using picamerasserver.Components.Components.StatusTable.Tooltip
-@using picamerasserver.pizerocamera
+@using picamerasserver.PiZero
 @using SysColor = System.Drawing.Color;
 
 <MudExpansionPanel Gutters="false" Dense="true" HideIcon="true" HeaderClass="pa-0"
@@ -68,7 +68,7 @@
     {
         _tooltipTransformSync = cameraId =>
         {
-            var item = PiZeroCameraManager.PiZeroCameras[cameraId];
+            var item = PiZeroManager.PiZeroCameras[cameraId];
 
             return @<SyncRequestTooltip PiZeroCamera="item"/>;
         };
@@ -77,7 +77,7 @@
 
     private SysColor ColorTransformSync(string id)
     {
-        var piZeroCamera = PiZeroCameraManager.PiZeroCameras[id];
+        var piZeroCamera = PiZeroManager.PiZeroCameras[id];
 
         return piZeroCamera.SyncStatus switch
         {

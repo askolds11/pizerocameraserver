@@ -3,17 +3,17 @@ using Microsoft.EntityFrameworkCore;
 using MudBlazor;
 using picamerasserver.Database;
 using picamerasserver.Database.Models;
-using picamerasserver.pizerocamera;
-using picamerasserver.pizerocamera.manager;
-using picamerasserver.pizerocamera.SendPicture;
-using picamerasserver.pizerocamera.TakePicture;
+using picamerasserver.PiZero;
+using picamerasserver.PiZero.Manager;
+using picamerasserver.PiZero.SendPicture;
+using picamerasserver.PiZero.TakePicture;
 using Color = System.Drawing.Color;
 
 namespace picamerasserver.Components.Pages;
 
 public partial class CameraPage : ComponentBase, IDisposable
 {
-    [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; init; } = null!;
+    [Inject] protected PiZeroManager PiZeroManager { get; init; } = null!;
     [Inject] protected ITakePictureManager TakePictureManager { get; init; } = null!;
     [Inject] protected ISendPictureManager SendPictureManager { get; init; } = null!;
     [Inject] protected IDbContextFactory<PiDbContext> DbContextFactory { get; init; } = null!;
@@ -91,7 +91,7 @@ public partial class CameraPage : ComponentBase, IDisposable
 
     private async Task StartPreview()
     {
-        await PiZeroCameraManager.StartPreview();
+        await PiZeroManager.StartPreview();
         // wait for the preview to start
         // TODO: Maybe some kind of confirmation?
         await Task.Delay(2000);
@@ -100,7 +100,7 @@ public partial class CameraPage : ComponentBase, IDisposable
 
     private async Task StopPreview()
     {
-        await PiZeroCameraManager.StopPreview();
+        await PiZeroManager.StopPreview();
         _previewStreamUrl = null;
     }
 

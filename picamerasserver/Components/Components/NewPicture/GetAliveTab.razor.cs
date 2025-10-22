@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Components;
 using picamerasserver.Database.Models;
-using picamerasserver.pizerocamera;
-using picamerasserver.pizerocamera.GetAlive;
-using picamerasserver.pizerocamera.manager;
+using picamerasserver.PiZero;
+using picamerasserver.PiZero.GetAlive;
+using picamerasserver.PiZero.Manager;
 
 namespace picamerasserver.Components.Components.NewPicture;
 
@@ -10,7 +10,7 @@ public partial class GetAliveTab : ComponentBase, IDisposable
 {
     [Parameter, EditorRequired] public required SharedState SharedState { get; set; }
 
-    [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; init; } = null!;
+    [Inject] protected PiZeroManager PiZeroManager { get; init; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
     [Inject] protected IGetAliveManager GetAliveManager { get; init; } = null!;
 
@@ -27,11 +27,11 @@ public partial class GetAliveTab : ComponentBase, IDisposable
 
     private bool IndicatorAlive => SharedState.IndicatorAlive;
 
-    private int PingedCount => PiZeroCameraManager.PiZeroCameras.Values.Count(x => x.Pingable == true);
-    private int StatusCount => PiZeroCameraManager.PiZeroCameras.Values.Count(x => x.Status != null);
+    private int PingedCount => PiZeroManager.PiZeroCameras.Values.Count(x => x.Pingable == true);
+    private int StatusCount => PiZeroManager.PiZeroCameras.Values.Count(x => x.Status != null);
 
     private int AliveCount => SharedState.AliveCount;
-    private int TotalCount => PiZeroCameraManager.PiZeroCameras.Count;
+    private int TotalCount => PiZeroManager.PiZeroCameras.Count;
 
     private async Task GetAlive()
     {

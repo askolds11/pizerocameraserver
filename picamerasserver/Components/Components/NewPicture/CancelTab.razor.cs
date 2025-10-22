@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Components;
-using picamerasserver.pizerocamera.GetAlive;
-using picamerasserver.pizerocamera.manager;
-using picamerasserver.pizerocamera.Ntp;
-using picamerasserver.pizerocamera.SendPicture;
-using picamerasserver.pizerocamera.Sync;
-using picamerasserver.pizerocamera.TakePicture;
+using picamerasserver.PiZero.GetAlive;
+using picamerasserver.PiZero.Manager;
+using picamerasserver.PiZero.Ntp;
+using picamerasserver.PiZero.SendPicture;
+using picamerasserver.PiZero.Sync;
+using picamerasserver.PiZero.TakePicture;
 
 namespace picamerasserver.Components.Components.NewPicture;
 

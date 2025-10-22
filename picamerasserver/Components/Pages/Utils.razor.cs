@@ -3,20 +3,20 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Options;
 using MudBlazor;
 using picamerasserver.Options;
-using picamerasserver.pizerocamera.manager;
+using picamerasserver.PiZero.Manager;
 
 namespace picamerasserver.Components.Pages;
 
 public partial class Utils : ComponentBase
 {
     [Inject]
-    protected PiZeroCameraManager PiZeroCameraManager { get; set; } = null!;
+    protected PiZeroManager PiZeroManager { get; set; } = null!;
     [Inject]
     protected IOptionsMonitor<ServerOptions> ServerOptionsMonitor { get; set; } = null!;
     
     private async Task ShutdownIndicator()
     {
-        var result = await PiZeroCameraManager.ShutdownIndicator();
+        var result = await PiZeroManager.ShutdownIndicator();
         if (result)
         {
             Snackbar.Add("Shutdown message sent!", Severity.Success);
@@ -29,7 +29,7 @@ public partial class Utils : ComponentBase
     
     private async Task ShutdownPis()
     {
-        var result = await PiZeroCameraManager.ShutdownPis();
+        var result = await PiZeroManager.ShutdownPis();
         if (result)
         {
             Snackbar.Add("Shutdown message sent!", Severity.Success);
@@ -42,7 +42,7 @@ public partial class Utils : ComponentBase
     
     private async Task ShutdownCamerasQuadrant(char start)
     {
-        var result = await PiZeroCameraManager.ShutdownCamerasQuadrant(start);
+        var result = await PiZeroManager.ShutdownCamerasQuadrant(start);
         if (result)
         {
             Snackbar.Add("Shutdown message sent!", Severity.Success);

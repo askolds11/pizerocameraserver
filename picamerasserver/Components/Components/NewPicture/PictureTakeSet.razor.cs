@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using MudBlazor;
 using picamerasserver.Database;
 using picamerasserver.Database.Models;
-using picamerasserver.pizerocamera;
-using picamerasserver.pizerocamera.manager;
-using picamerasserver.pizerocamera.TakePicture;
+using picamerasserver.PiZero;
+using picamerasserver.PiZero.Manager;
+using picamerasserver.PiZero.TakePicture;
 
 namespace picamerasserver.Components.Components.NewPicture;
 
@@ -17,7 +17,7 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
     [Parameter, EditorRequired] public required bool Disabled { get; set; }
     [Parameter, EditorRequired] public required bool Finished { get; set; }
 
-    [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; init; } = null!;
+    [Inject] protected PiZeroManager PiZeroManager { get; init; } = null!;
     [Inject] protected ITakePictureManager TakePictureManager { get; init; } = null!;
     [Inject] protected IDbContextFactory<PiDbContext> DbContextFactory { get; init; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
@@ -97,7 +97,7 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
         ) ?? 0;
 
     private int AliveCount =>
-        PiZeroCameraManager.PiZeroCameras.Values.Count(x => x is { Pingable: true, Status: not null });
+        PiZeroManager.PiZeroCameras.Values.Count(x => x is { Pingable: true, Status: not null });
 
     private int RequestCount => _pictureRequestModel?.CameraPictures.Count ?? AliveCount;
 

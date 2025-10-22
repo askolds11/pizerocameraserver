@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using picamerasserver.Components.Components.NewPicture;
 using picamerasserver.Database;
 using picamerasserver.Database.Models;
-using picamerasserver.pizerocamera;
+using picamerasserver.PiZero;
 
 namespace picamerasserver.Components.Pages;
 

@@ -3,8 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using MudBlazor;
 using picamerasserver.Database;
 using picamerasserver.Database.Models;
-using picamerasserver.pizerocamera;
-using picamerasserver.pizerocamera.SendPicture;
+using picamerasserver.PiZero;
+using picamerasserver.PiZero.SendPicture;
 
 namespace picamerasserver.Components.Pages;
 

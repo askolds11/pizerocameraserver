@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Components;
-using picamerasserver.pizerocamera;
+using picamerasserver.PiZero;
 
 namespace picamerasserver.Components.Components.StatusTable.Tooltip;
 

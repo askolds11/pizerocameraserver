@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using picamerasserver.Database.Models;
-using picamerasserver.pizerocamera.SendPicture;
+using picamerasserver.PiZero.SendPicture;
 
 namespace picamerasserver.Components.Components.StatusTable.Tooltip;
 

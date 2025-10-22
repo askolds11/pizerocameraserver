@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Components;
-using picamerasserver.pizerocamera;
-using picamerasserver.pizerocamera.manager;
-using picamerasserver.pizerocamera.Ntp;
-using picamerasserver.pizerocamera.Requests;
+using picamerasserver.PiZero;
+using picamerasserver.PiZero.Manager;
+using picamerasserver.PiZero.Ntp;
+using picamerasserver.PiZero.Requests;
 
 namespace picamerasserver.Components.Pages;
 
 public partial class NtpPage : ComponentBase, IDisposable
 {
-    [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; set; } = null!;
+    [Inject] protected PiZeroManager PiZeroManager { get; set; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
     [Inject] protected INtpManager NtpManager { get; init; } = null!;
 
@@ -39,7 +39,7 @@ public partial class NtpPage : ComponentBase, IDisposable
     
     private List<float>? GetOffsets()
     {
-        var offsets = PiZeroCameraManager.PiZeroCameras.Values
+        var offsets = PiZeroManager.PiZeroCameras.Values
             .Where(x => x.LastNtpOffsetMillis != null)
             .Select(x => Math.Abs((float)x.LastNtpOffsetMillis!))
             .ToList();
@@ -49,7 +49,7 @@ public partial class NtpPage : ComponentBase, IDisposable
 
     private List<float>? GetErrors()
     {
-        var errors = PiZeroCameraManager.PiZeroCameras.Values
+        var errors = PiZeroManager.PiZeroCameras.Values
             .Where(x => x.LastNtpErrorMillis != null)
             .Select(x => Math.Abs((float)x.LastNtpErrorMillis!))
             .ToList();

@@ -2,7 +2,7 @@
 @using picamerasserver.Components.Components
 @using picamerasserver.Components.Components.StatusTable
 @using picamerasserver.Components.Components.StatusTable.Tooltip
-@using picamerasserver.pizerocamera
+@using picamerasserver.PiZero
 @using SysColor = System.Drawing.Color;
 
 <PageTitle>Ntp - PiCam</PageTitle>
@@ -46,7 +46,7 @@
     {
         _tooltipTransform = cameraId =>
         {
-            var item = PiZeroCameraManager.PiZeroCameras[cameraId];
+            var item = PiZeroManager.PiZeroCameras[cameraId];
 
             return @<NtpRequestTooltip PiZeroCamera="item"/>;
         };
@@ -57,12 +57,12 @@
     private SysColor ColorTransformNtp(string id)
     {
         var ntpRequest = id == PiZeroIndicator.Id
-            ? PiZeroCameraManager.PiZeroIndicator.NtpRequest
-            : PiZeroCameraManager.PiZeroCameras[id].NtpRequest;
+            ? PiZeroManager.PiZeroIndicator.NtpRequest
+            : PiZeroManager.PiZeroCameras[id].NtpRequest;
 
         var lastNtpErrorMillis = id == PiZeroIndicator.Id
-            ? PiZeroCameraManager.PiZeroIndicator.LastNtpErrorMillis
-            : PiZeroCameraManager.PiZeroCameras[id].LastNtpErrorMillis;
+            ? PiZeroManager.PiZeroIndicator.LastNtpErrorMillis
+            : PiZeroManager.PiZeroCameras[id].LastNtpErrorMillis;
 
         return ntpRequest switch
         {

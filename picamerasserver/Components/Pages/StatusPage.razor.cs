@@ -1,14 +1,14 @@
 using System.Drawing;
 using Microsoft.AspNetCore.Components;
-using picamerasserver.pizerocamera;
-using picamerasserver.pizerocamera.GetAlive;
-using picamerasserver.pizerocamera.manager;
+using picamerasserver.PiZero;
+using picamerasserver.PiZero.GetAlive;
+using picamerasserver.PiZero.Manager;
 
 namespace picamerasserver.Components.Pages;
 
 public partial class StatusPage : ComponentBase, IDisposable
 {
-    [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; set; } = null!;
+    [Inject] protected PiZeroManager PiZeroManager { get; set; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
     [Inject] protected IGetAliveManager GetAliveManager { get; init; } = null!;
     private bool PingActive => GetAliveManager.PingActive;
@@ -47,7 +47,7 @@ public partial class StatusPage : ComponentBase, IDisposable
 
     private Color ColorTransform(string id)
     {
-        return PiZeroCameraManager.PiZeroCameras[id].Pingable switch
+        return PiZeroManager.PiZeroCameras[id].Pingable switch
         {
             true => Color.FromArgb(0x00, 0xFF, 0x00),
             false => Color.FromArgb(0xFF, 0x00, 0x00),
@@ -57,7 +57,7 @@ public partial class StatusPage : ComponentBase, IDisposable
 
     private Color ColorTransformStatus(string id)
     {
-        return PiZeroCameraManager.PiZeroCameras[id].Status switch
+        return PiZeroManager.PiZeroCameras[id].Status switch
         {
             null => Color.FromArgb(0xFF, 0x00, 0x00),
             _ => Color.FromArgb(0x00, 0xFF, 0x00)
@@ -66,7 +66,7 @@ public partial class StatusPage : ComponentBase, IDisposable
     
     private Color ColorTransformIndicator()
     {
-        return PiZeroCameraManager.PiZeroIndicator.Pingable switch
+        return PiZeroManager.PiZeroIndicator.Pingable switch
         {
             true => Color.FromArgb(0x00, 0xFF, 0x00),
             false => Color.FromArgb(0xFF, 0x00, 0x00),
@@ -76,7 +76,7 @@ public partial class StatusPage : ComponentBase, IDisposable
 
     private Color ColorTransformIndicatorStatus()
     {
-        return PiZeroCameraManager.PiZeroIndicator.Status switch
+        return PiZeroManager.PiZeroIndicator.Status switch
         {
             null => Color.FromArgb(0xFF, 0x00, 0x00),
             _ => Color.FromArgb(0x00, 0xFF, 0x00)

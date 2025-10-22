@@ -1,16 +1,16 @@
 using picamerasserver.Database.Models;
-using picamerasserver.pizerocamera;
-using picamerasserver.pizerocamera.GetAlive;
-using picamerasserver.pizerocamera.manager;
-using picamerasserver.pizerocamera.Ntp;
-using picamerasserver.pizerocamera.SendPicture;
-using picamerasserver.pizerocamera.Sync;
+using picamerasserver.PiZero;
+using picamerasserver.PiZero.GetAlive;
+using picamerasserver.PiZero.Manager;
+using picamerasserver.PiZero.Ntp;
+using picamerasserver.PiZero.SendPicture;
+using picamerasserver.PiZero.Sync;
 
 namespace picamerasserver.Components.Components.NewPicture;
 
 public class SharedState : IDisposable
 {
-    private readonly PiZeroCameraManager _piZeroCameraManager;
+    private readonly PiZeroManager _piZeroManager;
     private readonly IGetAliveManager _getAliveManager;
     private readonly INtpManager _ntpManager;
     private readonly ISyncManager _syncManager;
@@ -19,12 +19,12 @@ public class SharedState : IDisposable
     private readonly IUploadManager _uploadToServer;
 
     public SharedState(
-        PiZeroCameraManager piZeroCameraManager,
+        PiZeroManager piZeroManager,
         IGetAliveManager getAliveManager,
         ChangeListener changeListener, INtpManager ntpManager, ISyncManager syncManager, IUploadManager uploadToServer,
         ISendPictureSetManager sendPictureSetManager)
     {
-        _piZeroCameraManager = piZeroCameraManager;
+        _piZeroManager = piZeroManager;
         _getAliveManager = getAliveManager;
         _changeListener = changeListener;
         _ntpManager = ntpManager;
@@ -144,16 +144,16 @@ public class SharedState : IDisposable
     /// <summary>
     /// Is the indicator alive?
     /// </summary>
-    public bool IndicatorAlive => _piZeroCameraManager.PiZeroIndicator is { Pingable: true, Status: not null };
+    public bool IndicatorAlive => _piZeroManager.PiZeroIndicator is { Pingable: true, Status: not null };
 
     /// <summary>
     /// Is the indicator ntp synced?
     /// </summary>
-    public bool IndicatorNtped => _piZeroCameraManager.PiZeroIndicator.NtpRequest is PiZeroNtpRequest.Success;
+    public bool IndicatorNtped => _piZeroManager.PiZeroIndicator.NtpRequest is PiZeroNtpRequest.Success;
 
     /// <summary>
     /// Count of cameras that are alive
     /// </summary>
     public int AliveCount =>
-        _piZeroCameraManager.PiZeroCameras.Values.Count(x => x is { Pingable: true, Status: not null });
+        _piZeroManager.PiZeroCameras.Values.Count(x => x is { Pingable: true, Status: not null });
 }

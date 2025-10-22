@@ -5,14 +5,14 @@ using MQTTnet.Formatter;
 using MQTTnet.Protocol;
 using MudBlazor;
 using picamerasserver.Options;
-using picamerasserver.pizerocamera.GetAlive;
-using picamerasserver.pizerocamera.Ntp;
-using picamerasserver.pizerocamera.Requests;
-using picamerasserver.pizerocamera.Responses;
-using picamerasserver.pizerocamera.SendPicture;
-using picamerasserver.pizerocamera.Sync;
-using picamerasserver.pizerocamera.TakePicture;
-using picamerasserver.pizerocamera.Update;
+using picamerasserver.PiZero.GetAlive;
+using picamerasserver.PiZero.Ntp;
+using picamerasserver.PiZero.Requests;
+using picamerasserver.PiZero.Responses;
+using picamerasserver.PiZero.SendPicture;
+using picamerasserver.PiZero.Sync;
+using picamerasserver.PiZero.TakePicture;
+using picamerasserver.PiZero.Update;
 
 namespace picamerasserver.Services;
 

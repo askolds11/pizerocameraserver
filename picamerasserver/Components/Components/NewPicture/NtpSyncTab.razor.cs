@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Components;
 using picamerasserver.Database.Models;
-using picamerasserver.pizerocamera;
-using picamerasserver.pizerocamera.manager;
-using picamerasserver.pizerocamera.Ntp;
-using picamerasserver.pizerocamera.Requests;
+using picamerasserver.PiZero;
+using picamerasserver.PiZero.Manager;
+using picamerasserver.PiZero.Ntp;
+using picamerasserver.PiZero.Requests;
 
 namespace picamerasserver.Components.Components.NewPicture;
 
@@ -11,7 +11,7 @@ public partial class NtpSyncTab : ComponentBase, IDisposable
 {
     [Parameter, EditorRequired] public required SharedState SharedState { get; set; }
 
-    [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; init; } = null!;
+    [Inject] protected PiZeroManager PiZeroManager { get; init; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
     [Inject] protected INtpManager NtpManager { get; init; } = null!;
 
@@ -32,19 +32,19 @@ public partial class NtpSyncTab : ComponentBase, IDisposable
 
 
     private int NtpSyncedCount =>
-        PiZeroCameraManager.PiZeroCameras.Values.Count(x => x.NtpRequest is PiZeroNtpRequest.Success);
+        PiZeroManager.PiZeroCameras.Values.Count(x => x.NtpRequest is PiZeroNtpRequest.Success);
 
     private int AliveCount => SharedState.AliveCount;
 
     private List<float>? GetOffsets()
     {
-        var offsets = PiZeroCameraManager.PiZeroCameras.Values
+        var offsets = PiZeroManager.PiZeroCameras.Values
             .Where(x => x.LastNtpOffsetMillis != null)
             .Select(x => Math.Abs((float)x.LastNtpOffsetMillis!))
             .ToList();
-        if (PiZeroCameraManager.PiZeroIndicator.LastNtpOffsetMillis != null)
+        if (PiZeroManager.PiZeroIndicator.LastNtpOffsetMillis != null)
         {
-            offsets.Add((float)PiZeroCameraManager.PiZeroIndicator.LastNtpOffsetMillis);
+            offsets.Add((float)PiZeroManager.PiZeroIndicator.LastNtpOffsetMillis);
         }
 
         return offsets.Count == 0 ? null : offsets;
@@ -52,13 +52,13 @@ public partial class NtpSyncTab : ComponentBase, IDisposable
 
     private List<float>? GetErrors()
     {
-        var errors = PiZeroCameraManager.PiZeroCameras.Values
+        var errors = PiZeroManager.PiZeroCameras.Values
             .Where(x => x.LastNtpErrorMillis != null)
             .Select(x => Math.Abs((float)x.LastNtpErrorMillis!))
             .ToList();
-        if (PiZeroCameraManager.PiZeroIndicator.LastNtpErrorMillis != null)
+        if (PiZeroManager.PiZeroIndicator.LastNtpErrorMillis != null)
         {
-            errors.Add((float)PiZeroCameraManager.PiZeroIndicator.LastNtpErrorMillis);
+            errors.Add((float)PiZeroManager.PiZeroIndicator.LastNtpErrorMillis);
         }
 
         return errors.Count == 0 ? null : errors;

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using MudBlazor;
-using picamerasserver.pizerocamera.manager;
+using picamerasserver.PiZero.Manager;
 using Color = System.Drawing.Color;
 
 namespace picamerasserver.Components.Components;
@@ -13,7 +13,7 @@ public partial class PreviewDialog : ComponentBase
     // [CascadingParameter]
     [Parameter, EditorRequired] public required string CameraId { get; set; }
 
-    [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; init; } = null!;
+    [Inject] protected PiZeroManager PiZeroManager { get; init; } = null!;
 
     private string PreviewStreamUrl => $"http://pizero{CameraId}.local:8000/stream.mjpg";
 
@@ -51,7 +51,7 @@ public partial class PreviewDialog : ComponentBase
 
     private Color ColorTransform(string cameraId)
     {
-        var piZeroCamera = PiZeroCameraManager.PiZeroCameras[cameraId];
+        var piZeroCamera = PiZeroManager.PiZeroCameras[cameraId];
 
         // if match
         if (cameraId == CameraId)

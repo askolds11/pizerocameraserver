@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Components;
 using picamerasserver.Database.Models;
-using picamerasserver.pizerocamera;
-using picamerasserver.pizerocamera.manager;
-using picamerasserver.pizerocamera.Sync;
+using picamerasserver.PiZero;
+using picamerasserver.PiZero.Manager;
+using picamerasserver.PiZero.Sync;
 
 namespace picamerasserver.Components.Components.NewPicture;
 
@@ -10,7 +10,7 @@ public partial class SyncFramesTab : ComponentBase, IDisposable
 {
     [Parameter, EditorRequired] public required SharedState SharedState { get; set; }
 
-    [Inject] protected PiZeroCameraManager PiZeroCameraManager { get; init; } = null!;
+    [Inject] protected PiZeroManager PiZeroManager { get; init; } = null!;
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
     [Inject] protected ISyncManager SyncManager { get; init; } = null!;
 
@@ -29,13 +29,13 @@ public partial class SyncFramesTab : ComponentBase, IDisposable
     }
 
     private int SyncedCount =>
-        PiZeroCameraManager.PiZeroCameras.Values.Count(x => x.SyncStatus is SyncStatus.Success { SyncReady: true });
+        PiZeroManager.PiZeroCameras.Values.Count(x => x.SyncStatus is SyncStatus.Success { SyncReady: true });
 
     private int AliveCount => SharedState.AliveCount;
 
     private List<long>? GetTimeTillSync()
     {
-        var unsyncedTimes = PiZeroCameraManager.PiZeroCameras.Values
+        var unsyncedTimes = PiZeroManager.PiZeroCameras.Values
             .Select(x => x.SyncStatus)
             .Where(x => x is SyncStatus.Success { SyncReady: false })
             .Select(x => (SyncStatus.Success)x!)
