@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
+using MudBlazor;
 using picamerasserver.Database;
 using picamerasserver.Database.Models;
 using picamerasserver.pizerocamera;
@@ -43,13 +44,17 @@ public partial class PictureTakeSet : ComponentBase, IDisposable
                     false)
                 );
         }
-
-        // TODO: Error handling
-        _pictureRequestModel =
-            (await TakePictureManager.RequestTakePictureAll(PictureRequestType, PictureSetUId)).Value;
-        // _selectedPicture = new PictureElement(pictureRequestModel);
-        // await _gridData.ReloadServerData();
-        _canTryAgain = false;
+        
+        var pictureRequestResult = await TakePictureManager.RequestTakePictureAll(PictureRequestType, PictureSetUId);
+        if (pictureRequestResult.IsFailure)
+        {
+            Snackbar.Add($"Failed to take picture: {pictureRequestResult.Error}", Severity.Error);
+        }
+        else
+        {
+            _pictureRequestModel = pictureRequestResult.Value;
+            _canTryAgain = false;
+        }
     }
 
     private async Task CancelTakePicture()

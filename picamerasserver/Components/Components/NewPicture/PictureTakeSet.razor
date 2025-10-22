@@ -2,6 +2,7 @@
 @using picamerasserver.Components.Components.StatusTable.Tooltip
 @using picamerasserver.Database.Models
 @using SysColor = System.Drawing.Color
+@inject ISnackbar Snackbar
 <MudExpansionPanel Gutters="false" Dense="true" HideIcon="true" HeaderClass="pa-0"
                    Disabled="_pictureRequestModel == null && Disabled">
     <TitleContent>

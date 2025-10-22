@@ -8,7 +8,6 @@ using picamerasserver.Components;
 using picamerasserver.Components.Components.NewPicture;
 using picamerasserver.Database;
 using picamerasserver.Endpoints;
-using picamerasserver.mqtt;
 using picamerasserver.Options;
 using picamerasserver.pizerocamera;
 using picamerasserver.pizerocamera.GetAlive;
@@ -19,6 +18,7 @@ using picamerasserver.pizerocamera.Sync;
 using picamerasserver.pizerocamera.syncreceiver;
 using picamerasserver.pizerocamera.TakePicture;
 using picamerasserver.pizerocamera.Update;
+using picamerasserver.Services;
 using picamerasserver.Settings;
 using Serilog;
 
@@ -68,7 +68,7 @@ builder.Services.AddPooledDbContextFactory<PiDbContext>(opt =>
 var mqttFactory = new MqttClientFactory();
 var mqttClient = mqttFactory.CreateMqttClient();
 builder.Services.AddSingleton(mqttClient);
-builder.Services.AddSingleton<MqttStuff>();
+builder.Services.AddSingleton<MqttService>();
 builder.Services.AddSingleton<ChangeListener>();
 builder.Services.AddSingleton<PiZeroCameraManager>();
 builder.Services.AddSingleton<ISendPictureManager, SendPicture>();
@@ -81,6 +81,7 @@ builder.Services.AddSingleton<IUploadManager, UploadToServer>();
 builder.Services.AddSingleton<ISyncManager, Sync>();
 builder.Services.AddSingleton<Sound>();
 builder.Services.AddSingleton<SettingsService>();
+builder.Services.AddSingleton<NotificationService>();
 
 builder.Services.AddScoped<SharedState>();
 
@@ -118,7 +119,7 @@ app.UseRequestLocalization(options =>
 });
 
 // Force to instantly create
-app.Services.GetRequiredService<MqttStuff>();
+app.Services.GetRequiredService<MqttService>();
 app.Services.GetRequiredService<ChangeListener>();
 app.Services.GetRequiredService<PiZeroCameraManager>();
 

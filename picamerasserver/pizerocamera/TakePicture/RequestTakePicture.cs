@@ -3,6 +3,7 @@ using CSharpFunctionalExtensions;
 using Microsoft.EntityFrameworkCore;
 using MQTTnet;
 using MQTTnet.Protocol;
+using MudBlazor;
 using picamerasserver.Database.Models;
 using picamerasserver.pizerocamera.Requests;
 using picamerasserver.Settings;
@@ -25,7 +26,7 @@ public partial class TakePicture
     {
         var futureMillis = (await settingsService.GetAsync<Setting.RequestPictureDelay>()).Value.Value;
         var latestSync = syncPayloadService.GetLatest();
-        
+
         var uuid = Guid.CreateVersion7();
         var currentTime = DateTimeOffset.UtcNow;
 
@@ -36,22 +37,24 @@ public partial class TakePicture
             // Sync info
             var frameTimestampMicros = latestSync.Value.WallClockFrameTimestamp;
             var frameDurationMicros = latestSync.Value.FrameDuration;
-            
+
             // Planned time
-            var futureTimeMicros = (ulong) currentTime.AddMilliseconds(futureMillis).ToUnixTimeMilliseconds() * 1_000;
-            
+            var futureTimeMicros = (ulong)currentTime.AddMilliseconds(futureMillis).ToUnixTimeMilliseconds() * 1_000;
+
             // Get the difference between planned time and current frame start time
-            var diff = futureTimeMicros > frameTimestampMicros ? futureTimeMicros - frameTimestampMicros : (ulong) futureMillis * 1_000;
-            
+            var diff = futureTimeMicros > frameTimestampMicros
+                ? futureTimeMicros - frameTimestampMicros
+                : (ulong)futureMillis * 1_000;
+
             // Number of frames such that their total time is at least as long as the difference
             var n = (long)Math.Ceiling(diff / (double)frameDurationMicros);
-            
+
             // Get the closest frame start time to the planned time
             var closestMicros = frameTimestampMicros + (ulong)(n * frameDurationMicros);
 
             // Create the DateTimeOffset. Add extra time to be a bit after the frame start time.
             var epochTime = new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero);
-            pictureTime = epochTime.AddTicks((long) closestMicros * 10 + 5_000 * 10);
+            pictureTime = epochTime.AddTicks((long)closestMicros * 10 + 5_000 * 10);
         }
         else
         {
@@ -221,9 +224,9 @@ public partial class TakePicture
                 await piDbContext.CameraPictures
                     .Where(x => x.PictureRequestId == pictureRequest.Uuid && updateableIds.Contains(x.CameraId))
                     .ExecuteUpdateAsync(x => x.SetProperty(
-                        b => b.CameraPictureStatus, isCancelled
-                            ? CameraPictureStatus.Cancelled
-                            : CameraPictureStatus.FailedToRequest),
+                            b => b.CameraPictureStatus, isCancelled
+                                ? CameraPictureStatus.Cancelled
+                                : CameraPictureStatus.FailedToRequest),
                         CancellationToken.None
                     );
             }
@@ -286,6 +289,13 @@ public partial class TakePicture
             takeCameras = cameras.ToList();
             // ReSharper disable once PossibleMultipleEnumeration
             saveCameras = cameras.ToList();
+            // Warn that the camera responses are not expected and return
+            if (takeCameras.Count == 0)
+            {
+                await notificationService.AddAsync("No cameras found, operation might still be ongoing!",
+                    Severity.Warning);
+                return;
+            }
             var takeTask = HandleChannelResponses(takeChannel, takeCameras, cts.Token);
             var saveTask = HandleChannelResponses(saveChannel, saveCameras, cts.Token);
             await Task.WhenAll(takeTask, saveTask);

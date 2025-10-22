@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Formatter;
 using MQTTnet.Protocol;
+using MudBlazor;
 using picamerasserver.Options;
 using picamerasserver.pizerocamera.GetAlive;
 using picamerasserver.pizerocamera.Ntp;
@@ -13,9 +14,9 @@ using picamerasserver.pizerocamera.Sync;
 using picamerasserver.pizerocamera.TakePicture;
 using picamerasserver.pizerocamera.Update;
 
-namespace picamerasserver.mqtt;
+namespace picamerasserver.Services;
 
-public class MqttStuff
+public class MqttService
 {
     private readonly IMqttClient _mqttClient;
     private readonly ITakePictureManager _takePictureManager;
@@ -26,18 +27,18 @@ public class MqttStuff
     private readonly ISyncManager _syncManager;
     private readonly IOptionsMonitor<MqttOptions> _optionsMonitor;
     private MqttOptions _currentOptions;
-    private readonly ILogger<MqttStuff> _logger;
+    private readonly ILogger<MqttService> _logger;
+    private readonly NotificationService _notificationService;
 
-    public MqttStuff(IMqttClient mqttClient,
+    public MqttService(IMqttClient mqttClient,
         IOptionsMonitor<MqttOptions> optionsMonitor,
-        ILogger<MqttStuff> logger,
+        ILogger<MqttService> logger,
         ITakePictureManager takePictureManager,
         ISendPictureManager sendPictureManager,
         IGetAliveManager getAliveManager,
         INtpManager ntpManager,
         IUpdateManager updateManager,
-        ISyncManager syncManager
-    )
+        ISyncManager syncManager, NotificationService notificationService)
     {
         _mqttClient = mqttClient;
         _optionsMonitor = optionsMonitor;
@@ -48,6 +49,7 @@ public class MqttStuff
         _ntpManager = ntpManager;
         _updateManager = updateManager;
         _syncManager = syncManager;
+        _notificationService = notificationService;
         _currentOptions = _optionsMonitor.CurrentValue;
         Task.Run(InitClient);
     }
@@ -69,7 +71,7 @@ public class MqttStuff
     private static string GetAnswersTopic(string topic) => $"{topic}/answer/#";
 
     /// <summary>
-    /// Resubscribes to topic if changed
+    /// Resubscribes to the topic if changed
     /// </summary>
     /// <param name="oldTopic">Old topic</param>
     /// <param name="newTopic">New topic</param>
@@ -143,7 +145,7 @@ public class MqttStuff
             }
             else if (cameraResponse.IsFailure)
             {
-                // TODO: Handle
+                await _notificationService.AddAsync("Failed to parse camera response: " + cameraResponse.Error, Severity.Error);
             }
         }
         else if (topic == _currentOptions.CommandTopic)
@@ -159,6 +161,8 @@ public class MqttStuff
         }
         else if (topic == _currentOptions.ErrorTopic)
         {
+            var payload = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
+            await _notificationService.AddAsync($"Error for {id}: {payload}", Severity.Error);
         }
 
         var text = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
