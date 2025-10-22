@@ -7,7 +7,7 @@ using picamerasserver.PiZero.Manager;
 
 namespace picamerasserver.Components.Pages;
 
-public partial class Utils : ComponentBase
+public partial class ShutdownPage : ComponentBase
 {
     [Inject]
     protected PiZeroManager PiZeroManager { get; set; } = null!;

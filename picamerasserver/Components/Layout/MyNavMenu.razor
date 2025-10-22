@@ -1,15 +1,15 @@
-<MudNavMenu>
-    <MudNavLink Href="/" Match="NavLinkMatch.All">Dashboard</MudNavLink>
-    <MudNavLink Href="/ntp" Match="NavLinkMatch.Prefix">NTP</MudNavLink>
-    @* <MudNavGroup Title="Settings" Expanded="true"> *@
-    @*     <MudNavLink Href="/users"  Match="NavLinkMatch.Prefix">Users</MudNavLink> *@
-    @*     <MudNavLink Href="/security"  Match="NavLinkMatch.Prefix">Security</MudNavLink> *@
-    @* </MudNavGroup> *@
-    <MudNavLink Href="/camera"  Match="NavLinkMatch.Prefix">Camera</MudNavLink>
-    <MudNavLink Href="/update"  Match="NavLinkMatch.Prefix">Update</MudNavLink>
-    <MudNavLink Href="/status"  Match="NavLinkMatch.Prefix">Status</MudNavLink>
-    <MudNavLink Href="/utils"  Match="NavLinkMatch.Prefix">Utils</MudNavLink>
-    <MudNavLink Href="/settings"  Match="NavLinkMatch.Prefix">Settings</MudNavLink>
-    <MudNavLink Href="/sync"  Match="NavLinkMatch.Prefix">Sync</MudNavLink>
-    <MudNavLink Href="/sound"  Match="NavLinkMatch.Prefix">Sound</MudNavLink>
+<MudNavMenu Color="Color.Tertiary">
+    <MudNavLink Href="/" Icon="@Icons.Material.Filled.Dashboard" Match="NavLinkMatch.All">Dashboard</MudNavLink>
+    <MudNavLink Href="/status"  Icon="@Icons.Material.Filled.MonitorHeart" Match="NavLinkMatch.Prefix">Status</MudNavLink>
+    <MudNavLink Href="/shutdown" Icon="@Icons.Material.Filled.PowerSettingsNew" Match="NavLinkMatch.Prefix">Shutdown</MudNavLink>
+    
+    <MudNavGroup Title="Other" Expanded="true">
+        <MudNavLink Href="/ntp" Icon="@Icons.Material.Filled.AccessTime" Match="NavLinkMatch.Prefix">NTP</MudNavLink>
+        <MudNavLink Href="/camera" Icon="@Icons.Material.Filled.CameraAlt" Match="NavLinkMatch.Prefix">Camera</MudNavLink>
+        <MudNavLink Href="/sync" Icon="@Icons.Material.Filled.SyncAlt" Match="NavLinkMatch.Prefix">Sync</MudNavLink>
+        <MudNavLink Href="/sound" Icon="@Icons.Material.Filled.VolumeUp" Match="NavLinkMatch.Prefix">Sound</MudNavLink>
+        <MudNavLink Href="/update" Icon="@Icons.Material.Filled.Update" Match="NavLinkMatch.Prefix">Update</MudNavLink>
+        <MudNavLink Href="/settings" Icon="@Icons.Material.Filled.Settings" Match="NavLinkMatch.Prefix">Settings</MudNavLink>
+    </MudNavGroup>
+    
 </MudNavMenu>
