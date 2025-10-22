@@ -17,6 +17,7 @@ public partial class ActionsTab : ComponentBase, IDisposable
     [Inject] protected ChangeListener ChangeListener { get; init; } = null!;
     [Inject] protected ISendPictureSetManager SendPictureSetManager { get; init; } = null!;
     [Inject] protected IUploadManager UploadToServer { get; init; } = null!;
+    [Inject] protected NavigationManager NavigationManager { get; init; } = null!;
 
     private PictureSetModel? PictureSet => SharedState.PictureSet;
 
@@ -45,6 +46,11 @@ public partial class ActionsTab : ComponentBase, IDisposable
             .Sum(x => x.CameraPictures.Count(y => y.Synced)) ?? 0;
 
 
+    private void NavigateToNew()
+    {
+        NavigationManager.NavigateTo("/", replace: false);
+    }
+    
     private async Task FinishPictureSet()
     {
         if (PictureSet == null)
