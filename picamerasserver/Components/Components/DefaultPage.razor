@@ -3,7 +3,7 @@
 
 <MudContainer MaxWidth="MaxWidth.Large">
 
-    <MudPaper MinHeight="@($"calc(100vh - {MyThemeProvider.MyCustomTheme.LayoutProperties.AppbarHeight})")">
+    <MudPaper MinHeight="@($"calc(100vh - {MyThemeProvider.MyCustomTheme.LayoutProperties.AppbarHeight} - 16px)")" Class="mt-4">
         <ErrorBoundary>
             <ChildContent>
                 @ChildContent
